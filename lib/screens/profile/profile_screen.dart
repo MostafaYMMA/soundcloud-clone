@@ -7,6 +7,7 @@ import 'widgets/profile_completion_section.dart';
 import '../home/more_like_section.dart';
 import 'widgets/profile_track_list_section.dart';
 import 'edit_profile_screen.dart';
+import'widgets/profile_more_button.dart';
 
 const Color kBackgroundColor = Color(0xFF0F0F0F);
 
@@ -102,7 +103,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Navigator.of(context).maybePop();
                 },
                 onMorePressed: () {
-                  debugPrint('More clicked');
+                    showProfileMore(context, user: user);
                 },
                 onEditPressed: () {
                   Navigator.of(context).push(
