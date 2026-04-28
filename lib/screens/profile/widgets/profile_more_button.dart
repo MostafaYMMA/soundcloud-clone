@@ -16,10 +16,8 @@ void showProfileMore(BuildContext context, {required User user}) {
       minChildSize: 0.5,
       maxChildSize: 1.0,
       expand: false,
-      builder: (__, scrollController) => ProfileMoreButton(
-        user: user,
-        scrollController: scrollController,
-      ),
+      builder: (__, scrollController) =>
+          ProfileMoreButton(user: user, scrollController: scrollController),
     ),
   );
 }
@@ -40,16 +38,15 @@ class ProfileMoreButton extends StatelessWidget {
   // Correct order from screenshot:
   // Copy link, Message, QR code, SMS, WhatsApp, Stories, Snapchat, More
   List<_ShareItem> get _shareItems => [
-        _ShareItem.dark(icon: Icons.copy_rounded, label: 'Copy link'),
-        _ShareItem.dark(icon: Icons.near_me_outlined, label: 'Message'),
-        _ShareItem.dark(icon: Icons.qr_code_2_rounded, label: 'QR code'),
-        _ShareItem.dark(
-            icon: Icons.chat_bubble_outline_rounded, label: 'SMS'),
-        _ShareItem.whatsapp(),
-        _ShareItem.instagram(),
-        _ShareItem.snapchat(),
-        _ShareItem.dark(icon: Icons.more_horiz_rounded, label: 'More'),
-      ];
+    _ShareItem.dark(icon: Icons.copy_rounded, label: 'Copy link'),
+    _ShareItem.dark(icon: Icons.near_me_outlined, label: 'Message'),
+    _ShareItem.dark(icon: Icons.qr_code_2_rounded, label: 'QR code'),
+    _ShareItem.dark(icon: Icons.chat_bubble_outline_rounded, label: 'SMS'),
+    _ShareItem.whatsapp(),
+    _ShareItem.instagram(),
+    _ShareItem.snapchat(),
+    _ShareItem.dark(icon: Icons.more_horiz_rounded, label: 'More'),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -85,11 +82,14 @@ class ProfileMoreButton extends StatelessWidget {
                 backgroundColor: const Color(0xFF2A2A2A),
                 backgroundImage:
                     (user.avatarUrl != null && user.avatarUrl!.isNotEmpty)
-                        ? NetworkImage(user.avatarUrl!)
-                        : null,
+                    ? NetworkImage(user.avatarUrl!)
+                    : null,
                 child: (user.avatarUrl == null || user.avatarUrl!.isEmpty)
-                    ? Icon(Icons.person,
-                        color: Colors.white54, size: avatarRadius)
+                    ? Icon(
+                        Icons.person,
+                        color: Colors.white54,
+                        size: avatarRadius,
+                      )
                     : null,
               ),
               const SizedBox(height: 12),
@@ -141,7 +141,9 @@ class ProfileMoreButton extends StatelessWidget {
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 18),
+                    horizontal: 20,
+                    vertical: 18,
+                  ),
                   child: Row(
                     children: [
                       Container(
@@ -151,8 +153,11 @@ class ProfileMoreButton extends StatelessWidget {
                           color: Color(0xFF2A2A2A),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.info_outline,
-                            color: Colors.white, size: 20),
+                        child: const Icon(
+                          Icons.info_outline,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       const Text(
@@ -302,8 +307,11 @@ class _ShareIconButton extends StatelessWidget {
               ],
             ),
           ),
-          child: const Icon(Icons.camera_alt_outlined,
-              color: Colors.white, size: 26),
+          child: const Icon(
+            Icons.camera_alt_outlined,
+            color: Colors.white,
+            size: 26,
+          ),
         );
 
       case _ShareItemType.snapchat:
@@ -314,8 +322,11 @@ class _ShareIconButton extends StatelessWidget {
             color: Color(0xFFFFFC00),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.camera_alt_outlined,
-              color: Colors.black, size: 24),
+          child: const Icon(
+            Icons.camera_alt_outlined,
+            color: Colors.black,
+            size: 24,
+          ),
         );
     }
   }

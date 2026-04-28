@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../models/user.dart';
 
-
-
 void showProfileViewInfo(BuildContext context, {required User user}) {
   showModalBottomSheet(
     context: context,
@@ -13,20 +11,14 @@ void showProfileViewInfo(BuildContext context, {required User user}) {
       minChildSize: 0.5,
       maxChildSize: 1.0,
       expand: false,
-      builder: (__, scrollController) => ProfileViewInfo(
-        user: user,
-        scrollController: scrollController,
-      ),
+      builder: (__, scrollController) =>
+          ProfileViewInfo(user: user, scrollController: scrollController),
     ),
   );
 }
 
 class ProfileViewInfo extends StatelessWidget {
-  const ProfileViewInfo({
-    super.key,
-    required this.user,
-    this.scrollController,
-  });
+  const ProfileViewInfo({super.key, required this.user, this.scrollController});
 
   final User user;
   final ScrollController? scrollController;
