@@ -1,6 +1,5 @@
 import '../../models/album.dart';
 import '../../models/playlist.dart';
-import '../../models/station.dart';
 import 'collections_screen.dart';
 
 /// Maps domain models → [CollectionDetailsData] for [CollectionDetailsScreen].
@@ -29,19 +28,6 @@ class CollectionDetailsMapper {
       ownerAvatarPath: playlist.coverUrl ?? '',
       yearText: playlist.duration ?? '',
       likesText: '${playlist.trackCount} tracks',
-      tracks: [], // populate when track data is available
-    );
-  }
-
-  static CollectionDetailsData fromStation(Station station) {
-    return CollectionDetailsData(
-      type: CollectionType.station,
-      title: station.title,
-      artworkPath: station.artworkUrl,
-      ownerName: station.basedOn,
-      ownerAvatarPath: station.artworkUrl,
-      yearText: station.mood,
-      likesText: station.likeCount.toString(),
       tracks: [], // populate when track data is available
     );
   }
