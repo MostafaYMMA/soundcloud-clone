@@ -75,11 +75,11 @@ class LibraryScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
                 LibraryTile(
-                  title: 'Albums', 
+                  title: 'Albums',
                   onTap: () => onNavigate(AlbumsScreen(onBack: onBack)),
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
-                
+
                 LibraryTile(title: 'Following', onTap: () {}),
                 const SizedBox(height: AppDimensions.spaceSmall),
                 LibraryTile(title: 'Stations', onTap: () {}),
