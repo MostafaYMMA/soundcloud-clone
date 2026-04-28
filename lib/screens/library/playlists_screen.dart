@@ -5,7 +5,6 @@ import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
 import '../../models/playlist.dart';
 import '../../providers/playlist_provider.dart';
-import '../../providers/create_playlist_provider.dart';
 import '../library/widgets/playlist_tiles.dart';
 import 'collections_screen.dart';
 
@@ -29,7 +28,7 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(playlistProvider.notifier).fetchTestPlaylist();
+      ref.read(playlistProvider.notifier).fetchLikedPlaylists();
     });
   }
 
@@ -61,12 +60,27 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
     );
   }
 
-  void _openPlaylistDetails(Playlist playlist) {
+  Future<void> _openPlaylistDetails(Playlist playlist) async {
+    final detailedPlaylist = await ref
+        .read(playlistProvider.notifier)
+        .getPlaylistDetails(playlist.id);
+
+    if (!mounted) return;
+
+    if (detailedPlaylist == null) {
+      final error = ref.read(playlistProvider).error ?? 'Failed to open playlist.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            CollectionDetailsScreen(data: _mapPlaylistToCollection(playlist)),
+        builder: (_) => CollectionDetailsScreen(
+          data: _mapPlaylistToCollection(detailedPlaylist),
+        ),
       ),
     );
   }
@@ -96,9 +110,9 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
                 label: 'Recently Added',
                 selected: _sortOption == PlaylistsSortOption.recentlyAdded,
                 onTap: () {
-                  setState(
-                    () => _sortOption = PlaylistsSortOption.recentlyAdded,
-                  );
+                  setState(() {
+                    _sortOption = PlaylistsSortOption.recentlyAdded;
+                  });
                   Navigator.pop(context);
                 },
               ),
@@ -106,7 +120,9 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
                 label: 'First Added',
                 selected: _sortOption == PlaylistsSortOption.firstAdded,
                 onTap: () {
-                  setState(() => _sortOption = PlaylistsSortOption.firstAdded);
+                  setState(() {
+                    _sortOption = PlaylistsSortOption.firstAdded;
+                  });
                   Navigator.pop(context);
                 },
               ),
@@ -114,9 +130,9 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
                 label: 'Playlist Name',
                 selected: _sortOption == PlaylistsSortOption.playlistName,
                 onTap: () {
-                  setState(
-                    () => _sortOption = PlaylistsSortOption.playlistName,
-                  );
+                  setState(() {
+                    _sortOption = PlaylistsSortOption.playlistName;
+                  });
                   Navigator.pop(context);
                 },
               ),
@@ -139,30 +155,29 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
       ),
       builder: (_) => _CreatePlaylistSheet(
         onCreate: (name, description) async {
-          await ref
-              .read(createPlaylistProvider.notifier)
-              .createPlaylist(name: name, description: description);
+          await ref.read(playlistProvider.notifier).createPlaylist(
+                name: name,
+                description: description,
+              );
 
-          final createState = ref.read(createPlaylistProvider);
+          final state = ref.read(playlistProvider);
 
           if (!mounted) return;
 
-          if (createState.error != null) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(createState.error!)));
+          if (state.error != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.error!)),
+            );
             return;
           }
 
-          if (createState.successMessage != null) {
+          if (state.successMessage != null) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(createState.successMessage!)),
+              SnackBar(content: Text(state.successMessage!)),
             );
 
             Navigator.pop(context);
-
-            ref.read(createPlaylistProvider.notifier).clearState();
-            ref.read(playlistProvider.notifier).fetchTestPlaylist();
+            ref.read(playlistProvider.notifier).clearMessages();
           }
         },
       ),
@@ -173,10 +188,7 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
   Widget build(BuildContext context) {
     final playlistState = ref.watch(playlistProvider);
 
-    List<Playlist> playlists = [];
-    if (playlistState.playlist != null) {
-      playlists = [playlistState.playlist!];
-    }
+    List<Playlist> playlists = List.from(playlistState.likedPlaylists);
 
     final query = _searchController.text.trim().toLowerCase();
     if (query.isNotEmpty) {
@@ -184,6 +196,7 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
           .where(
             (p) =>
                 p.name.toLowerCase().contains(query) ||
+                p.description.toLowerCase().contains(query) ||
                 p.owner.toLowerCase().contains(query),
           )
           .toList();
@@ -197,165 +210,177 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Stack(
-              children: [
-                Positioned(
-                  right: -30,
-                  top: -10,
-                  child: _StackedSquaresDecoration(),
-                ),
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 12, 16, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(
-                                Icons.chevron_left,
-                                color: Colors.white,
-                                size: 28,
-                              ),
-                              onPressed: () => widget.onBack?.call(),
-                            ),
-                            Expanded(
-                              child: Container(
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1E1E1E),
-                                  borderRadius: BorderRadius.circular(20),
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(playlistProvider.notifier).fetchLikedPlaylists(),
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: -30,
+                    top: -10,
+                    child: _StackedSquaresDecoration(),
+                  ),
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 12, 16, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.chevron_left,
+                                  color: Colors.white,
+                                  size: 28,
                                 ),
-                                child: TextField(
-                                  controller: _searchController,
-                                  onChanged: (_) => setState(() {}),
-                                  style: const TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontSize: 14,
+                                onPressed: () => widget.onBack?.call(),
+                              ),
+                              Expanded(
+                                child: Container(
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1E1E1E),
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
-                                  decoration: const InputDecoration(
-                                    hintText: 'Search your playlists',
-                                    hintStyle: TextStyle(
-                                      color: AppColors.textSecondary,
+                                  child: TextField(
+                                    controller: _searchController,
+                                    onChanged: (_) => setState(() {}),
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
                                       fontSize: 14,
                                     ),
-                                    prefixIcon: Icon(
-                                      Icons.search,
-                                      color: AppColors.textSecondary,
-                                      size: 20,
-                                    ),
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(
-                                      vertical: 10,
+                                    decoration: const InputDecoration(
+                                      hintText: 'Search your playlists',
+                                      hintStyle: TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 14,
+                                      ),
+                                      prefixIcon: Icon(
+                                        Icons.search,
+                                        color: AppColors.textSecondary,
+                                        size: 20,
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.symmetric(
+                                        vertical: 10,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            GestureDetector(
-                              onTap: _showSortBottomSheet,
-                              child: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: AppColors.surface,
-                                  borderRadius: BorderRadius.circular(
-                                    AppDimensions.borderRadiusPill,
+                              const SizedBox(width: 10),
+                              GestureDetector(
+                                onTap: _showSortBottomSheet,
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface,
+                                    borderRadius: BorderRadius.circular(
+                                      AppDimensions.borderRadiusPill,
+                                    ),
                                   ),
-                                ),
-                                child: const Icon(
-                                  Icons.sort,
-                                  color: AppColors.primary,
-                                  size: 22,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        const Padding(
-                          padding: EdgeInsets.only(
-                            left: AppDimensions.spaceSmall,
-                          ),
-                          child: Text(
-                            'Playlists',
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppDimensions.spaceSmall,
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: _ActionButton(
-                                  icon: Icons.download_outlined,
-                                  label: 'Import',
-                                  onTap: () {},
-                                ),
-                              ),
-                              const SizedBox(width: AppDimensions.spaceSmall),
-                              Expanded(
-                                child: _ActionButton(
-                                  icon: Icons.add,
-                                  label: 'Create',
-                                  onTap: _showCreatePlaylistSheet,
+                                  child: const Icon(
+                                    Icons.sort,
+                                    color: AppColors.primary,
+                                    size: 22,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
+                          const SizedBox(height: 20),
+                          const Padding(
+                            padding: EdgeInsets.only(
+                              left: AppDimensions.spaceSmall,
+                            ),
+                            child: Text(
+                              'Playlists',
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppDimensions.spaceSmall,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _ActionButton(
+                                    icon: Icons.download_outlined,
+                                    label: 'Import',
+                                    onTap: () {},
+                                  ),
+                                ),
+                                const SizedBox(width: AppDimensions.spaceSmall),
+                                Expanded(
+                                  child: _ActionButton(
+                                    icon: Icons.add,
+                                    label: 'Create',
+                                    onTap: _showCreatePlaylistSheet,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (playlistState.isLoadingLiked)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (playlistState.error != null &&
+                playlistState.likedPlaylists.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      playlistState.error!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white70),
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          if (playlistState.isLoading)
-            const SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (playlistState.error != null)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
+              )
+            else if (playlists.isEmpty)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
                   child: Text(
-                    playlistState.error!,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white70),
+                    'No liked playlists yet.',
+                    style: TextStyle(color: Colors.white70),
                   ),
                 ),
+              )
+            else
+              SliverToBoxAdapter(
+                child: PlaylistTiles(
+                  title: '',
+                  playlists: playlists,
+                  onPlaylistTap: _openPlaylistDetails,
+                  onMoreTap: (_) {},
+                ),
               ),
-            )
-          else
-            SliverToBoxAdapter(
-              child: PlaylistTiles(
-                title: '',
-                playlists: playlists,
-                onPlaylistTap: _openPlaylistDetails,
-                onMoreTap: (_) {},
-              ),
-            ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
       ),
     );
   }
@@ -472,7 +497,6 @@ class _CreatePlaylistSheetState extends State<_CreatePlaylistSheet> {
                 ],
               ),
               const SizedBox(height: AppDimensions.spaceExtraLarge),
-
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -518,9 +542,7 @@ class _CreatePlaylistSheetState extends State<_CreatePlaylistSheet> {
                   ),
                 ],
               ),
-
               const SizedBox(height: AppDimensions.spaceMedium),
-
               TextField(
                 controller: _descriptionController,
                 maxLines: 2,
@@ -542,9 +564,7 @@ class _CreatePlaylistSheetState extends State<_CreatePlaylistSheet> {
                   ),
                 ),
               ),
-
               const SizedBox(height: AppDimensions.spaceExtraLarge),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -565,9 +585,7 @@ class _CreatePlaylistSheetState extends State<_CreatePlaylistSheet> {
                   ),
                 ],
               ),
-
               const SizedBox(height: AppDimensions.spaceExtraLarge),
-
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -597,9 +615,7 @@ class _CreatePlaylistSheetState extends State<_CreatePlaylistSheet> {
                         ),
                 ),
               ),
-
               const SizedBox(height: AppDimensions.spaceMedium),
-
               Center(
                 child: GestureDetector(
                   onTap: () => Navigator.pop(context),
@@ -612,7 +628,6 @@ class _CreatePlaylistSheetState extends State<_CreatePlaylistSheet> {
                   ),
                 ),
               ),
-
               const SizedBox(height: AppDimensions.spaceSmall),
             ],
           ),

@@ -134,7 +134,7 @@ class PlaylistTiles extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Playlist · ${_formatTrackCount(playlist.trackCount)} tracks · ${playlist.duration}',
+                            'Playlist · ${_formatTrackCount(playlist.trackCount)} tracks ',
                             style: TextStyle(
                               color: AppColors.textMuted,
                               fontSize: (screenWidth * 0.037).clamp(12.0, 14.0),

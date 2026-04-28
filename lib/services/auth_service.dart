@@ -1,10 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:my_project/models/auth_token.dart';
-import '../constants/api_constants.dart';
 
 class AuthService {
   final Dio _dio;
-  String baseUrl = apiBaseUrl;
+  String baseUrl = 'https://streamline-swp.duckdns.org/api/';
 
   AuthService({required Dio dio}) : _dio = dio;
 
@@ -14,18 +13,18 @@ class AuthService {
     String displayName,
   ) async {
     await _dio.post(
-      '$baseUrl/auth/register',
+      '${baseUrl}auth/register',
       data: {'email': email, 'password': password, 'display_name': displayName},
     );
   }
 
   Future<void> verifyEmail(String token) async {
-    await _dio.post('$baseUrl/auth/verify-email', data: {'token': token});
+    await _dio.post('${baseUrl}auth/verify-email', data: {'token': token});
   }
 
   Future<void> resendVerification(String email) async {
     await _dio.post(
-      '$baseUrl/auth/resend-verification',
+      '${baseUrl}auth/resend-verification',
       data: {'email': email},
     );
   }
@@ -33,7 +32,7 @@ class AuthService {
   Future<AuthTokens> login(String email, String password) async {
     try {
       final result = await _dio.post(
-        '$baseUrl/auth/login',
+        '${baseUrl}auth/login',
         data: {'email': email, 'password': password},
       );
 
@@ -51,7 +50,7 @@ class AuthService {
   Future<AuthTokens> googleLogin(String googleIdToken) async {
     try {
       final result = await _dio.post(
-        '$baseUrl/auth/google',
+        '${baseUrl}auth/google',
         data: {'google_token': googleIdToken},
       );
 
@@ -68,7 +67,7 @@ class AuthService {
 
   Future<AuthTokens> refreshTokens(String refreshToken) async {
     final result = await _dio.post(
-      '$baseUrl/auth/refresh',
+      '${baseUrl}auth/refresh',
       data: {'refresh_token': refreshToken},
     );
     return AuthTokens.fromJson(result.data);
@@ -76,18 +75,18 @@ class AuthService {
 
   Future<void> logout(String accessToken) async {
     await _dio.post(
-      '$baseUrl/auth/logout',
+      '${baseUrl}auth/logout',
       options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
     );
   }
 
   Future<void> forgotPassword(String email) async {
-    await _dio.post('$baseUrl/auth/forgot-password', data: {'email': email});
+    await _dio.post('${baseUrl}auth/forgot-password', data: {'email': email});
   }
 
   Future<void> resetPassword(String token, String newPassword) async {
     await _dio.post(
-      '$baseUrl/auth/reset-password',
+      '${baseUrl}auth/reset-password',
       data: {'token': token, 'new_password': newPassword},
     );
   }

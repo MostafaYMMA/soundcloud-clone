@@ -5,10 +5,34 @@ import 'dart:typed_data';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../constants/api_constants.dart';
 import '../../providers/auth_providers.dart';
 import '../../services/user_profile_services.dart';
 import 'package:my_project/models/user.dart';
+
+const String _apiOrigin = 'https://streamline-swp.duckdns.org';
+const String _apiBaseUrl = '$_apiOrigin/api/';
+
+String _resolveApiUrl(String path) {
+  final normalized = path.trim();
+
+  if (normalized.isEmpty) {
+    return '';
+  }
+
+  if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+    return normalized;
+  }
+
+  final trimmed = normalized.startsWith('/')
+      ? normalized.substring(1)
+      : normalized;
+
+  if (trimmed.startsWith('api/')) {
+    return '$_apiOrigin/$trimmed';
+  }
+
+  return '$_apiBaseUrl$trimmed';
+}
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -143,7 +167,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       );
 
       if (newAvatarUrl != null && currentUser != null) {
-        final fullAvatarUrl = resolveApiUrl(newAvatarUrl);
+        final fullAvatarUrl = _resolveApiUrl(newAvatarUrl);
 
         final updatedUser = User(
           id: currentUser.id,

@@ -1,17 +1,16 @@
 // services/user_service.dart
 import 'package:dio/dio.dart';
 import 'dart:io';
-import '../constants/api_constants.dart';
 import '../models/user.dart';
 
 class UserService {
   final Dio _dio;
-  String baseUrl = apiBaseUrl;
+  String baseUrl = 'https://streamline-swp.duckdns.org/api/';
   UserService({required Dio dio}) : _dio = dio;
 
   Future<User> getMe(String accessToken) async {
     final res = await _dio.get(
-      '$baseUrl/users/me',
+      '${baseUrl}users/me',
       options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
     );
 
@@ -19,7 +18,7 @@ class UserService {
   }
 
   Future<User> getUserById(String userId) async {
-    final res = await _dio.get('$baseUrl/users/$userId');
+    final res = await _dio.get('${baseUrl}users/$userId');
 
     print('GET USER BY ID STATUS: ${res.statusCode}');
     print('GET USER BY ID DATA: ${res.data}');
@@ -34,7 +33,7 @@ class UserService {
     String? location,
   }) async {
     final res = await _dio.patch(
-      '$baseUrl/users/me',
+      '${baseUrl}users/me',
       data: {
         if (displayName != null) 'display_name': displayName,
         if (bio != null) 'bio': bio,
@@ -54,7 +53,7 @@ class UserService {
     required bool isPrivate,
   }) async {
     final res = await _dio.patch(
-      '$baseUrl/users/me/privacy',
+      '${baseUrl}users/me/privacy',
       data: {'is_private': isPrivate},
       options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
     );
@@ -76,7 +75,7 @@ class UserService {
     });
 
     final res = await _dio.put(
-      '$baseUrl/users/me/avatar',
+      '${baseUrl}users/me/avatar',
       data: formData,
       options: Options(
         headers: {
@@ -103,7 +102,7 @@ class UserService {
     });
 
     final res = await _dio.put(
-      '$baseUrl/users/me/cover',
+      '${baseUrl}users/me/cover',
       data: formData,
       options: Options(
         headers: {

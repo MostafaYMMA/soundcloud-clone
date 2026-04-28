@@ -1,4 +1,27 @@
-import '../constants/api_constants.dart';
+const String _apiOrigin = 'https://streamline-swp.duckdns.org';
+const String _apiBaseUrl = '$_apiOrigin/api/';
+
+String _resolveApiUrl(String path) {
+  final normalized = path.trim();
+
+  if (normalized.isEmpty) {
+    return '';
+  }
+
+  if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+    return normalized;
+  }
+
+  final trimmed = normalized.startsWith('/')
+      ? normalized.substring(1)
+      : normalized;
+
+  if (trimmed.startsWith('api/')) {
+    return '$_apiOrigin/$trimmed';
+  }
+
+  return '$_apiBaseUrl$trimmed';
+}
 
 class User {
   final String email;
@@ -32,7 +55,7 @@ class User {
           json['avatar_url']?.toString() ?? json['profile_picture']?.toString();
 
       if (raw == null || raw.isEmpty) return null;
-      return resolveApiUrl(raw);
+      return _resolveApiUrl(raw);
     })(),
     location: json['location']?.toString(),
     bio: json['bio']?.toString(),

@@ -1,10 +1,9 @@
 import 'package:dio/dio.dart';
-import '../constants/api_constants.dart';
 import '../models/playlist.dart';
 
 class CreatePlaylistService {
   final Dio _dio;
-  final String baseUrl = apiBaseUrl;
+  final String baseUrl = 'https://streamline-swp.duckdns.org/api/';
 
   CreatePlaylistService({required Dio dio}) : _dio = dio;
 
@@ -14,7 +13,7 @@ class CreatePlaylistService {
     String? description,
   }) async {
     final res = await _dio.post(
-      '$baseUrl/playlists/',
+      '${baseUrl}playlists/',
       data: {'name': name, 'description': description ?? ''},
       options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
     );

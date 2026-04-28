@@ -1,11 +1,10 @@
 import 'package:dio/dio.dart';
-import '../constants/api_constants.dart';
 import '../models/track.dart';
 
 class MusicService {
   final Dio _dio = Dio(
     BaseOptions(
-      baseUrl: apiBaseUrl,
+      baseUrl: 'https://streamline-swp.duckdns.org/api/',
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
     ),
@@ -13,7 +12,7 @@ class MusicService {
 
   Future<List<Track>> searchTracks(String query) async {
     final res = await _dio.get(
-      '/search/tracks',
+      'search/tracks',
       queryParameters: {"keyword": query},
     );
 

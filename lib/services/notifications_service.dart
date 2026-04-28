@@ -1,16 +1,15 @@
 import 'package:dio/dio.dart';
-import '../constants/api_constants.dart';
 import '../models/notification.dart';
 
 class NotificationsService {
   final Dio _dio;
-  String baseUrl = apiBaseUrl;
+  String baseUrl = 'https://streamline-swp.duckdns.org/api/';
   NotificationsService({required Dio dio})
     : _dio = dio; //must set private like this
 
   // Endpoint #1 (Module 10) — GET /notifications
   Future<List<Notification>> getNotifications() async {
-    final response = await _dio.get('$baseUrl/notifications');
+    final response = await _dio.get('${baseUrl}notifications');
 
     final raw = response.data['data'];
 
@@ -33,6 +32,6 @@ class NotificationsService {
 
   // Endpoint #2 (Module 10) — PUT /notifications/{id}/read
   Future<void> markNotificationAsRead({required int id}) async {
-    await _dio.put('$baseUrl/notifications/$id/read');
+    await _dio.put('${baseUrl}notifications/$id/read');
   }
 }

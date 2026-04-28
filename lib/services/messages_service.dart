@@ -1,11 +1,10 @@
 import 'package:dio/dio.dart';
-import '../constants/api_constants.dart';
 import '../models/conversation.dart';
 import '../models/message.dart';
 
 class MessagesService {
   final Dio _dio;
-  String baseUrl = apiBaseUrl;
+  String baseUrl = 'https://streamline-swp.duckdns.org/api/';
   MessagesService({required Dio dio}) : _dio = dio; //must set private like this
 
   // POST /conversations — create or retrieve a conversation
@@ -13,7 +12,7 @@ class MessagesService {
     required String participantId,
   }) async {
     final response = await _dio.post(
-      '$baseUrl/conversations',
+      '${baseUrl}conversations',
       data: {'participant_id': participantId},
     );
     return response.data['data']['conversation_id'];
@@ -21,20 +20,20 @@ class MessagesService {
 
   // GET /conversations — list all conversations
   Future<List<Conversation>> getConversations() async {
-    final response = await _dio.get('$baseUrl/conversations');
+    final response = await _dio.get('${baseUrl}conversations');
     final List data = response.data['data'];
     return data.map((e) => Conversation.fromJson(e)).toList();
   }
 
   // DELETE /conversations/{conversation_id}
   Future<void> deleteConversation({required String conversationId}) async {
-    await _dio.delete('$baseUrl/conversations/$conversationId');
+    await _dio.delete('${baseUrl}conversations/$conversationId');
   }
 
   // GET /conversations/{conversation_id}/messages
   Future<List<Message>> getMessages({required String conversationId}) async {
     final response = await _dio.get(
-      '$baseUrl/conversations/$conversationId/messages',
+      '${baseUrl}conversations/$conversationId/messages',
     );
     final List data = response.data['data'];
     return data.map((e) => Message.fromJson(e)).toList();
@@ -46,7 +45,7 @@ class MessagesService {
     required String content,
   }) async {
     await _dio.post(
-      '$baseUrl/conversations/$conversationId/messages',
+      '${baseUrl}conversations/$conversationId/messages',
       data: {'content': content},
     );
   }
@@ -57,7 +56,7 @@ class MessagesService {
     required String messageId,
   }) async {
     await _dio.patch(
-      '$baseUrl/conversations/$conversationId/messages/$messageId/read',
+      '${baseUrl}conversations/$conversationId/messages/$messageId/read',
     );
   }
 }

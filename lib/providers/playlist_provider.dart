@@ -2,37 +2,235 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/playlist.dart';
 import '../services/playlist_service.dart';
-
-const String testPlaylistId = 'd29044ae-8586-4aab-b4e0-c4345e5633af';
+import 'auth_providers.dart';
 
 class PlaylistState {
-  final Playlist? playlist;
-  final bool isLoading;
+  final List<Playlist> likedPlaylists;
+  final List<Playlist> searchResults;
+  final bool isLoadingLiked;
+  final bool isSearching;
+  final bool isCreating;
+  final bool isLiking;
   final String? error;
+  final String? successMessage;
 
-  const PlaylistState({this.playlist, this.isLoading = false, this.error});
+  const PlaylistState({
+    this.likedPlaylists = const [],
+    this.searchResults = const [],
+    this.isLoadingLiked = false,
+    this.isSearching = false,
+    this.isCreating = false,
+    this.isLiking = false,
+    this.error,
+    this.successMessage,
+  });
+
+  PlaylistState copyWith({
+    List<Playlist>? likedPlaylists,
+    List<Playlist>? searchResults,
+    bool? isLoadingLiked,
+    bool? isSearching,
+    bool? isCreating,
+    bool? isLiking,
+    String? error,
+    String? successMessage,
+    bool clearError = false,
+    bool clearSuccess = false,
+  }) {
+    return PlaylistState(
+      likedPlaylists: likedPlaylists ?? this.likedPlaylists,
+      searchResults: searchResults ?? this.searchResults,
+      isLoadingLiked: isLoadingLiked ?? this.isLoadingLiked,
+      isSearching: isSearching ?? this.isSearching,
+      isCreating: isCreating ?? this.isCreating,
+      isLiking: isLiking ?? this.isLiking,
+      error: clearError ? null : error ?? this.error,
+      successMessage:
+          clearSuccess ? null : successMessage ?? this.successMessage,
+    );
+  }
 }
 
 class PlaylistNotifier extends StateNotifier<PlaylistState> {
-  final PlaylistService _playlistService;
+  final PlaylistService _service;
+  final Ref ref;
 
-  PlaylistNotifier(this._playlistService) : super(const PlaylistState());
+  PlaylistNotifier(this._service, this.ref) : super(const PlaylistState());
 
-  Future<void> fetchTestPlaylist() async {
-    state = const PlaylistState(isLoading: true);
+  String? get _token => ref.read(authProvider).tokens?.accessToken;
+
+  Future<void> fetchLikedPlaylists() async {
+    final token = _token;
+
+    if (token == null || token.isEmpty) {
+      state = state.copyWith(
+        error: 'No access token found. Please log in again.',
+        clearSuccess: true,
+      );
+      return;
+    }
+
+    state = state.copyWith(
+      isLoadingLiked: true,
+      clearError: true,
+      clearSuccess: true,
+    );
 
     try {
-      final playlist = await _playlistService.getPlaylistById(testPlaylistId);
-      state = PlaylistState(playlist: playlist);
+      final playlists = await _service.getLikedPlaylists(token);
+
+      state = state.copyWith(
+        likedPlaylists: playlists,
+        isLoadingLiked: false,
+        clearError: true,
+      );
     } catch (e) {
-      state = PlaylistState(error: e.toString());
+      state = state.copyWith(
+        isLoadingLiked: false,
+        error: e.toString().replaceFirst('Exception: ', ''),
+      );
     }
+  }
+
+  Future<Playlist?> getPlaylistDetails(String playlistId) async {
+    final token = _token;
+
+    if (token == null || token.isEmpty) {
+      state = state.copyWith(error: 'No access token found. Please log in again.');
+      return null;
+    }
+
+    try {
+      return await _service.getPlaylistById(
+        playlistId: playlistId,
+        accessToken: token,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString().replaceFirst('Exception: ', ''),
+      );
+      return null;
+    }
+  }
+
+  Future<void> searchPlaylists(String keyword) async {
+    final token = _token;
+
+    if (keyword.trim().isEmpty) {
+      state = state.copyWith(searchResults: [], clearError: true);
+      return;
+    }
+
+    if (token == null || token.isEmpty) {
+      state = state.copyWith(error: 'No access token found. Please log in again.');
+      return;
+    }
+
+    state = state.copyWith(
+      isSearching: true,
+      clearError: true,
+      clearSuccess: true,
+    );
+
+    try {
+      final results = await _service.searchPlaylists(
+        keyword: keyword.trim(),
+        accessToken: token,
+      );
+
+      state = state.copyWith(
+        searchResults: results,
+        isSearching: false,
+        clearError: true,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isSearching: false,
+        error: e.toString().replaceFirst('Exception: ', ''),
+      );
+    }
+  }
+
+  Future<void> likePlaylist(String playlistId) async {
+    final token = _token;
+
+    if (token == null || token.isEmpty) {
+      state = state.copyWith(error: 'No access token found. Please log in again.');
+      return;
+    }
+
+    state = state.copyWith(
+      isLiking: true,
+      clearError: true,
+      clearSuccess: true,
+    );
+
+    try {
+      await _service.likePlaylist(
+        playlistId: playlistId,
+        accessToken: token,
+      );
+
+      await fetchLikedPlaylists();
+
+      state = state.copyWith(
+        isLiking: false,
+        successMessage: 'Playlist added to your playlists.',
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLiking: false,
+        error: e.toString().replaceFirst('Exception: ', ''),
+      );
+    }
+  }
+
+  Future<void> createPlaylist({
+    required String name,
+    String? description,
+  }) async {
+    final token = _token;
+
+    if (token == null || token.isEmpty) {
+      state = state.copyWith(error: 'No access token found. Please log in again.');
+      return;
+    }
+
+    state = state.copyWith(
+      isCreating: true,
+      clearError: true,
+      clearSuccess: true,
+    );
+
+    try {
+      await _service.createPlaylist(
+        accessToken: token,
+        name: name,
+        description: description,
+      );
+
+      await fetchLikedPlaylists();
+
+      state = state.copyWith(
+        isCreating: false,
+        successMessage: 'Playlist created successfully.',
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isCreating: false,
+        error: e.toString().replaceFirst('Exception: ', ''),
+      );
+    }
+  }
+
+  void clearMessages() {
+    state = state.copyWith(clearError: true, clearSuccess: true);
   }
 }
 
 final playlistProvider = StateNotifierProvider<PlaylistNotifier, PlaylistState>(
   (ref) {
     final service = PlaylistService(dio: Dio());
-    return PlaylistNotifier(service);
+    return PlaylistNotifier(service, ref);
   },
 );
