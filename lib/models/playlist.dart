@@ -94,7 +94,7 @@ class Playlist {
         json['cover_photo_url']?.toString() ??
         json['cover_url']?.toString() ??
         '';
-
+    print('FINAL PARSED PLAYLIST COVER: ${fixMediaUrl(rawCoverUrl)}');
     return Playlist(
       id: json['playlist_id']?.toString() ?? json['id']?.toString() ?? '',
       userId: json['user_id']?.toString() ?? '',

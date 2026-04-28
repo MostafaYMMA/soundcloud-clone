@@ -337,9 +337,23 @@ class _CollectionImage extends StatelessWidget {
     required this.borderRadius,
   });
 
+  String _fixMediaUrl(String url) {
+    if (url.isEmpty) return '';
+
+    if (url.startsWith('http')) return url;
+
+    if (url.startsWith('/')) {
+      return 'https://streamline-swp.duckdns.org$url';
+    }
+
+    return url;
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (path.isEmpty) {
+    final fixedPath = _fixMediaUrl(path);
+
+    if (fixedPath.isEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
         child: Container(
@@ -351,27 +365,20 @@ class _CollectionImage extends StatelessWidget {
       );
     }
 
-    if (path.startsWith('http')) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: Image.network(
-          path,
-          width: width,
-          height: height,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Container(
-            width: width,
-            height: height,
-            color: AppColors.surfaceLight,
-            child: const Icon(Icons.broken_image, color: Colors.white70),
-          ),
-        ),
-      );
-    }
-
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
-      child: Image.asset(path, width: width, height: height, fit: BoxFit.cover),
+      child: Image.network(
+        fixedPath,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          width: width,
+          height: height,
+          color: AppColors.surfaceLight,
+          child: const Icon(Icons.broken_image, color: Colors.white70),
+        ),
+      ),
     );
   }
 }
@@ -381,9 +388,23 @@ class _CollectionAvatar extends StatelessWidget {
 
   const _CollectionAvatar({required this.path});
 
+  String _fixMediaUrl(String url) {
+    if (url.isEmpty) return '';
+
+    if (url.startsWith('http')) return url;
+
+    if (url.startsWith('/')) {
+      return 'https://streamline-swp.duckdns.org$url';
+    }
+
+    return url;
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (path.isEmpty) {
+    final fixedPath = _fixMediaUrl(path);
+
+    if (fixedPath.isEmpty) {
       return const CircleAvatar(
         radius: 18,
         backgroundColor: AppColors.surfaceLight,
@@ -391,10 +412,9 @@ class _CollectionAvatar extends StatelessWidget {
       );
     }
 
-    if (path.startsWith('http')) {
-      return CircleAvatar(radius: 18, backgroundImage: NetworkImage(path));
-    }
-
-    return CircleAvatar(radius: 18, backgroundImage: AssetImage(path));
+    return CircleAvatar(
+      radius: 18,
+      backgroundImage: NetworkImage(fixedPath),
+    );
   }
 }

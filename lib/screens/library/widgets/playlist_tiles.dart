@@ -99,8 +99,12 @@ class PlaylistTiles extends StatelessWidget {
                             width: AppDimensions.trackArtworkSmall,
                             height: AppDimensions.trackArtworkSmall,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                const _PlaylistCoverPlaceholder(),
+                            errorBuilder: (context, error, stackTrace) {
+                              print('PLAYLIST TILE IMAGE ERROR: $error');
+                              print('FAILED URL: ${playlist.coverUrl}');
+
+                              return const _PlaylistCoverPlaceholder();
+                            },
                           )
                         : const _PlaylistCoverPlaceholder(),
                   ),
