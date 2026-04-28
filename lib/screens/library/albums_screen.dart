@@ -5,6 +5,9 @@ import '../../constants/app_text_styles.dart';
 import '../../models/album.dart';
 import '../../mock_data/mock_albums.dart';
 import 'widgets/album_tile.dart';
+import 'collections_screen.dart';
+import 'collections_details_mapper.dart'; 
+import 'collections_screen.dart';
 
 enum AlbumsSortOption { recentlyAdded, firstAdded, albumName }
 
@@ -235,7 +238,15 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
             delegate: SliverChildBuilderDelegate(
               (context, index) => AlbumTile(
                 album: _filteredAlbums[index],
-                onTap: () {}, // hook up later
+                onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                builder: (_) => CollectionDetailsScreen(
+                data: CollectionDetailsMapper.fromAlbum(_filteredAlbums[index]),
+                ),
+                ),
+                
+              ), 
                 onMoreTap: () {}, // hook up context menu later
               ),
               childCount: _filteredAlbums.length,
