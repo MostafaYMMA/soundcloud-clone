@@ -4,7 +4,7 @@ import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
 import '../../models/playlist.dart';
 import '../../mock_data/mock_playlists.dart';
-import '../library/widgets/playlist_tiles.dart';
+import 'widgets/playlist_tile.dart';
 
 enum PlaylistsSortOption { recentlyAdded, firstAdded, playlistName }
 
@@ -274,12 +274,14 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
           ),
 
           // ── Playlist list ────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: PlaylistTiles(
-              title: '',
-              playlists: _filteredPlaylists,
-              onPlaylistTap: (_) {}, // hook up later
-              onMoreTap: (_) {}, // hook up context menu later
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => PlaylistTile(
+                playlist: _filteredPlaylists[index],
+                onTap: () {}, // hook up later
+                onMoreTap: () {}, // hook up context menu later
+              ),
+              childCount: _filteredPlaylists.length,
             ),
           ),
 
@@ -309,7 +311,6 @@ class _CreatePlaylistSheetState extends State<_CreatePlaylistSheet> {
   void initState() {
     super.initState();
     _nameController.addListener(() => setState(() {}));
-    // Select all text on open so user can type straight away
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _nameController.selection = TextSelection(
         baseOffset: 0,
@@ -451,7 +452,6 @@ class _CreatePlaylistSheetState extends State<_CreatePlaylistSheet> {
                 height: 52,
                 child: OutlinedButton(
                   onPressed: () {
-                    // hook up playlist creation logic here
                     Navigator.pop(context);
                   },
                   style: OutlinedButton.styleFrom(
