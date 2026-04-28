@@ -10,21 +10,16 @@ import '../home/more_like_section.dart';
 import 'widgets/profile_track_list_section.dart';
 import 'edit_profile_screen.dart';
 
-
-
-
 const Color kBackgroundColor = Color(0xFF0F0F0F);
 
 /// Builds completion cards dynamically from the real user object.
 /// isCompleted is true only when the user has actually filled that field.
 List<ProfileCompletionCardData> buildCompletionCards(User user) {
-  final hasAvatar =
-      user.avatarUrl != null && user.avatarUrl!.trim().isNotEmpty;
+  final hasAvatar = user.avatarUrl != null && user.avatarUrl!.trim().isNotEmpty;
   final hasBio = user.bio != null && user.bio!.trim().isNotEmpty;
   // Banner: extend User model with bannerUrl if needed; default to false for now
   final hasBanner = false;
-  final hasName =
-      user.userName != null && user.userName!.trim().isNotEmpty;
+  final hasName = user.userName != null && user.userName!.trim().isNotEmpty;
   // Email verified: extend User model with isEmailVerified if needed; default true
   const emailVerified = true;
 
@@ -83,9 +78,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool isProfileSectionExpanded = true;
 
   Future<void> _openEditProfile() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const EditProfileScreen()));
     // Rebuild after returning so completion cards reflect any changes
     if (mounted) setState(() {});
   }
@@ -125,12 +120,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 user: user,
 
                 onBackPressed: () => Navigator.of(context).maybePop(),
-                onMorePressed: () =>
-                    showProfileMore(context, user: user),
+                onMorePressed: () => showProfileMore(context, user: user),
                 onEditPressed: _openEditProfile,
                 onShufflePressed: () => debugPrint('Shuffle clicked'),
                 onPlayPressed: () => debugPrint('Play clicked'),
-
               ),
               SizedBox(height: sectionGap),
               ProfileCompletionSection(
