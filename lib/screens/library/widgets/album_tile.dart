@@ -13,10 +13,8 @@ class AlbumTile extends TypeTile {
   });
 
   @override
-  Widget get leading => TileArtwork(
-        url: album.artworkUrl,
-        placeholderIcon: Icons.album,
-      );
+  Widget get leading =>
+      TileArtwork(url: album.artworkUrl, placeholderIcon: Icons.album);
 
   @override
   String get title => album.title;
