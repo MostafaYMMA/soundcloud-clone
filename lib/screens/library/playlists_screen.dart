@@ -5,7 +5,7 @@ import '../../constants/app_text_styles.dart';
 import '../../models/playlist.dart';
 import '../../mock_data/mock_playlists.dart';
 import 'widgets/playlist_tile.dart';
-import 'collections_details_mapper.dart'; 
+import 'collections_details_mapper.dart';
 import 'collections_screen.dart';
 
 enum PlaylistsSortOption { recentlyAdded, firstAdded, playlistName }
@@ -281,13 +281,15 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
               (context, index) => PlaylistTile(
                 playlist: _filteredPlaylists[index],
                 onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                builder: (_) => CollectionDetailsScreen(
-                data: CollectionDetailsMapper.fromPlaylist(_filteredPlaylists[index]),
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CollectionDetailsScreen(
+                      data: CollectionDetailsMapper.fromPlaylist(
+                        _filteredPlaylists[index],
+                      ),
+                    ),
+                  ),
                 ),
-                ),
-      ),
                 onMoreTap: () {}, // hook up context menu later
               ),
               childCount: _filteredPlaylists.length,
