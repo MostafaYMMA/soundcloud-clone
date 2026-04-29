@@ -1,4 +1,7 @@
 import '../models/track.dart';
+import '../models/recently_played_item.dart';
+import '../models/playlist.dart';
+import '../models/album.dart';
 
 class MockTracks {
   static const List<Track> likedTracks = [
@@ -173,4 +176,47 @@ class MockTracks {
           'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
   ];
+  static List<RecentlyPlayedItem> get recentlyPlayedItems => [
+  RecentlyPlayedPlaylist(Playlist(
+    id: 'p1',
+    name: 'Somatic  -  Deep Bass  -  Brain Massage',
+    owner: 'THRILLHO',
+    trackCount: 23,
+    coverUrl: '',
+    duration: null,
+  )),
+ RecentlyPlayedAlbum(Album(
+  id: 'a1',
+  title: 'Lana Del Rey - ULTRAVIOLENCE',
+  artist: 'Interscope Records',
+  releaseYear: 2014,
+  artworkUrl: '',
+  trackCount: 0,
+  likeCount: 0,
+)),
+  RecentlyPlayedPlaylist(Playlist(
+    id: 'p2',
+    name: 'kennedy walsh jams',
+    owner: 'Hana_Ahmed',
+    trackCount: 112,
+    coverUrl: '',
+    duration: null,
+  )),
+  RecentlyPlayedPlaylist(Playlist(
+    id: 'p3',
+    name: 'Buzzing Indie',
+    owner: 'New!',
+    trackCount: 25,
+    coverUrl: '',
+    duration: null,
+  )),
+  RecentlyPlayedPlaylist(Playlist(
+    id: 'p4',
+    name: 'Your Mix 1',
+    owner: 'SoundCloud',
+    trackCount: 0,
+    coverUrl: '',
+    duration: null,
+  )),
+];
 }

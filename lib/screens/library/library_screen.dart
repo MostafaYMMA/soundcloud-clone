@@ -13,6 +13,9 @@ import 'package:my_project/screens/library/albums_screen.dart';
 import 'following_screen.dart';
 import 'insights_screen.dart';
 import 'uploads_screen.dart';
+import 'history_screen.dart';
+import 'recently_played_screen.dart';
+import 'context_menu_sheet.dart';
 
 class LibraryScreen extends StatelessWidget {
   final void Function(Widget) onNavigate;
@@ -111,7 +114,7 @@ class LibraryScreen extends StatelessWidget {
           SliverToBoxAdapter(
             child: _SectionHeader(
               title: 'Recently Played',
-              onSeeAll: () {}, // hook up later
+              onSeeAll: () => onNavigate(RecentlyPlayedScreen(onBack: onBack)),
             ),
           ),
 
@@ -128,7 +131,7 @@ class LibraryScreen extends StatelessWidget {
           SliverToBoxAdapter(
             child: _SectionHeader(
               title: 'History',
-              onSeeAll: () {}, // hook up later
+              onSeeAll: () => onNavigate(HistoryScreen(onBack: onBack)),
             ),
           ),
 
@@ -138,7 +141,7 @@ class LibraryScreen extends StatelessWidget {
               (context, index) => TrackTile(
                 track: history[index],
                 onTap: () {},
-                onMoreTap: () {},
+                onMoreTap: () => showTrackContextMenu(context, history[index]),
               ),
               childCount: history.length,
             ),

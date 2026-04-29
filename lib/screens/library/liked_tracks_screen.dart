@@ -5,6 +5,7 @@ import '../../constants/app_text_styles.dart';
 import '../../models/track.dart';
 import '../../mock_data/mock_tracks.dart';
 import '../profile/widgets/profile_track_list_section.dart';
+import 'context_menu_sheet.dart';
 
 enum LikedTracksSortOption { recentlyAdded, firstAdded, trackName, artist }
 
@@ -295,11 +296,10 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
               title: '',
               tracks: _filteredTracks,
               onTrackTap: (_) {
-                // TODO: start player at tapped index,
+                // To do: start player at tapped index,
                 // shuffle: _isShuffled
               },
-              onMoreTap: (_) {},
-            ),
+              onMoreTap: (track)  => showTrackContextMenu(context, track),),
           ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 100)),

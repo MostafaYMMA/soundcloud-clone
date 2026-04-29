@@ -8,6 +8,7 @@ import 'widgets/album_tile.dart';
 import 'collections_screen.dart';
 import 'collections_details_mapper.dart';
 import 'collections_screen.dart';
+import 'context_menu_sheet.dart';
 
 enum AlbumsSortOption { recentlyAdded, firstAdded, albumName }
 
@@ -248,7 +249,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                     ),
                   ),
                 ),
-                onMoreTap: () {}, // hook up context menu later
+                onMoreTap:  () => showCollectionContextMenu(context),
               ),
               childCount: _filteredAlbums.length,
             ),

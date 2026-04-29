@@ -6,6 +6,7 @@ import '../../models/track.dart';
 import '../../models/user.dart';
 import '../../mock_data/mock_tracks.dart';
 import 'widgets/track_tile.dart';
+import 'context_menu_sheet.dart';
 
 enum UploadsSortOption { recentlyAdded, firstAdded, trackName }
 
@@ -273,7 +274,7 @@ class _UploadsScreenState extends State<UploadsScreen> {
                 (context, index) => TrackTile(
                   track: _filteredTracks[index],
                   onTap: () {},
-                  onMoreTap: () {},
+                  onMoreTap: () => showTrackContextMenu(context, _filteredTracks[index]),
                 ),
                 childCount: _filteredTracks.length,
               ),
