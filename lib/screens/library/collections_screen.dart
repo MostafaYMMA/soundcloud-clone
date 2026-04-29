@@ -125,10 +125,9 @@ class _CollectionDetailsScreenState
     });
 
     try {
-      await ref.read(playlistProvider.notifier).uploadCover(
-            playlistId: widget.playlistId!,
-            filePath: image.path,
-          );
+      await ref
+          .read(playlistProvider.notifier)
+          .uploadCover(playlistId: widget.playlistId!, filePath: image.path);
 
       await ref.read(playlistProvider.notifier).fetchLikedPlaylists();
 
@@ -147,9 +146,9 @@ class _CollectionDetailsScreenState
       final error =
           ref.read(playlistProvider).error ?? 'Failed to upload cover.';
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
     } finally {
       if (mounted) {
         setState(() {
@@ -170,9 +169,9 @@ class _CollectionDetailsScreenState
     }
 
     if (track.id.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Track ID is missing.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Track ID is missing.')));
       return;
     }
 
@@ -181,10 +180,9 @@ class _CollectionDetailsScreenState
     });
 
     try {
-      final success = await ref.read(playlistProvider.notifier).removeTrack(
-            playlistId: widget.playlistId!,
-            trackId: track.id,
-          );
+      final success = await ref
+          .read(playlistProvider.notifier)
+          .removeTrack(playlistId: widget.playlistId!, trackId: track.id);
 
       if (!mounted) return;
 
@@ -196,9 +194,9 @@ class _CollectionDetailsScreenState
             ? 'You can only edit your own playlists'
             : error;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
 
         return;
       }
@@ -218,9 +216,9 @@ class _CollectionDetailsScreenState
       final error =
           ref.read(playlistProvider).error ?? 'Failed to remove track.';
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
     } finally {
       if (mounted) {
         setState(() {
