@@ -105,10 +105,9 @@ class _CollectionDetailsScreenState
     });
 
     try {
-      await ref.read(playlistProvider.notifier).uploadCover(
-            playlistId: widget.playlistId,
-            filePath: image.path,
-          );
+      await ref
+          .read(playlistProvider.notifier)
+          .uploadCover(playlistId: widget.playlistId, filePath: image.path);
 
       await ref.read(playlistProvider.notifier).fetchLikedPlaylists();
 
@@ -127,9 +126,9 @@ class _CollectionDetailsScreenState
       final error =
           ref.read(playlistProvider).error ?? 'Failed to upload cover.';
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
     } finally {
       if (mounted) {
         setState(() {
