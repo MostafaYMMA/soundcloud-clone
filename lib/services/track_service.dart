@@ -194,4 +194,15 @@ class TracksService {
         .map((e) => Track.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+  // ── POST /tracks/{track_id}/like ─────────────────────────────────────────────
+
+  Future<void> likeTrack({required String trackId}) async {
+  await _dio.post('$_base/tracks/$trackId/like');
+  }
+
+// ── DELETE /tracks/{track_id}/like ───────────────────────────────────────────
+
+  Future<void> unlikeTrack({required String trackId}) async {
+  await _dio.delete('$_base/tracks/$trackId/like');
+}
 }

@@ -414,6 +414,8 @@ final deleteTrackProvider =
       DeleteTrackNotifier.new,
     );
 
+
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 String _dioError(DioException e) {
@@ -424,3 +426,39 @@ String _dioError(DioException e) {
   if (status == 413) return 'File is too large.';
   return 'Something went wrong. Please try again.';
 }
+class ToggleTrackLikeNotifier extends FamilyAsyncNotifier<void, String> {
+  @override
+  Future<void> build(String arg) async {}
+
+  Future<void> toggle({
+    required bool currentlyLiked,
+    required String username,
+  }) async {
+    final service = ref.read(tracksServiceProvider);
+
+    try {
+      if (currentlyLiked) {
+        await service.unlikeTrack(trackId: arg);
+      } else {
+        await service.likeTrack(trackId: arg);
+      }
+
+      // Refresh liked tracks page
+      ref.invalidate(userLikedTracksProvider(username));
+
+      // Update feeds instantly
+      ref.read(followingFeedProvider.notifier).toggleLike(arg);
+      ref.read(discoverFeedProvider.notifier).toggleLike(arg);
+
+      // Refresh single track
+      ref.invalidate(trackProvider(arg));
+    } on DioException catch (e) {
+      throw Exception(_dioError(e));
+    }
+  }
+}
+
+final toggleTrackLikeProvider =
+    AsyncNotifierProviderFamily<ToggleTrackLikeNotifier, void, String>(
+      ToggleTrackLikeNotifier.new,
+    );

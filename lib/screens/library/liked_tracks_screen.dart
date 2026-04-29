@@ -1,34 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
 import '../../models/track.dart';
-import '../../mock_data/mock_tracks.dart';
+import '../../providers/auth_providers.dart';
+import '../../providers/track_provider.dart';
 import '../profile/widgets/profile_track_list_section.dart';
 import 'context_menu_sheet.dart';
 
 enum LikedTracksSortOption { recentlyAdded, firstAdded, trackName, artist }
 
-class LikedTracksScreen extends StatefulWidget {
+class LikedTracksScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
+
   const LikedTracksScreen({super.key, this.onBack});
 
   @override
-  State<LikedTracksScreen> createState() => _LikedTracksScreenState();
+  ConsumerState<LikedTracksScreen> createState() => _LikedTracksScreenState();
 }
 
-class _LikedTracksScreenState extends State<LikedTracksScreen> {
+class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
   LikedTracksSortOption _sortOption = LikedTracksSortOption.recentlyAdded;
+
   final TextEditingController _searchController = TextEditingController();
-  List<Track> _filteredTracks = [];
+
   List<Track> _allTracks = [];
-  bool _isShuffled = false; // passed to player on play, does not reorder list
+  List<Track> _filteredTracks = [];
+
+  bool _isShuffled = false;
 
   @override
   void initState() {
     super.initState();
-    _allTracks = List.from(MockTracks.recentlyPlayedTracks);
-    _filteredTracks = List.from(_allTracks);
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -38,43 +43,64 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
     super.dispose();
   }
 
+  void _setTracks(List<Track> tracks) {
+    _allTracks = List.from(tracks);
+    _applySort(_sortOption, refreshSearch: false);
+    _onSearchChanged();
+  }
+
   void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
+    final query = _searchController.text.toLowerCase().trim();
 
     setState(() {
-      _filteredTracks = _allTracks.where((t) {
-        final titleMatch = t.title.toLowerCase().contains(query);
+      if (query.isEmpty) {
+        _filteredTracks = List.from(_allTracks);
+        return;
+      }
+
+      _filteredTracks = _allTracks.where((track) {
+        final titleMatch = track.title.toLowerCase().contains(query);
 
         final artistMatch =
-            t.artist?.displayName.toLowerCase().contains(query) ?? false;
+            track.artist?.displayName.toLowerCase().contains(query) ?? false;
 
         return titleMatch || artistMatch;
       }).toList();
     });
   }
 
-  void _applySort(LikedTracksSortOption option) {
-    setState(() {
-      _sortOption = option;
-      switch (option) {
-        case LikedTracksSortOption.recentlyAdded:
-          _filteredTracks = List.from(_allTracks);
-          break;
-        case LikedTracksSortOption.firstAdded:
-          _filteredTracks = List.from(_allTracks.reversed);
-          break;
-        case LikedTracksSortOption.trackName:
-          _filteredTracks.sort((a, b) => a.title.compareTo(b.title));
-          break;
-        case LikedTracksSortOption.artist:
-          _filteredTracks.sort(
-            (a, b) =>
-                a.artist?.displayName.compareTo(b.artist?.displayName ?? '') ??
-                0,
-          );
-          break;
-      }
-    });
+  void _applySort(
+    LikedTracksSortOption option, {
+    bool refreshSearch = true,
+  }) {
+    _sortOption = option;
+
+    switch (option) {
+      case LikedTracksSortOption.recentlyAdded:
+        _allTracks = List.from(_allTracks);
+        break;
+
+      case LikedTracksSortOption.firstAdded:
+        _allTracks = List.from(_allTracks.reversed);
+        break;
+
+      case LikedTracksSortOption.trackName:
+        _allTracks.sort((a, b) => a.title.compareTo(b.title));
+        break;
+
+      case LikedTracksSortOption.artist:
+        _allTracks.sort(
+          (a, b) =>
+              (a.artist?.displayName ?? '').compareTo(
+                b.artist?.displayName ?? '',
+              ),
+        );
+        break;
+    }
+
+    if (refreshSearch) {
+      _onSearchChanged();
+    }
   }
 
   void _showSortBottomSheet() {
@@ -98,36 +124,48 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
             children: [
               const Text('Sort by', style: AppTextStyles.heading2),
               const SizedBox(height: AppDimensions.spaceMedium),
+
               _SortOption(
                 label: 'Recently Added',
                 selected: _sortOption == LikedTracksSortOption.recentlyAdded,
                 onTap: () {
                   Navigator.pop(context);
-                  _applySort(LikedTracksSortOption.recentlyAdded);
+                  setState(() {
+                    _applySort(LikedTracksSortOption.recentlyAdded);
+                  });
                 },
               ),
+
               _SortOption(
                 label: 'First Added',
                 selected: _sortOption == LikedTracksSortOption.firstAdded,
                 onTap: () {
                   Navigator.pop(context);
-                  _applySort(LikedTracksSortOption.firstAdded);
+                  setState(() {
+                    _applySort(LikedTracksSortOption.firstAdded);
+                  });
                 },
               ),
+
               _SortOption(
                 label: 'Track Name',
                 selected: _sortOption == LikedTracksSortOption.trackName,
                 onTap: () {
                   Navigator.pop(context);
-                  _applySort(LikedTracksSortOption.trackName);
+                  setState(() {
+                    _applySort(LikedTracksSortOption.trackName);
+                  });
                 },
               ),
+
               _SortOption(
                 label: 'Artist',
                 selected: _sortOption == LikedTracksSortOption.artist,
                 onTap: () {
                   Navigator.pop(context);
-                  _applySort(LikedTracksSortOption.artist);
+                  setState(() {
+                    _applySort(LikedTracksSortOption.artist);
+                  });
                 },
               ),
             ],
@@ -139,178 +177,217 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final username = ref.watch(authProvider).user?.userName;
+
+    if (username == null || username.isEmpty) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Text(
+            'You are not logged in.',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+
+    final likedTracksAsync = ref.watch(userLikedTracksProvider(username));
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          // ── Header with heart background ──
-          SliverToBoxAdapter(
-            child: Stack(
-              children: [
-                Positioned(
-                  right: -30,
-                  top: -10,
-                  child: Icon(
-                    Icons.favorite,
-                    size: 220,
-                    color: AppColors.primary.withOpacity(0.25),
-                  ),
-                ),
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 12, 16, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Search bar row
-                        Row(
+      body: likedTracksAsync.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+
+        error: (e, _) => Center(
+          child: Text(
+            e.toString(),
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
+
+        data: (tracks) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _setTracks(tracks);
+          });
+
+          return CustomScrollView(
+            slivers: [
+              // ── Header ─────────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: Stack(
+                  children: [
+                    Positioned(
+                      right: -30,
+                      top: -10,
+                      child: Icon(
+                        Icons.favorite,
+                        size: 220,
+                        color: AppColors.primary.withOpacity(0.25),
+                      ),
+                    ),
+
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 12, 16, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            IconButton(
-                              icon: const Icon(
-                                Icons.chevron_left,
-                                color: Colors.white,
-                                size: 28,
-                              ),
-                              onPressed: () => widget.onBack?.call(),
-                            ),
-                            Expanded(
-                              child: Container(
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1E1E1E),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: TextField(
-                                  controller: _searchController,
-                                  style: const TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontSize: 14,
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.chevron_left,
+                                    color: Colors.white,
+                                    size: 28,
                                   ),
-                                  decoration: const InputDecoration(
-                                    hintText: 'Search your likes',
-                                    hintStyle: TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 14,
-                                    ),
-                                    prefixIcon: Icon(
-                                      Icons.search,
-                                      color: AppColors.textSecondary,
-                                      size: 20,
-                                    ),
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(
-                                      vertical: 10,
-                                    ),
-                                  ),
+                                  onPressed: () => widget.onBack?.call(),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            GestureDetector(
-                              onTap: _showSortBottomSheet,
-                              child: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: AppColors.surface,
-                                  borderRadius: BorderRadius.circular(
-                                    AppDimensions.borderRadiusPill,
+
+                                Expanded(
+                                  child: Container(
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF1E1E1E),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: TextField(
+                                      controller: _searchController,
+                                      style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontSize: 14,
+                                      ),
+                                      decoration: const InputDecoration(
+                                        hintText: 'Search your likes',
+                                        hintStyle: TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 14,
+                                        ),
+                                        prefixIcon: Icon(
+                                          Icons.search,
+                                          color: AppColors.textSecondary,
+                                          size: 20,
+                                        ),
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.symmetric(
+                                          vertical: 10,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
-                                child: const Icon(
-                                  Icons.sort,
-                                  color: AppColors.primary,
-                                  size: 22,
+
+                                const SizedBox(width: 10),
+
+                                GestureDetector(
+                                  onTap: _showSortBottomSheet,
+                                  child: Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surface,
+                                      borderRadius: BorderRadius.circular(
+                                        AppDimensions.borderRadiusPill,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.sort,
+                                      color: AppColors.primary,
+                                      size: 22,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                left: AppDimensions.spaceSmall,
+                              ),
+                              child: Text(
+                                'Your likes (${_filteredTracks.length})',
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
+
+                            const SizedBox(height: 20),
+
+                            Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.shuffle,
+                                      color: _isShuffled
+                                          ? AppColors.primary
+                                          : AppColors.textPrimary,
+                                      size: 24,
+                                    ),
+                                    onPressed: () => setState(
+                                      () => _isShuffled = !_isShuffled,
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 8),
+
+                                  GestureDetector(
+                                    onTap: () {
+                                      // TODO: Start player with _filteredTracks
+                                    },
+                                    child: Container(
+                                      width: 52,
+                                      height: 52,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.play_arrow,
+                                        color: Colors.black,
+                                        size: 30,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 8),
                           ],
                         ),
-
-                        const SizedBox(height: 20),
-
-                        const Padding(
-                          padding: EdgeInsets.only(
-                            left: AppDimensions.spaceSmall,
-                          ),
-                          child: Text(
-                            'Your likes',
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Shuffle + Play row
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              // Shuffle toggle — highlights when active
-                              IconButton(
-                                icon: Icon(
-                                  Icons.shuffle,
-                                  color: _isShuffled
-                                      ? AppColors.primary
-                                      : AppColors.textPrimary,
-                                  size: 24,
-                                ),
-                                onPressed: () =>
-                                    setState(() => _isShuffled = !_isShuffled),
-                              ),
-                              const SizedBox(width: 8),
-                              GestureDetector(
-                                onTap: () {
-                                  // TODO: start player with _filteredTracks,
-                                  // shuffle: _isShuffled
-                                },
-                                child: Container(
-                                  width: 52,
-                                  height: 52,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.play_arrow,
-                                    color: Colors.black,
-                                    size: 30,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 8),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
 
-          // ── Track list ──
-          SliverToBoxAdapter(
-            child: ProfileTrackListSection(
-              title: '',
-              tracks: _filteredTracks,
-              onTrackTap: (_) {
-                // To do: start player at tapped index,
-                // shuffle: _isShuffled
-              },
-              onMoreTap: (track) => showTrackContextMenu(context, track),
-            ),
-          ),
+              // ── Tracks ─────────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: ProfileTrackListSection(
+                  title: '',
+                  tracks: _filteredTracks,
+                  onTrackTap: (_) {
+                    // TODO: Start player
+                  },
+                  onMoreTap: (track) => showTrackContextMenu(context, track),
+                ),
+              ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 100),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -340,7 +417,11 @@ class _SortOption extends StatelessWidget {
         ),
       ),
       trailing: selected
-          ? const Icon(Icons.check, color: AppColors.primary, size: 20)
+          ? const Icon(
+              Icons.check,
+              color: AppColors.primary,
+              size: 20,
+            )
           : null,
       onTap: onTap,
     );
