@@ -52,12 +52,12 @@ class CollectionDetailsData {
 }
 
 class CollectionDetailsScreen extends ConsumerStatefulWidget {
-  final String playlistId;
+  final String? playlistId;
   final CollectionDetailsData data;
 
   const CollectionDetailsScreen({
     super.key,
-    required this.playlistId,
+    this.playlistId,
     required this.data,
   });
 
@@ -96,6 +96,14 @@ class _CollectionDetailsScreenState
   }
 
   Future<void> _pickAndUploadCover() async {
+    if (widget.playlistId == null || widget.playlistId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cover editing is only available for playlists.'),
+        ),
+      );
+      return;
+    }
     final picker = ImagePicker();
 
     final image = await picker.pickImage(
@@ -112,7 +120,7 @@ class _CollectionDetailsScreenState
     try {
       await ref
           .read(playlistProvider.notifier)
-          .uploadCover(playlistId: widget.playlistId, filePath: image.path);
+          .uploadCover(playlistId: widget.playlistId!, filePath: image.path);
 
       await ref.read(playlistProvider.notifier).fetchLikedPlaylists();
 
@@ -144,7 +152,14 @@ class _CollectionDetailsScreenState
   }
 
   Future<void> _removeTrack(CollectionTrack track) async {
-    // 🔥 ADD THESE PRINTS HERE
+    if (widget.playlistId == null || widget.playlistId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Track removal is only available for playlists.'),
+        ),
+      );
+      return;
+    }
     print('REMOVING PLAYLIST ID: ${widget.playlistId}');
     print('REMOVING TRACK ID: ${track.id}');
 
@@ -162,7 +177,7 @@ class _CollectionDetailsScreenState
     try {
       final success = await ref
           .read(playlistProvider.notifier)
-          .removeTrack(playlistId: widget.playlistId, trackId: track.id);
+          .removeTrack(playlistId: widget.playlistId!, trackId: track.id);
 
       if (!mounted) return;
 
