@@ -16,33 +16,33 @@ import 'your_likes_card.dart';
 
 extension FeedTrackItemToTrack on FeedTrackItem {
   Track toTrack() => Track(
-        trackId: trackId,
-        title: title,
-        description: description,
-        genre: genre,
-        tags: tags,
-        releaseDate: releaseDate,
-        coverImageUrl: coverImageUrl,
-        streamUrl: streamUrl,
-        userId: artist.userId,
-        artist: TrackArtist(
-          userId: artist.userId,
-          username: artist.username,
-          displayName: artist.displayName,
-          profilePicture: artist.profilePicture,
-          followerCount: artist.followerCount,
-        ),
-        visibility: 'public',
-        processingStatus: 'ready',
-        playCount: playCount,
-        durationSeconds: durationSeconds,
-        likeCount: likeCount,
-        repostCount: repostCount,
-        commentCount: commentCount,
-        isLiked: isLiked,
-        isReposted: isReposted,
-        createdAt: createdAt,
-      );
+    trackId: trackId,
+    title: title,
+    description: description,
+    genre: genre,
+    tags: tags,
+    releaseDate: releaseDate,
+    coverImageUrl: coverImageUrl,
+    streamUrl: streamUrl,
+    userId: artist.userId,
+    artist: TrackArtist(
+      userId: artist.userId,
+      username: artist.username,
+      displayName: artist.displayName,
+      profilePicture: artist.profilePicture,
+      followerCount: artist.followerCount,
+    ),
+    visibility: 'public',
+    processingStatus: 'ready',
+    playCount: playCount,
+    durationSeconds: durationSeconds,
+    likeCount: likeCount,
+    repostCount: repostCount,
+    commentCount: commentCount,
+    isLiked: isLiked,
+    isReposted: isReposted,
+    createdAt: createdAt,
+  );
 }
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -244,10 +244,7 @@ class _ErrorTile extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ErrorTile({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ErrorTile({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -261,10 +258,7 @@ class _ErrorTile extends StatelessWidget {
               message,
               style: const TextStyle(color: Colors.grey, fontSize: 13),
             ),
-            TextButton(
-              onPressed: onRetry,
-              child: const Text('Retry'),
-            ),
+            TextButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ),
       ),

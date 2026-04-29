@@ -27,10 +27,7 @@ class AuthService {
   }
 
   Future<void> verifyEmail(String token) async {
-    await _dio.post(
-      '$baseUrl/auth/verify-email',
-      data: {'token': token},
-    );
+    await _dio.post('$baseUrl/auth/verify-email', data: {'token': token});
   }
 
   Future<void> resendVerification(String email) async {
@@ -44,10 +41,7 @@ class AuthService {
     try {
       final result = await _dio.post(
         '$baseUrl/auth/login',
-        data: {
-          'identifier': identifier,
-          'password': password,
-        },
+        data: {'identifier': identifier, 'password': password},
       );
 
       print('LOGIN STATUS: ${result.statusCode}');
@@ -113,28 +107,18 @@ class AuthService {
     await _dio.post(
       '$baseUrl/auth/logout',
       data: {'refresh_token': refreshToken},
-      options: Options(
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-        },
-      ),
+      options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
     );
   }
 
   Future<void> forgotPassword(String email) async {
-    await _dio.post(
-      '$baseUrl/auth/forgot-password',
-      data: {'email': email},
-    );
+    await _dio.post('$baseUrl/auth/forgot-password', data: {'email': email});
   }
 
   Future<void> resetPassword(String token, String newPassword) async {
     await _dio.post(
       '$baseUrl/auth/reset-password',
-      data: {
-        'token': token,
-        'new_password': newPassword,
-      },
+      data: {'token': token, 'new_password': newPassword},
     );
   }
 }

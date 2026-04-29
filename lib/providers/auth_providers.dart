@@ -131,10 +131,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         currentTokens.refreshToken,
       );
 
-      state = AuthState(
-        tokens: newTokens,
-        user: state.user,
-      );
+      state = AuthState(tokens: newTokens, user: state.user);
     } catch (_) {
       state = const AuthState();
     }
@@ -143,11 +140,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     final currentTokens = state.tokens;
 
-    state = AuthState(
-      tokens: state.tokens,
-      user: state.user,
-      isLoading: true,
-    );
+    state = AuthState(tokens: state.tokens, user: state.user, isLoading: true);
 
     if (currentTokens != null) {
       try {
