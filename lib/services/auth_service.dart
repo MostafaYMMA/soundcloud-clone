@@ -39,7 +39,7 @@ class AuthService {
     try {
       final result = await _dio.post(
         '$baseUrl/auth/login',
-        data: {'email': email, 'password': password},
+        data: {'identifier': email, 'password': password},
       );
 
       print('LOGIN STATUS: ${result.statusCode}');
