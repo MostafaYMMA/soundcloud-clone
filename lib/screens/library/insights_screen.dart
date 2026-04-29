@@ -346,7 +346,6 @@ class _PromoButton extends StatelessWidget {
           side: const BorderSide(color: AppColors.textPrimary),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(
- 
               AppDimensions.borderRadiusSmall,
             ),
           ),
