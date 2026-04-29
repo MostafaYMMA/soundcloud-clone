@@ -12,6 +12,7 @@ import '../../providers/playlist_provider.dart';
 enum CollectionType { playlist, album, station }
 
 class CollectionTrack {
+  final String id;
   final String title;
   final String artist;
   final String? secondaryArtist;
@@ -19,6 +20,7 @@ class CollectionTrack {
   final bool isAvailable;
 
   const CollectionTrack({
+    required this.id,
     required this.title,
     required this.artist,
     this.secondaryArtist,
@@ -67,12 +69,15 @@ class CollectionDetailsScreen extends ConsumerStatefulWidget {
 class _CollectionDetailsScreenState
     extends ConsumerState<CollectionDetailsScreen> {
   late String _currentCoverPath;
+  late List<CollectionTrack> _tracks;
   bool _isUploadingCover = false;
+  String? _removingTrackId;
 
   @override
   void initState() {
     super.initState();
     _currentCoverPath = widget.data.artworkPath;
+    _tracks = List.from(widget.data.tracks);
   }
 
   String get _typeLabel {
@@ -139,6 +144,85 @@ class _CollectionDetailsScreenState
     }
   }
 
+  Future<void> _removeTrack(CollectionTrack track) async {
+    if (track.id.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Track ID is missing.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _removingTrackId = track.id;
+    });
+
+    try {
+      await ref.read(playlistProvider.notifier).removeTrack(
+            playlistId: widget.playlistId,
+            trackId: track.id,
+          );
+
+      await ref.read(playlistProvider.notifier).fetchLikedPlaylists();
+
+      if (!mounted) return;
+
+      setState(() {
+        _tracks.removeWhere((item) => item.id == track.id);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Track removed from playlist.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+
+      final error =
+          ref.read(playlistProvider).error ?? 'Failed to remove track.';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _removingTrackId = null;
+        });
+      }
+    }
+  }
+
+  void _showTrackOptions(CollectionTrack track) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppDimensions.borderRadiusMedium),
+        ),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: AppDimensions.spaceMedium,
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              title: const Text(
+                'Remove from playlist',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _removeTrack(track);
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final data = widget.data;
@@ -162,7 +246,7 @@ class _CollectionDetailsScreenState
                   const SizedBox(height: AppDimensions.spaceLarge),
                   _ActionRow(likesText: data.likesText),
                   const SizedBox(height: AppDimensions.spaceLarge),
-                  if (data.tracks.isEmpty)
+                  if (_tracks.isEmpty)
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -181,14 +265,18 @@ class _CollectionDetailsScreenState
                     )
                   else
                     ...List.generate(
-                      data.tracks.length,
+                      _tracks.length,
                       (index) => Padding(
                         padding: EdgeInsets.only(
-                          bottom: index == data.tracks.length - 1
+                          bottom: index == _tracks.length - 1
                               ? 0
                               : AppDimensions.spaceMedium,
                         ),
-                        child: _TrackTile(track: data.tracks[index]),
+                        child: _TrackTile(
+                          track: _tracks[index],
+                          isRemoving: _removingTrackId == _tracks[index].id,
+                          onMoreTap: () => _showTrackOptions(_tracks[index]),
+                        ),
                       ),
                     ),
                   const SizedBox(height: 130),
@@ -388,8 +476,14 @@ class _ActionRow extends StatelessWidget {
 
 class _TrackTile extends StatelessWidget {
   final CollectionTrack track;
+  final bool isRemoving;
+  final VoidCallback onMoreTap;
 
-  const _TrackTile({required this.track});
+  const _TrackTile({
+    required this.track,
+    required this.isRemoving,
+    required this.onMoreTap,
+  });
 
   String get _artistLine {
     if (track.secondaryArtist == null ||
@@ -435,11 +529,45 @@ class _TrackTile extends StatelessWidget {
                   fontSize: 15,
                 ),
               ),
+              if (!track.isAvailable) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.location_off,
+                      color: Colors.white60,
+                      size: 15,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Not available',
+                      style: AppTextStyles.caption.copyWith(
+                        color: Colors.white60,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
         const SizedBox(width: 10),
-        const Icon(Icons.more_horiz, color: Colors.white70, size: 26),
+        if (isRemoving)
+          const SizedBox(
+            width: 26,
+            height: 26,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        else
+          IconButton(
+            onPressed: onMoreTap,
+            icon: const Icon(
+              Icons.more_horiz,
+              color: Colors.white70,
+              size: 26,
+            ),
+          ),
       ],
     );
   }
