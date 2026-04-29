@@ -7,21 +7,27 @@ class AuthService {
 
   AuthService({required Dio dio}) : _dio = dio;
 
-  Future<void> register(
-    String email,
-    String password,
-    String displayName,
-  ) async {
+  // POST /auth/register
+  // API requires: email, username, password, display_name
+  Future<void> register({
+    required String email,
+    required String username,
+    required String password,
+    required String displayName,
+    String accountType = 'listener',
+  }) async {
     await _dio.post(
       '${baseUrl}auth/register',
       data: {'email': email, 'password': password, 'display_name': displayName},
     );
   }
 
+  // POST /auth/verify-email
   Future<void> verifyEmail(String token) async {
     await _dio.post('${baseUrl}auth/verify-email', data: {'token': token});
   }
 
+  // POST /auth/resend-verification
   Future<void> resendVerification(String email) async {
     await _dio.post(
       '${baseUrl}auth/resend-verification',
@@ -47,6 +53,7 @@ class AuthService {
     }
   }
 
+  // POST /auth/google
   Future<AuthTokens> googleLogin(String googleIdToken) async {
     try {
       final result = await _dio.post(
@@ -57,14 +64,16 @@ class AuthService {
       print('GOOGLE LOGIN STATUS: ${result.statusCode}');
       print('GOOGLE LOGIN DATA: ${result.data}');
 
-      return AuthTokens.fromJson(result.data);
-    } on DioException catch (e) {
-      print('GOOGLE LOGIN ERROR STATUS: ${e.response?.statusCode}');
-      print('GOOGLE LOGIN ERROR DATA: ${e.response?.data}');
-      rethrow;
-    }
+  // POST /auth/facebook
+  Future<AuthTokens> facebookLogin(String facebookToken) async {
+    final result = await _dio.post(
+      '$_baseUrl/auth/facebook',
+      data: {'facebook_token': facebookToken},
+    );
+    return AuthTokens.fromJson(result.data);
   }
 
+  // POST /auth/refresh
   Future<AuthTokens> refreshTokens(String refreshToken) async {
     final result = await _dio.post(
       '${baseUrl}auth/refresh',
@@ -73,17 +82,24 @@ class AuthService {
     return AuthTokens.fromJson(result.data);
   }
 
-  Future<void> logout(String accessToken) async {
+  // POST /auth/logout
+  // API requires: refresh_token in body + Bearer token in header
+  Future<void> logout({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
     await _dio.post(
       '${baseUrl}auth/logout',
       options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
     );
   }
 
+  // POST /auth/forgot-password
   Future<void> forgotPassword(String email) async {
     await _dio.post('${baseUrl}auth/forgot-password', data: {'email': email});
   }
 
+  // POST /auth/reset-password
   Future<void> resetPassword(String token, String newPassword) async {
     await _dio.post(
       '${baseUrl}auth/reset-password',
