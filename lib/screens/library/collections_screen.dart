@@ -57,12 +57,14 @@ class CollectionDetailsScreen extends ConsumerStatefulWidget {
   final String? playlistId;
   final CollectionDetailsData data;
   final Future<void> Function(CollectionTrack track)? onTrackTap;
+  final VoidCallback? onBack;
 
   const CollectionDetailsScreen({
     super.key,
     this.playlistId,
     required this.data,
     this.onTrackTap,
+    this.onBack,
   });
 
   @override
@@ -108,6 +110,7 @@ class _CollectionDetailsScreenState
       );
       return;
     }
+
     final picker = ImagePicker();
 
     final image = await picker.pickImage(
@@ -122,9 +125,10 @@ class _CollectionDetailsScreenState
     });
 
     try {
-      await ref
-          .read(playlistProvider.notifier)
-          .uploadCover(playlistId: widget.playlistId!, filePath: image.path);
+      await ref.read(playlistProvider.notifier).uploadCover(
+            playlistId: widget.playlistId!,
+            filePath: image.path,
+          );
 
       await ref.read(playlistProvider.notifier).fetchLikedPlaylists();
 
@@ -143,9 +147,9 @@ class _CollectionDetailsScreenState
       final error =
           ref.read(playlistProvider).error ?? 'Failed to upload cover.';
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -164,13 +168,11 @@ class _CollectionDetailsScreenState
       );
       return;
     }
-    print('REMOVING PLAYLIST ID: ${widget.playlistId}');
-    print('REMOVING TRACK ID: ${track.id}');
 
     if (track.id.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Track ID is missing.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Track ID is missing.')),
+      );
       return;
     }
 
@@ -179,9 +181,10 @@ class _CollectionDetailsScreenState
     });
 
     try {
-      final success = await ref
-          .read(playlistProvider.notifier)
-          .removeTrack(playlistId: widget.playlistId!, trackId: track.id);
+      final success = await ref.read(playlistProvider.notifier).removeTrack(
+            playlistId: widget.playlistId!,
+            trackId: track.id,
+          );
 
       if (!mounted) return;
 
@@ -189,17 +192,13 @@ class _CollectionDetailsScreenState
         final error =
             ref.read(playlistProvider).error ?? 'Failed to remove track.';
 
-        String message;
+        final message = error.contains('only edit your own playlists')
+            ? 'You can only edit your own playlists'
+            : error;
 
-        if (error.contains('only edit your own playlists')) {
-          message = 'You can only edit your own playlists';
-        } else {
-          message = error;
-        }
-
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(message)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
 
         return;
       }
@@ -219,9 +218,9 @@ class _CollectionDetailsScreenState
       final error =
           ref.read(playlistProvider).error ?? 'Failed to remove track.';
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -285,6 +284,7 @@ class _CollectionDetailsScreenState
                     coverPath: _currentCoverPath,
                     isUploadingCover: _isUploadingCover,
                     onEditCover: _pickAndUploadCover,
+                    onBack: widget.onBack,
                   ),
                   const SizedBox(height: AppDimensions.spaceLarge),
                   _ActionRow(likesText: data.likesText),
@@ -340,6 +340,7 @@ class _TopSection extends StatelessWidget {
   final String coverPath;
   final bool isUploadingCover;
   final VoidCallback onEditCover;
+  final VoidCallback? onBack;
 
   const _TopSection({
     required this.data,
@@ -347,6 +348,7 @@ class _TopSection extends StatelessWidget {
     required this.coverPath,
     required this.isUploadingCover,
     required this.onEditCover,
+    this.onBack,
   });
 
   @override
@@ -357,7 +359,7 @@ class _TopSection extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: InkWell(
             borderRadius: BorderRadius.circular(100),
-            onTap: () => Navigator.pop(context),
+            onTap: onBack ?? () => Navigator.pop(context),
             child: Container(
               width: 44,
               height: 44,
@@ -521,7 +523,6 @@ class _TrackTile extends StatelessWidget {
     return '${track.artist}, ${track.secondaryArtist}';
   }
 
-  @override
   @override
   Widget build(BuildContext context) {
     return GestureDetector(

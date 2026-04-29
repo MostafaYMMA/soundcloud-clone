@@ -116,10 +116,12 @@ class _RootScreenState extends ConsumerState<RootScreen> {
 
       // 4. Load new track if needed
       if (_currentTrack.trackId != track.trackId || !_hasLoaded) {
-        _hasLoaded = true;
-        _currentTrack = track;
-        _currentPosition = Duration.zero;
-
+        setState(() {
+          _hasLoaded = true;
+          _currentTrack = track;
+          _currentPosition = Duration.zero;
+          _totalDuration = Duration(seconds: track.durationSeconds ?? 0);
+        });
         try {
           await _player.setUrl(url);
         } catch (e) {

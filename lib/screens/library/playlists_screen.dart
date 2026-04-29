@@ -18,8 +18,15 @@ enum PlaylistsSortOption { recentlyAdded, firstAdded, playlistName }
 class PlaylistsScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
   final Future<void> Function(Track track) onTrackTap;
+  final void Function(Widget screen) onNavigate;
 
-  const PlaylistsScreen({super.key, this.onBack, required this.onTrackTap});
+  const PlaylistsScreen({
+    super.key,
+    this.onBack,
+    required this.onTrackTap,
+    required this.onNavigate,
+  });
+
   @override
   ConsumerState<PlaylistsScreen> createState() => _PlaylistsScreenState();
 }
@@ -83,34 +90,32 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
       return;
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CollectionDetailsScreen(
-          playlistId: detailedPlaylist.id,
-          data: _mapPlaylistToCollection(detailedPlaylist),
-          onTrackTap: (collectionTrack) async {
-            final playableTrack = Track(
-              trackId: collectionTrack.id,
-              title: collectionTrack.title,
-              coverImageUrl: collectionTrack.artworkPath,
-              streamUrl:
-                  'https://streamline-swp.duckdns.org/api/tracks/${collectionTrack.id}/audio',
-              artist: TrackArtist(
-                userId: '',
-                username: '',
-                displayName: collectionTrack.artist,
-                followerCount: 0,
-              ),
-              visibility: 'public',
-              processingStatus: '',
-              playCount: 0,
-              durationSeconds: collectionTrack.durationSeconds,
-            );
+    widget.onNavigate(
+      CollectionDetailsScreen(
+        playlistId: detailedPlaylist.id,
+        data: _mapPlaylistToCollection(detailedPlaylist),
+        onBack: widget.onBack,
+        onTrackTap: (collectionTrack) async {
+          final playableTrack = Track(
+            trackId: collectionTrack.id,
+            title: collectionTrack.title,
+            coverImageUrl: collectionTrack.artworkPath,
+            streamUrl:
+                'https://streamline-swp.duckdns.org/api/tracks/${collectionTrack.id}/audio',
+            artist: TrackArtist(
+              userId: '',
+              username: '',
+              displayName: collectionTrack.artist,
+              followerCount: 0,
+            ),
+            visibility: 'public',
+            processingStatus: '',
+            playCount: 0,
+            durationSeconds: collectionTrack.durationSeconds,
+          );
 
-            await widget.onTrackTap(playableTrack);
-          },
-        ),
+          await widget.onTrackTap(playableTrack);
+        },
       ),
     );
   }

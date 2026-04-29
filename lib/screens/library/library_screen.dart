@@ -89,7 +89,11 @@ class LibraryScreen extends StatelessWidget {
                 LibraryTile(
                   title: 'Playlists',
                   onTap: () => onNavigate(
-                    PlaylistsScreen(onBack: onBack, onTrackTap: onTrackTap),
+                    PlaylistsScreen(
+                      onBack: onBack,
+                      onTrackTap: onTrackTap,
+                      onNavigate: onNavigate,
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
@@ -111,10 +115,7 @@ class LibraryScreen extends StatelessWidget {
                 LibraryTile(
                   title: 'Your uploads',
                   onTap: () => onNavigate(
-                    UploadsScreen(
-                      onBack: onBack,
-                      onTrackTap: onTrackTap,
-                    ),
+                    UploadsScreen(onBack: onBack, onTrackTap: onTrackTap),
                   ),
                 ),
               ]),
@@ -135,21 +136,21 @@ class LibraryScreen extends StatelessWidget {
               items: MockTracks.recentlyPlayedItems,
               onItemTap: (item) => switch (item) {
                 RecentlyPlayedPlaylist(:final playlist) => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CollectionDetailsScreen(
-                        data: CollectionDetailsMapper.fromPlaylist(playlist),
-                      ),
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CollectionDetailsScreen(
+                      data: CollectionDetailsMapper.fromPlaylist(playlist),
                     ),
                   ),
+                ),
                 RecentlyPlayedAlbum(:final album) => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CollectionDetailsScreen(
-                        data: CollectionDetailsMapper.fromAlbum(album),
-                      ),
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CollectionDetailsScreen(
+                      data: CollectionDetailsMapper.fromAlbum(album),
                     ),
                   ),
+                ),
               },
             ),
           ),
