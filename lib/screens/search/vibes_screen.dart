@@ -21,9 +21,6 @@ class VibeScreen extends StatelessWidget {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(vibe),
-        ),
         appBar: AppBar(title: Text(vibe)),
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,10 +71,6 @@ class VibeScreen extends StatelessWidget {
                         padding: EdgeInsets.symmetric(
                           horizontal: AppDimensions.spaceLarge,
                         ),
-                        child: Text(
-                          'Trending',
-                          style: AppTextStyles.heading1,
-                        ),
                         child: Text('Trending', style: AppTextStyles.heading1),
                       ),
                       const SizedBox(height: AppDimensions.spaceSmall),
@@ -108,6 +101,7 @@ class VibeScreen extends StatelessWidget {
                         padding: EdgeInsets.symmetric(
                           horizontal: AppDimensions.spaceLarge,
                         ),
+                        child: Text('Playlists', style: AppTextStyles.heading1),
                       ),
                       const SizedBox(height: AppDimensions.spaceSmall),
                       Expanded(
@@ -117,11 +111,6 @@ class VibeScreen extends StatelessWidget {
                           ),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            childAspectRatio: 0.95,
-                          ),
                                 crossAxisCount: 2,
                                 mainAxisSpacing: 12,
                                 crossAxisSpacing: 12,
@@ -145,6 +134,7 @@ class VibeScreen extends StatelessWidget {
                         padding: EdgeInsets.symmetric(
                           horizontal: AppDimensions.spaceLarge,
                         ),
+                        child: Text('Albums', style: AppTextStyles.heading1),
                       ),
                       const SizedBox(height: AppDimensions.spaceSmall),
                       Expanded(
@@ -154,6 +144,11 @@ class VibeScreen extends StatelessWidget {
                           ),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                childAspectRatio: 0.95,
+                              ),
                           itemCount: trendingTracks.length,
                           itemBuilder: (context, index) {
                             final track = trendingTracks[index];
