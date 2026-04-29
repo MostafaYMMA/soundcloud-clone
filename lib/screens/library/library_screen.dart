@@ -105,7 +105,8 @@ class LibraryScreen extends StatelessWidget {
           ),
 
           const SliverToBoxAdapter(
-              child: SizedBox(height: AppDimensions.spaceLarge)),
+            child: SizedBox(height: AppDimensions.spaceLarge),
+          ),
 
           // ── Recently Played header ───────────────────────────────────
           SliverToBoxAdapter(
@@ -117,14 +118,12 @@ class LibraryScreen extends StatelessWidget {
 
           // ── Recently Played — original horizontal boxes ───────────────
           SliverToBoxAdapter(
-            child: MoreLikeSection(
-              sectionTitle: '',
-              tracks: recentlyPlayed,
-            ),
+            child: MoreLikeSection(sectionTitle: '', tracks: recentlyPlayed),
           ),
 
           const SliverToBoxAdapter(
-              child: SizedBox(height: AppDimensions.spaceLarge)),
+            child: SizedBox(height: AppDimensions.spaceLarge),
+          ),
 
           // ── History header ───────────────────────────────────────────
           SliverToBoxAdapter(
