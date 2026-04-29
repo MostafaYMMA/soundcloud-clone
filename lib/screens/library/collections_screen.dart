@@ -18,6 +18,7 @@ class CollectionTrack {
   final String? secondaryArtist;
   final String artworkPath;
   final bool isAvailable;
+  final int durationSeconds;
 
   const CollectionTrack({
     required this.id,
@@ -26,6 +27,7 @@ class CollectionTrack {
     this.secondaryArtist,
     required this.artworkPath,
     this.isAvailable = true,
+    this.durationSeconds = 0,
   });
 }
 
@@ -54,11 +56,13 @@ class CollectionDetailsData {
 class CollectionDetailsScreen extends ConsumerStatefulWidget {
   final String? playlistId;
   final CollectionDetailsData data;
+  final Future<void> Function(CollectionTrack track)? onTrackTap;
 
   const CollectionDetailsScreen({
     super.key,
     this.playlistId,
     required this.data,
+    this.onTrackTap,
   });
 
   @override
@@ -315,6 +319,7 @@ class _CollectionDetailsScreenState
                           track: _tracks[index],
                           isRemoving: _removingTrackId == _tracks[index].id,
                           onMoreTap: () => _showTrackOptions(_tracks[index]),
+                          onTap: () => widget.onTrackTap?.call(_tracks[index]),
                         ),
                       ),
                     ),
@@ -499,11 +504,13 @@ class _TrackTile extends StatelessWidget {
   final CollectionTrack track;
   final bool isRemoving;
   final VoidCallback onMoreTap;
+  final VoidCallback? onTap;
 
   const _TrackTile({
     required this.track,
     required this.isRemoving,
     required this.onMoreTap,
+    this.onTap,
   });
 
   String get _artistLine {
@@ -515,77 +522,85 @@ class _TrackTile extends StatelessWidget {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _CollectionImage(
-          path: track.artworkPath,
-          width: 74,
-          height: 74,
-          borderRadius: AppDimensions.borderRadiusMedium,
-        ),
-        const SizedBox(width: AppDimensions.spaceMedium),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                track.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.trackTitle.copyWith(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        children: [
+          _CollectionImage(
+            path: track.artworkPath,
+            width: 74,
+            height: 74,
+            borderRadius: AppDimensions.borderRadiusMedium,
+          ),
+          const SizedBox(width: AppDimensions.spaceMedium),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  track.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.trackTitle.copyWith(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _artistLine,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.caption.copyWith(
-                  color: Colors.white70,
-                  fontSize: 15,
-                ),
-              ),
-              if (!track.isAvailable) ...[
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_off,
-                      color: Colors.white60,
-                      size: 15,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Not available',
-                      style: AppTextStyles.caption.copyWith(
-                        color: Colors.white60,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ],
+                Text(
+                  _artistLine,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.caption.copyWith(
+                    color: Colors.white70,
+                    fontSize: 15,
+                  ),
                 ),
+                if (!track.isAvailable) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_off,
+                        color: Colors.white60,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Not available',
+                        style: AppTextStyles.caption.copyWith(
+                          color: Colors.white60,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
-        const SizedBox(width: 10),
-        if (isRemoving)
-          const SizedBox(
-            width: 26,
-            height: 26,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
-        else
-          IconButton(
-            onPressed: onMoreTap,
-            icon: const Icon(Icons.more_horiz, color: Colors.white70, size: 26),
-          ),
-      ],
+          const SizedBox(width: 10),
+          if (isRemoving)
+            const SizedBox(
+              width: 26,
+              height: 26,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            IconButton(
+              onPressed: onMoreTap,
+              icon: const Icon(
+                Icons.more_horiz,
+                color: Colors.white70,
+                size: 26,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

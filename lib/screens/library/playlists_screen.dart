@@ -11,14 +11,15 @@ import '../../models/playlist.dart';
 import '../../providers/playlist_provider.dart';
 import '../library/widgets/playlist_tiles.dart';
 import 'collections_screen.dart';
+import '../../models/track.dart';
 
 enum PlaylistsSortOption { recentlyAdded, firstAdded, playlistName }
 
 class PlaylistsScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
+  final Future<void> Function(Track track) onTrackTap;
 
-  const PlaylistsScreen({super.key, this.onBack});
-
+  const PlaylistsScreen({super.key, this.onBack, required this.onTrackTap});
   @override
   ConsumerState<PlaylistsScreen> createState() => _PlaylistsScreenState();
 }
@@ -58,6 +59,7 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
               title: track.title,
               artist: track.artist,
               artworkPath: track.artworkUrl,
+              durationSeconds: track.durationSeconds,
               isAvailable: true,
             ),
           )
@@ -87,6 +89,27 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
         builder: (_) => CollectionDetailsScreen(
           playlistId: detailedPlaylist.id,
           data: _mapPlaylistToCollection(detailedPlaylist),
+          onTrackTap: (collectionTrack) async {
+            final playableTrack = Track(
+              trackId: collectionTrack.id,
+              title: collectionTrack.title,
+              coverImageUrl: collectionTrack.artworkPath,
+              streamUrl:
+                  'https://streamline-swp.duckdns.org/api/tracks/${collectionTrack.id}/audio',
+              artist: TrackArtist(
+                userId: '',
+                username: '',
+                displayName: collectionTrack.artist,
+                followerCount: 0,
+              ),
+              visibility: 'public',
+              processingStatus: '',
+              playCount: 0,
+              durationSeconds: collectionTrack.durationSeconds,
+            );
+
+            await widget.onTrackTap(playableTrack);
+          },
         ),
       ),
     );
