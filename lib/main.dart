@@ -11,9 +11,12 @@ import 'screens/upgrade/upgrade_screen.dart';
 import 'screens/auth/change_password_screen.dart';
 import 'screens/library/collections_screen.dart';
 import 'screens/auth/verify_email_screen.dart';
+import 'screens/subscription/stripe_helper.dart';
 
 void main() {
-  runApp(ProviderScope(child: const SoundCloudApp()));
+  WidgetsFlutterBinding.ensureInitialized(); // must be first
+  initStripe();                              // then stripe
+  runApp(const ProviderScope(child: SoundCloudApp())); // only one runApp
 }
 
 class SoundCloudApp extends StatelessWidget {
@@ -31,7 +34,6 @@ class SoundCloudApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/root': (context) => const RootScreen(),
         '/forgot_password': (context) => const ForgotPasswordScreen(),
-        //'/change-password': (context) => const ChangePasswordScreen(),
       },
     );
   }
