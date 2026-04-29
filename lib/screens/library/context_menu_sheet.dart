@@ -249,11 +249,11 @@ class _TrackHeader extends StatelessWidget {
   }
 
   Widget _placeholder(double size) => Container(
-        width: size,
-        height: size,
-        color: AppColors.surfaceLight,
-        child: const Icon(Icons.music_note, color: AppColors.textSecondary),
-      );
+    width: size,
+    height: size,
+    color: AppColors.surfaceLight,
+    child: const Icon(Icons.music_note, color: AppColors.textSecondary),
+  );
 }
 
 // ── Share row ────────────────────────────────────────────────────────────────
@@ -284,10 +284,26 @@ class _ShareRow extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _ShareButton(icon: Icons.send_outlined, label: 'Message', onTap: () {}),
-                _ShareButton(icon: Icons.copy_outlined, label: 'Copy link', onTap: () {}),
-                _ShareButton(icon: Icons.qr_code_2, label: 'QR code', onTap: () {}),
-                _ShareButton(icon: Icons.sms_outlined, label: 'SMS', onTap: () {}),
+                _ShareButton(
+                  icon: Icons.send_outlined,
+                  label: 'Message',
+                  onTap: () {},
+                ),
+                _ShareButton(
+                  icon: Icons.copy_outlined,
+                  label: 'Copy link',
+                  onTap: () {},
+                ),
+                _ShareButton(
+                  icon: Icons.qr_code_2,
+                  label: 'QR code',
+                  onTap: () {},
+                ),
+                _ShareButton(
+                  icon: Icons.sms_outlined,
+                  label: 'SMS',
+                  onTap: () {},
+                ),
               ],
             ),
           ),
@@ -302,7 +318,11 @@ class _ShareButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _ShareButton({required this.icon, required this.label, required this.onTap});
+  const _ShareButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -373,10 +393,10 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Divider(
-        height: 1,
-        thickness: 0.5,
-        color: AppColors.divider,
-        indent: AppDimensions.spaceMedium,
-        endIndent: AppDimensions.spaceMedium,
-      );
+    height: 1,
+    thickness: 0.5,
+    color: AppColors.divider,
+    indent: AppDimensions.spaceMedium,
+    endIndent: AppDimensions.spaceMedium,
+  );
 }

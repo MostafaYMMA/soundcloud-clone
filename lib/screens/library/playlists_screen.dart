@@ -8,6 +8,7 @@ import 'widgets/playlist_tile.dart';
 import 'collections_details_mapper.dart';
 import 'collections_screen.dart';
 import 'context_menu_sheet.dart';
+
 enum PlaylistsSortOption { recentlyAdded, firstAdded, playlistName }
 
 class PlaylistsScreen extends StatefulWidget {
@@ -290,8 +291,7 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
                     ),
                   ),
                 ),
-                onMoreTap: ()  => showCollectionContextMenu(context),
-
+                onMoreTap: () => showCollectionContextMenu(context),
               ),
               childCount: _filteredPlaylists.length,
             ),

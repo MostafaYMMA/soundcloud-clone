@@ -299,7 +299,8 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
                 // To do: start player at tapped index,
                 // shuffle: _isShuffled
               },
-              onMoreTap: (track)  => showTrackContextMenu(context, track),),
+              onMoreTap: (track) => showTrackContextMenu(context, track),
+            ),
           ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
