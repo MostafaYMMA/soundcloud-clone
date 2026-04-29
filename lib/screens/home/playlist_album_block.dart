@@ -1,33 +1,53 @@
 import 'package:flutter/material.dart';
-import '../../constants/app_colors.dart';
-import '../../constants/app_text_styles.dart';
 import '../../constants/app_dimensions.dart';
-import '../../models/track.dart';
+import '../../constants/app_text_styles.dart';
+import '../../constants/app_colors.dart';
+import '../../models/recently_played_item.dart';
+import '../../models/playlist.dart';
+import '../../models/album.dart';
+import 'more_like_section.dart';
 
-class MoreLikeSection extends StatelessWidget {
+class PlaylistAlbumBlock extends StatelessWidget {
   final String sectionTitle;
-  final List<Track> tracks;
-  final void Function(Track)? onTrackTap;
+  final List<RecentlyPlayedItem> items;
+  final void Function(RecentlyPlayedItem)? onItemTap;
 
-  const MoreLikeSection({
+  const PlaylistAlbumBlock({
     super.key,
     required this.sectionTitle,
-    required this.tracks,
-    this.onTrackTap,
+    required this.items,
+    this.onItemTap,
   });
+
+  String _coverUrl(RecentlyPlayedItem item) => switch (item) {
+    RecentlyPlayedPlaylist(:final playlist) => playlist.coverUrl ?? '',
+    RecentlyPlayedAlbum(:final album) => album.artworkUrl,
+  };
+
+  String _title(RecentlyPlayedItem item) => switch (item) {
+    RecentlyPlayedPlaylist(:final playlist) => playlist.name,
+    RecentlyPlayedAlbum(:final album) => album.title,
+  };
+
+  String _subtitle(RecentlyPlayedItem item) => switch (item) {
+    RecentlyPlayedPlaylist(:final playlist) => playlist.owner,
+    RecentlyPlayedAlbum(:final album) => album.artist,
+  };
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.spaceMedium,
+        if (sectionTitle.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.spaceMedium,
+            ),
+            child: Text(sectionTitle, style: AppTextStyles.heading1),
           ),
-          child: Text(sectionTitle, style: AppTextStyles.heading1),
-        ),
-        const SizedBox(height: AppDimensions.spaceSmall),
+        if (sectionTitle.isNotEmpty)
+          const SizedBox(height: AppDimensions.spaceSmall),
         SizedBox(
           height: 180,
           child: SingleChildScrollView(
@@ -37,9 +57,9 @@ class MoreLikeSection extends StatelessWidget {
             ),
             child: Row(
               children: [
-                for (int i = 0; i < tracks.length; i++) ...[
+                for (int i = 0; i < items.length; i++) ...[
                   GestureDetector(
-                    onTap: () => onTrackTap?.call(tracks[i]),
+                    onTap: () => onItemTap?.call(items[i]),
                     child: SizedBox(
                       width: 150,
                       child: Column(
@@ -49,17 +69,12 @@ class MoreLikeSection extends StatelessWidget {
                             borderRadius: BorderRadius.circular(
                               AppDimensions.borderRadiusSmall,
                             ),
-                            child:
-                                (tracks[i].coverImageUrl != null &&
-                                    tracks[i].coverImageUrl!.isNotEmpty)
+                            child: _coverUrl(items[i]).isNotEmpty
                                 ? Image.network(
-                                    tracks[i].coverImageUrl!,
+                                    _coverUrl(items[i]),
                                     width: 150,
                                     height: 130,
                                     fit: BoxFit.cover,
-                                    headers: const {
-                                      'User-Agent': 'Mozilla/5.0',
-                                    },
                                     errorBuilder: (_, __, ___) =>
                                         const _PlaceholderThumb(),
                                   )
@@ -67,13 +82,13 @@ class MoreLikeSection extends StatelessWidget {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            tracks[i].title,
+                            _title(items[i]),
                             style: AppTextStyles.artistName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            tracks[i].artist?.displayName ?? 'Unknown Artist',
+                            _subtitle(items[i]),
                             style: AppTextStyles.caption,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -82,7 +97,7 @@ class MoreLikeSection extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (i < tracks.length - 1)
+                  if (i < items.length - 1)
                     const SizedBox(width: AppDimensions.spaceSmall),
                 ],
               ],

@@ -80,7 +80,7 @@ class PlaylistTiles extends StatelessWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-          separatorBuilder: (_, __) => const SizedBox(height: 14),
+          separatorBuilder: (_, _) => const SizedBox(height: 14),
           itemBuilder: (context, index) {
             final playlist = playlists[index];
             return GestureDetector(
@@ -93,16 +93,15 @@ class PlaylistTiles extends StatelessWidget {
                     borderRadius: BorderRadius.circular(
                       AppDimensions.borderRadiusSharp,
                     ),
-                    child:
-                        (playlist.coverUrl != null &&
-                            playlist.coverUrl!.isNotEmpty)
+                    child: playlist.coverUrl.isNotEmpty
                         ? Image.network(
-                            playlist.coverUrl!,
+                            playlist.coverUrl,
                             width: AppDimensions.trackArtworkSmall,
                             height: AppDimensions.trackArtworkSmall,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                const _PlaylistCoverPlaceholder(),
+                            errorBuilder: (context, error, stackTrace) {
+                              return const _PlaylistCoverPlaceholder();
+                            },
                           )
                         : const _PlaylistCoverPlaceholder(),
                   ),
@@ -136,7 +135,7 @@ class PlaylistTiles extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Playlist · ${_formatTrackCount(playlist.trackCount)} tracks · ${playlist.duration}',
+                            'Playlist · ${_formatTrackCount(playlist.trackCount)} tracks ',
                             style: TextStyle(
                               color: AppColors.textMuted,
                               fontSize: (screenWidth * 0.037).clamp(12.0, 14.0),
