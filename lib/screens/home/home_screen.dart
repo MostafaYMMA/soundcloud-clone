@@ -1,46 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_project/models/track.dart';
-import '../../models/feed_response.dart';
-import 'package:my_project/screens/home/activity.dart';
+
 import '../../constants/app_dimensions.dart';
+import '../../models/feed_response.dart';
+import '../../providers/auth_providers.dart';
 import '../../providers/feed_provider.dart';
 import '../../providers/notifications_provider.dart';
-import '../../widgets/upload_track_sheet.dart';
-import 'your_likes_card.dart';
-import 'today_pick_card.dart';
-import 'more_like_section.dart';
+import '../auth/welcome_screen.dart';
+import 'activity.dart';
 import 'albums_for_you_section.dart';
+import 'more_like_section.dart';
+import 'today_pick_card.dart';
+import 'your_likes_card.dart';
 
 extension FeedTrackItemToTrack on FeedTrackItem {
   Track toTrack() => Track(
-    trackId: trackId,
-    title: title,
-    description: description,
-    genre: genre,
-    tags: tags,
-    releaseDate: releaseDate,
-    coverImageUrl: coverImageUrl,
-    streamUrl: streamUrl,
-    userId: artist.userId,
-    artist: TrackArtist(
-      userId: artist.userId,
-      username: artist.username,
-      displayName: artist.displayName,
-      profilePicture: artist.profilePicture,
-      followerCount: artist.followerCount,
-    ),
-    visibility: 'public',
-    processingStatus: 'ready',
-    playCount: playCount,
-    durationSeconds: durationSeconds,
-    likeCount: likeCount,
-    repostCount: repostCount,
-    commentCount: commentCount,
-    isLiked: isLiked,
-    isReposted: isReposted,
-    createdAt: createdAt,
-  );
+        trackId: trackId,
+        title: title,
+        description: description,
+        genre: genre,
+        tags: tags,
+        releaseDate: releaseDate,
+        coverImageUrl: coverImageUrl,
+        streamUrl: streamUrl,
+        userId: artist.userId,
+        artist: TrackArtist(
+          userId: artist.userId,
+          username: artist.username,
+          displayName: artist.displayName,
+          profilePicture: artist.profilePicture,
+          followerCount: artist.followerCount,
+        ),
+        visibility: 'public',
+        processingStatus: 'ready',
+        playCount: playCount,
+        durationSeconds: durationSeconds,
+        likeCount: likeCount,
+        repostCount: repostCount,
+        commentCount: commentCount,
+        isLiked: isLiked,
+        isReposted: isReposted,
+        createdAt: createdAt,
+      );
 }
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -53,6 +55,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _isLoggingOut = false;
+
   Future<void> _onRefresh() async {
     await Future.wait([
       ref.read(followingFeedProvider.notifier).refresh(),
@@ -61,16 +65,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ]);
   }
 
-  Future<void> _openUploadSheet() async {
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      builder: (_) => const UploadTrackSheet(),
-    );
+  Future<void> _logout() async {
+    if (_isLoggingOut) return;
+
+    setState(() {
+      _isLoggingOut = true;
+    });
+
+    await ref.read(authProvider.notifier).logout();
 
     if (!mounted) return;
-    await _onRefresh();
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      (route) => false,
+    );
   }
 
   @override
@@ -83,10 +92,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.cloud_upload_outlined),
-            onPressed: _openUploadSheet,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => Activity()),
+            ),
           ),
           Badge(
             isLabelVisible: unreadCount > 0,
@@ -98,6 +111,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 MaterialPageRoute(builder: (_) => Activity()),
               ),
             ),
+          ),
+          IconButton(
+            icon: _isLoggingOut
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.logout),
+            onPressed: _isLoggingOut ? null : _logout,
           ),
         ],
       ),
@@ -121,10 +144,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 data: (state) {
                   if (state.items.isEmpty) return const SizedBox();
+
                   return YourLikesCard(
                     tracks: state.items
                         .take(6)
-                        .map((i) => i.toTrack())
+                        .map((item) => item.toTrack())
                         .toList(),
                     onTrackTap: widget.onTrackTap,
                   );
@@ -156,7 +180,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   final tracks = state.items
                       .skip(6)
                       .take(10)
-                      .map((i) => i.toTrack())
+                      .map((item) => item.toTrack())
                       .toList();
 
                   if (tracks.isEmpty) return const SizedBox();
@@ -176,7 +200,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   final tracks = state.items
                       .skip(1)
                       .take(10)
-                      .map((i) => i.toTrack())
+                      .map((item) => item.toTrack())
                       .toList();
 
                   if (tracks.isEmpty) return const SizedBox();
@@ -220,7 +244,10 @@ class _ErrorTile extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ErrorTile({required this.message, required this.onRetry});
+  const _ErrorTile({
+    required this.message,
+    required this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -234,7 +261,10 @@ class _ErrorTile extends StatelessWidget {
               message,
               style: const TextStyle(color: Colors.grey, fontSize: 13),
             ),
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
+            TextButton(
+              onPressed: onRetry,
+              child: const Text('Retry'),
+            ),
           ],
         ),
       ),
