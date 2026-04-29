@@ -61,7 +61,7 @@ class _FakeRootState extends State<FakeRoot> {
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          MiniPlayer(track: fakeTrack, isPlaying: false, onPlay: () {}),
+          MiniPlayer(track: fakeTrack, isPlaying: false, onPlay: () {},onOpenFullPlayer: () {},),
           Row(
             children: [
               TextButton(
