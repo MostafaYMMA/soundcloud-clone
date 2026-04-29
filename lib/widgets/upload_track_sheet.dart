@@ -25,30 +25,30 @@ class _UploadTrackSheetState extends ConsumerState<UploadTrackSheet> {
     super.dispose();
   }
 
- Future<void> pickFile() async {
-  final result = await FilePicker.pickFiles(
-    type: FileType.custom,
-    allowedExtensions: ['mp3', 'wav', 'm4a', 'aac'],
-    allowMultiple: false,
-  );
-
-  if (result == null) return;
-
-  final pickedPath = result.files.single.path;
-
-  if (pickedPath == null) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Could not read selected file.')),
+  Future<void> pickFile() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['mp3', 'wav', 'm4a', 'aac'],
+      allowMultiple: false,
     );
-    return;
-  }
 
-  setState(() {
-    filePath = pickedPath;
-    fileName = result.files.single.name;
-  });
-}
+    if (result == null) return;
+
+    final pickedPath = result.files.single.path;
+
+    if (pickedPath == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not read selected file.')),
+      );
+      return;
+    }
+
+    setState(() {
+      filePath = pickedPath;
+      fileName = result.files.single.name;
+    });
+  }
 
   Future<void> upload() async {
     final String title = titleController.text.trim();
@@ -64,11 +64,9 @@ class _UploadTrackSheetState extends ConsumerState<UploadTrackSheet> {
     }
 
     try {
-      await ref.read(createTrackProvider.notifier).create(
-            title: title,
-            description: description,
-            filePath: filePath!,
-          );
+      await ref
+          .read(createTrackProvider.notifier)
+          .create(title: title, description: description, filePath: filePath!);
 
       if (!mounted) return;
 
@@ -82,9 +80,9 @@ class _UploadTrackSheetState extends ConsumerState<UploadTrackSheet> {
 
       final String message = e.toString().replaceFirst('Exception: ', '');
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -107,28 +105,21 @@ class _UploadTrackSheetState extends ConsumerState<UploadTrackSheet> {
             children: [
               const Text(
                 'Upload Track',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: titleController,
                 enabled: !isUploading,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                ),
+                decoration: const InputDecoration(labelText: 'Title'),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: descController,
                 enabled: !isUploading,
                 maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                ),
+                decoration: const InputDecoration(labelText: 'Description'),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
