@@ -3,9 +3,9 @@ import 'package:dio/dio.dart';
 const String _baseUrl = 'https://streamline-swp.duckdns.org/api';
 
 class SubscriptionStatus {
-  final String plan;          // "Free" or "Premium"
+  final String plan; // "Free" or "Premium"
   final int tracksUploaded;
-  final int? limit;           // null = unlimited (Premium)
+  final int? limit; // null = unlimited (Premium)
   final String? billingCycle; // "monthly", "yearly", or null (Free)
 
   const SubscriptionStatus({
@@ -62,10 +62,7 @@ class SubscriptionService {
     try {
       final response = await _dio.post(
         endpoint,
-        data: {
-          'payment_token': paymentToken,
-          'plan': 'Premium',
-        },
+        data: {'payment_token': paymentToken, 'plan': 'Premium'},
         options: Options(
           headers: {
             'Authorization': 'Bearer $accessToken',

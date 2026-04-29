@@ -23,7 +23,8 @@ class SubscriptionState {
 
   bool isCurrentPlanFor(String billingType) {
     if (!isPremium) return false;
-    if (billingType.toLowerCase() == 'monthly') return status?.isMonthly ?? false;
+    if (billingType.toLowerCase() == 'monthly')
+      return status?.isMonthly ?? false;
     if (billingType.toLowerCase() == 'yearly') return status?.isYearly ?? false;
     return false;
   }
@@ -116,5 +117,5 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
 
 final subscriptionProvider =
     StateNotifierProvider<SubscriptionNotifier, SubscriptionState>(
-  (ref) => SubscriptionNotifier(ref),
-);
+      (ref) => SubscriptionNotifier(ref),
+    );
