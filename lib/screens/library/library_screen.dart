@@ -126,21 +126,21 @@ class LibraryScreen extends StatelessWidget {
               items: MockTracks.recentlyPlayedItems,
               onItemTap: (item) => switch (item) {
                 RecentlyPlayedPlaylist(:final playlist) => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CollectionDetailsScreen(
-                        data: CollectionDetailsMapper.fromPlaylist(playlist),
-                      ),
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CollectionDetailsScreen(
+                      data: CollectionDetailsMapper.fromPlaylist(playlist),
                     ),
                   ),
+                ),
                 RecentlyPlayedAlbum(:final album) => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CollectionDetailsScreen(
-                        data: CollectionDetailsMapper.fromAlbum(album),
-                      ),
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CollectionDetailsScreen(
+                      data: CollectionDetailsMapper.fromAlbum(album),
                     ),
                   ),
+                ),
               },
             ),
           ),

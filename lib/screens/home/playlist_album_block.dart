@@ -20,19 +20,19 @@ class PlaylistAlbumBlock extends StatelessWidget {
   });
 
   String _coverUrl(RecentlyPlayedItem item) => switch (item) {
-        RecentlyPlayedPlaylist(:final playlist) => playlist.coverUrl ?? '',
-        RecentlyPlayedAlbum(:final album) => album.artworkUrl,
-      };
+    RecentlyPlayedPlaylist(:final playlist) => playlist.coverUrl ?? '',
+    RecentlyPlayedAlbum(:final album) => album.artworkUrl,
+  };
 
   String _title(RecentlyPlayedItem item) => switch (item) {
-        RecentlyPlayedPlaylist(:final playlist) => playlist.name,
-        RecentlyPlayedAlbum(:final album) => album.title,
-      };
+    RecentlyPlayedPlaylist(:final playlist) => playlist.name,
+    RecentlyPlayedAlbum(:final album) => album.title,
+  };
 
   String _subtitle(RecentlyPlayedItem item) => switch (item) {
-        RecentlyPlayedPlaylist(:final playlist) => playlist.owner,
-        RecentlyPlayedAlbum(:final album) => album.artist,
-      };
+    RecentlyPlayedPlaylist(:final playlist) => playlist.owner,
+    RecentlyPlayedAlbum(:final album) => album.artist,
+  };
 
   @override
   Widget build(BuildContext context) {
