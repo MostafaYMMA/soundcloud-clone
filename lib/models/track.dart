@@ -102,6 +102,15 @@ class Track {
     );
   }
 
+  /// Alias for coverImageUrl to maintain compatibility with code expecting 'artworkUrl'
+  String? get artworkUrl => coverImageUrl;
+
+  /// Gets the artist's display name or empty string if null
+  String get artistName => artist?.displayName ?? '';
+
+  /// Gets formatted artist name with fallback
+  String get formattedArtist => artist?.displayName ?? 'Unknown Artist';
+
   /// Convenience copy-with for local optimistic updates (e.g. toggling like).
   Track copyWith({
     int? likeCount,
@@ -109,6 +118,7 @@ class Track {
     int? repostCount,
     bool? isReposted,
     int? commentCount,
+    String? coverImageUrl,
   }) {
     return Track(
       trackId: trackId,
@@ -117,7 +127,7 @@ class Track {
       genre: genre,
       tags: tags,
       releaseDate: releaseDate,
-      coverImageUrl: coverImageUrl,
+      coverImageUrl: coverImageUrl ?? this.coverImageUrl,
       streamUrl: streamUrl,
       userId: userId,
       artist: artist,
