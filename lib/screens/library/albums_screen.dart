@@ -1,37 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
 import '../../models/album.dart';
-import '../../mock_data/mock_albums.dart';
+import '../../providers/album_provider.dart';
 import 'widgets/album_tile.dart';
 import 'collections_screen.dart';
 import 'collections_details_mapper.dart';
-import 'collections_screen.dart';
 import 'context_menu_sheet.dart';
 
 enum AlbumsSortOption { recentlyAdded, firstAdded, albumName }
 
-class AlbumsScreen extends StatefulWidget {
+class AlbumsScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
   const AlbumsScreen({super.key, this.onBack});
 
   @override
-  State<AlbumsScreen> createState() => _AlbumsScreenState();
+  ConsumerState<AlbumsScreen> createState() => _AlbumsScreenState();
 }
 
-class _AlbumsScreenState extends State<AlbumsScreen> {
+class _AlbumsScreenState extends ConsumerState<AlbumsScreen> {
   AlbumsSortOption _sortOption = AlbumsSortOption.recentlyAdded;
   final TextEditingController _searchController = TextEditingController();
-  List<Album> _filteredAlbums = [];
-  List<Album> _allAlbums = [];
 
   @override
   void initState() {
     super.initState();
-    _allAlbums = List.from(MockAlbums.featuredAlbums);
-    _filteredAlbums = List.from(_allAlbums);
-    _searchController.addListener(_onSearchChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(albumProvider.notifier).fetchLikedAlbums();
+    });
   }
 
   @override
@@ -40,34 +38,33 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
     super.dispose();
   }
 
-  void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredAlbums = _allAlbums
-          .where(
-            (a) =>
-                a.title.toLowerCase().contains(query) ||
-                a.artist.toLowerCase().contains(query),
-          )
-          .toList();
-    });
+  Future<void> _openAlbumDetails(Album album) async {
+    // Fetch full album details (includes tracks)
+    final detailed = await ref
+        .read(albumProvider.notifier)
+        .getAlbumDetails(album.id);
+
+    if (!mounted) return;
+
+    if (detailed == null) {
+      final error = ref.read(albumProvider).error ?? 'Failed to open album.';
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CollectionDetailsScreen(
+          data: CollectionDetailsMapper.fromAlbum(detailed),
+        ),
+      ),
+    );
   }
 
   void _applySort(AlbumsSortOption option) {
-    setState(() {
-      _sortOption = option;
-      switch (option) {
-        case AlbumsSortOption.recentlyAdded:
-          _filteredAlbums = List.from(_allAlbums);
-          break;
-        case AlbumsSortOption.firstAdded:
-          _filteredAlbums = List.from(_allAlbums.reversed);
-          break;
-        case AlbumsSortOption.albumName:
-          _filteredAlbums.sort((a, b) => a.title.compareTo(b.title));
-          break;
-      }
-    });
+    setState(() => _sortOption = option);
   }
 
   void _showSortBottomSheet() {
@@ -79,190 +76,243 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
           top: Radius.circular(AppDimensions.borderRadiusMedium),
         ),
       ),
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: AppDimensions.spaceLarge,
-            horizontal: AppDimensions.spaceMedium,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Sort by', style: AppTextStyles.heading2),
-              const SizedBox(height: AppDimensions.spaceMedium),
-              _SortOption(
-                label: 'Recently Added',
-                selected: _sortOption == AlbumsSortOption.recentlyAdded,
-                onTap: () {
-                  Navigator.pop(context);
-                  _applySort(AlbumsSortOption.recentlyAdded);
-                },
-              ),
-              _SortOption(
-                label: 'First Added',
-                selected: _sortOption == AlbumsSortOption.firstAdded,
-                onTap: () {
-                  Navigator.pop(context);
-                  _applySort(AlbumsSortOption.firstAdded);
-                },
-              ),
-              _SortOption(
-                label: 'Album Name',
-                selected: _sortOption == AlbumsSortOption.albumName,
-                onTap: () {
-                  Navigator.pop(context);
-                  _applySort(AlbumsSortOption.albumName);
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: AppDimensions.spaceLarge,
+          horizontal: AppDimensions.spaceMedium,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Sort by', style: AppTextStyles.heading2),
+            const SizedBox(height: AppDimensions.spaceMedium),
+            _SortOption(
+              label: 'Recently Added',
+              selected: _sortOption == AlbumsSortOption.recentlyAdded,
+              onTap: () {
+                Navigator.pop(context);
+                _applySort(AlbumsSortOption.recentlyAdded);
+              },
+            ),
+            _SortOption(
+              label: 'First Added',
+              selected: _sortOption == AlbumsSortOption.firstAdded,
+              onTap: () {
+                Navigator.pop(context);
+                _applySort(AlbumsSortOption.firstAdded);
+              },
+            ),
+            _SortOption(
+              label: 'Album Name',
+              selected: _sortOption == AlbumsSortOption.albumName,
+              onTap: () {
+                Navigator.pop(context);
+                _applySort(AlbumsSortOption.albumName);
+              },
+            ),
+          ],
+        ),
+      ),
     );
+  }
+
+  List<Album> _sorted(List<Album> source) {
+    final query = _searchController.text.trim().toLowerCase();
+
+    List<Album> result = query.isEmpty
+        ? List.from(source)
+        : source
+            .where(
+              (a) =>
+                  a.title.toLowerCase().contains(query) ||
+                  a.artist.toLowerCase().contains(query),
+            )
+            .toList();
+
+    switch (_sortOption) {
+      case AlbumsSortOption.recentlyAdded:
+        break; // API order = most recent first
+      case AlbumsSortOption.firstAdded:
+        result = result.reversed.toList();
+        break;
+      case AlbumsSortOption.albumName:
+        result.sort((a, b) => a.title.compareTo(b.title));
+        break;
+    }
+
+    return result;
   }
 
   @override
   Widget build(BuildContext context) {
+    final albumState = ref.watch(albumProvider);
+    final albums = _sorted(albumState.likedAlbums);
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          // ── Header ──────────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Stack(
-              children: [
-                Positioned(
-                  right: -30,
-                  top: -10,
-                  child: _StackedSquaresDecoration(),
-                ),
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 12, 16, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // ── Search bar row ───────────────────────────
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(
-                                Icons.chevron_left,
-                                color: Colors.white,
-                                size: 28,
-                              ),
-                              onPressed: () => widget.onBack?.call(),
-                            ),
-                            Expanded(
-                              child: Container(
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1E1E1E),
-                                  borderRadius: BorderRadius.circular(20),
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(albumProvider.notifier).fetchLikedAlbums(),
+        child: CustomScrollView(
+          slivers: [
+            // ── Header ──────────────────────────────────────────────────
+            SliverToBoxAdapter(
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: -30,
+                    top: -10,
+                    child: _StackedSquaresDecoration(),
+                  ),
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 12, 16, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── Search bar row ───────────────────────────
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.chevron_left,
+                                  color: Colors.white,
+                                  size: 28,
                                 ),
-                                child: TextField(
-                                  controller: _searchController,
-                                  style: const TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontSize: 14,
+                                onPressed: () => widget.onBack?.call(),
+                              ),
+                              Expanded(
+                                child: Container(
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1E1E1E),
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
-                                  decoration: const InputDecoration(
-                                    hintText: 'Search 4 albums',
-                                    hintStyle: TextStyle(
-                                      color: AppColors.textSecondary,
+                                  child: TextField(
+                                    controller: _searchController,
+                                    onChanged: (_) => setState(() {}),
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
                                       fontSize: 14,
                                     ),
-                                    prefixIcon: Icon(
-                                      Icons.search,
-                                      color: AppColors.textSecondary,
-                                      size: 20,
-                                    ),
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(
-                                      vertical: 10,
+                                    decoration: const InputDecoration(
+                                      hintText: 'Search albums',
+                                      hintStyle: TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 14,
+                                      ),
+                                      prefixIcon: Icon(
+                                        Icons.search,
+                                        color: AppColors.textSecondary,
+                                        size: 20,
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.symmetric(
+                                        vertical: 10,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            GestureDetector(
-                              onTap: _showSortBottomSheet,
-                              child: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: AppColors.surface,
-                                  borderRadius: BorderRadius.circular(
-                                    AppDimensions.borderRadiusPill,
+                              const SizedBox(width: 10),
+                              GestureDetector(
+                                onTap: _showSortBottomSheet,
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface,
+                                    borderRadius: BorderRadius.circular(
+                                      AppDimensions.borderRadiusPill,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.sort,
+                                    color: AppColors.primary,
+                                    size: 22,
                                   ),
                                 ),
-                                child: const Icon(
-                                  Icons.sort,
-                                  color: AppColors.primary,
-                                  size: 22,
-                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          const Padding(
+                            padding: EdgeInsets.only(
+                              left: AppDimensions.spaceSmall,
+                            ),
+                            child: Text(
+                              'Albums',
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // ── Title ────────────────────────────────────
-                        const Padding(
-                          padding: EdgeInsets.only(
-                            left: AppDimensions.spaceSmall,
                           ),
-                          child: Text(
-                            'Albums',
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
 
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Album list ───────────────────────────────────────────────
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => AlbumTile(
-                album: _filteredAlbums[index],
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CollectionDetailsScreen(
-                      data: CollectionDetailsMapper.fromAlbum(
-                        _filteredAlbums[index],
+                          const SizedBox(height: 20),
+                        ],
                       ),
                     ),
                   ),
-                ),
-                onMoreTap: () => showCollectionContextMenu(context),
+                ],
               ),
-              childCount: _filteredAlbums.length,
             ),
-          ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
+            // ── Body states ──────────────────────────────────────────────
+            if (albumState.isLoadingLiked)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (albumState.error != null && albumState.likedAlbums.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      albumState.error!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                ),
+              )
+            else if (albums.isEmpty)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Text(
+                    'No liked albums yet.',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ),
+              )
+            else
+              // ── Album list ─────────────────────────────────────────────
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => AlbumTile(
+                    album: albums[index],
+                    onTap: () => _openAlbumDetails(albums[index]),
+                    onMoreTap: () => showCollectionContextMenu(context),
+                  ),
+                  childCount: albums.length,
+                ),
+              ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ── Stacked squares background decoration ──────────────────────────────────
+// ── Stacked squares background decoration ───────────────────────────────────
 class _StackedSquaresDecoration extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -295,7 +345,7 @@ class _StackedSquaresDecoration extends StatelessWidget {
   }
 }
 
-// ── Sort option tile ────────────────────────────────────────────────────────
+// ── Sort option tile ─────────────────────────────────────────────────────────
 class _SortOption extends StatelessWidget {
   final String label;
   final bool selected;
