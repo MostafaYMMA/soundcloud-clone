@@ -19,12 +19,13 @@ class TracksService {
   // ── POST /tracks/ (multipart/form-data) ──────────────────────────────────
 
   Future<Track> createTrack({
+    required String accessToken,
     required String title,
     required String description,
     required String filePath,
     String? genre,
-    String? tags, // comma-separated string accepted by the API
-    String? releaseDate, // "YYYY-MM-DD"
+    String? tags,
+    String? releaseDate,
     String visibility = 'public',
     String? coverImagePath,
   }) async {
@@ -37,16 +38,32 @@ class TracksService {
         filename: filePath.split('/').last,
       ),
     };
-    if (genre != null) map['genre'] = genre;
-    if (tags != null) map['tags'] = tags;
-    if (releaseDate != null) map['release_date'] = releaseDate;
-    if (coverImagePath != null) {
+
+    if (genre != null && genre.trim().isNotEmpty) {
+      map['genre'] = genre.trim();
+    }
+
+    if (tags != null && tags.trim().isNotEmpty) {
+      map['tags'] = tags.trim();
+    }
+
+    if (releaseDate != null && releaseDate.trim().isNotEmpty) {
+      map['release_date'] = releaseDate.trim();
+    }
+
+    if (coverImagePath != null && coverImagePath.trim().isNotEmpty) {
       map['cover_image'] = await MultipartFile.fromFile(
         coverImagePath,
         filename: coverImagePath.split('/').last,
       );
     }
-    final res = await _dio.post('$_base/tracks/', data: FormData.fromMap(map));
+
+    final res = await _dio.post(
+      '$_base/tracks/',
+      data: FormData.fromMap(map),
+      options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
+    );
+
     return Track.fromJson(res.data['data'] as Map<String, dynamic>);
   }
 
