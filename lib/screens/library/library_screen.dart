@@ -87,8 +87,7 @@ class LibraryScreen extends StatelessWidget {
                 LibraryTile(
                   title: 'Following',
                   onTap: () => onNavigate(FollowingScreen(onBack: onBack)),
-                  title: 'Following',
-                  onTap: () => onNavigate(FollowingScreen(onBack: onBack)),
+                 
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
                 LibraryTile(
