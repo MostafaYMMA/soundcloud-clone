@@ -154,7 +154,11 @@ class _RootScreenState extends State<RootScreen> {
     HomeScreen(onTrackTap: _handlePlay),
     const FeedScreen(),
     SearchScreen(),
-    LibraryScreen(onNavigate: _pushSubScreen, onBack: _popSubScreen),
+    LibraryScreen(
+      onNavigate: _pushSubScreen,
+      onBack: _popSubScreen,
+      onTrackTap: _handlePlay,
+    ),
     const UpgradeScreen(),
   ];
 

@@ -19,12 +19,19 @@ import 'uploads_screen.dart';
 import 'history_screen.dart';
 import 'recently_played_screen.dart';
 import 'context_menu_sheet.dart';
+import 'package:my_project/models/track.dart';
 
 class LibraryScreen extends StatelessWidget {
   final void Function(Widget) onNavigate;
   final VoidCallback? onBack;
-  const LibraryScreen({super.key, required this.onNavigate, this.onBack});
+  final Future<void> Function(Track track) onTrackTap;
 
+  const LibraryScreen({
+    super.key,
+    required this.onNavigate,
+    this.onBack,
+    required this.onTrackTap,
+  });
   @override
   Widget build(BuildContext context) {
     final history = MockTracks.historyTracks;
@@ -81,7 +88,9 @@ class LibraryScreen extends StatelessWidget {
                 const SizedBox(height: AppDimensions.spaceSmall),
                 LibraryTile(
                   title: 'Playlists',
-                  onTap: () => onNavigate(PlaylistsScreen(onBack: onBack)),
+                  onTap: () => onNavigate(
+                    PlaylistsScreen(onBack: onBack, onTrackTap: onTrackTap),
+                  ),
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
                 LibraryTile(

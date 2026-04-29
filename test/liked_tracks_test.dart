@@ -49,7 +49,11 @@ class _FakeRootState extends State<FakeRoot> {
       return subScreens[selectedIndex]!;
     }
     if (selectedIndex == 3) {
-      return LibraryScreen(onNavigate: push, onBack: pop);
+      return LibraryScreen(
+        onNavigate: push,
+        onBack: pop,
+        onTrackTap: (_) async {},
+      );
     }
     return const Text('HomeTab');
   }
