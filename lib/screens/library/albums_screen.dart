@@ -2,33 +2,35 @@ import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
-import '../../models/track.dart';
-import '../../mock_data/mock_tracks.dart';
-import '../profile/widgets/profile_track_list_section.dart';
+import '../../models/album.dart';
+import '../../mock_data/mock_albums.dart';
+import 'widgets/album_tile.dart';
+import 'collections_screen.dart';
+import 'collections_details_mapper.dart';
+import 'collections_screen.dart';
 import 'context_menu_sheet.dart';
 
-enum LikedTracksSortOption { recentlyAdded, firstAdded, trackName, artist }
+enum AlbumsSortOption { recentlyAdded, firstAdded, albumName }
 
-class LikedTracksScreen extends StatefulWidget {
+class AlbumsScreen extends StatefulWidget {
   final VoidCallback? onBack;
-  const LikedTracksScreen({super.key, this.onBack});
+  const AlbumsScreen({super.key, this.onBack});
 
   @override
-  State<LikedTracksScreen> createState() => _LikedTracksScreenState();
+  State<AlbumsScreen> createState() => _AlbumsScreenState();
 }
 
-class _LikedTracksScreenState extends State<LikedTracksScreen> {
-  LikedTracksSortOption _sortOption = LikedTracksSortOption.recentlyAdded;
+class _AlbumsScreenState extends State<AlbumsScreen> {
+  AlbumsSortOption _sortOption = AlbumsSortOption.recentlyAdded;
   final TextEditingController _searchController = TextEditingController();
-  List<Track> _filteredTracks = [];
-  List<Track> _allTracks = [];
-  bool _isShuffled = false; // passed to player on play, does not reorder list
+  List<Album> _filteredAlbums = [];
+  List<Album> _allAlbums = [];
 
   @override
   void initState() {
     super.initState();
-    _allTracks = List.from(MockTracks.recentlyPlayedTracks);
-    _filteredTracks = List.from(_allTracks);
+    _allAlbums = List.from(MockAlbums.featuredAlbums);
+    _filteredAlbums = List.from(_allAlbums);
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -41,31 +43,28 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
   void _onSearchChanged() {
     final query = _searchController.text.toLowerCase();
     setState(() {
-      _filteredTracks = _allTracks
+      _filteredAlbums = _allAlbums
           .where(
-            (t) =>
-                t.title.toLowerCase().contains(query) ||
-                t.artist.toLowerCase().contains(query),
+            (a) =>
+                a.title.toLowerCase().contains(query) ||
+                a.artist.toLowerCase().contains(query),
           )
           .toList();
     });
   }
 
-  void _applySort(LikedTracksSortOption option) {
+  void _applySort(AlbumsSortOption option) {
     setState(() {
       _sortOption = option;
       switch (option) {
-        case LikedTracksSortOption.recentlyAdded:
-          _filteredTracks = List.from(_allTracks);
+        case AlbumsSortOption.recentlyAdded:
+          _filteredAlbums = List.from(_allAlbums);
           break;
-        case LikedTracksSortOption.firstAdded:
-          _filteredTracks = List.from(_allTracks.reversed);
+        case AlbumsSortOption.firstAdded:
+          _filteredAlbums = List.from(_allAlbums.reversed);
           break;
-        case LikedTracksSortOption.trackName:
-          _filteredTracks.sort((a, b) => a.title.compareTo(b.title));
-          break;
-        case LikedTracksSortOption.artist:
-          _filteredTracks.sort((a, b) => a.artist.compareTo(b.artist));
+        case AlbumsSortOption.albumName:
+          _filteredAlbums.sort((a, b) => a.title.compareTo(b.title));
           break;
       }
     });
@@ -94,34 +93,26 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
               const SizedBox(height: AppDimensions.spaceMedium),
               _SortOption(
                 label: 'Recently Added',
-                selected: _sortOption == LikedTracksSortOption.recentlyAdded,
+                selected: _sortOption == AlbumsSortOption.recentlyAdded,
                 onTap: () {
                   Navigator.pop(context);
-                  _applySort(LikedTracksSortOption.recentlyAdded);
+                  _applySort(AlbumsSortOption.recentlyAdded);
                 },
               ),
               _SortOption(
                 label: 'First Added',
-                selected: _sortOption == LikedTracksSortOption.firstAdded,
+                selected: _sortOption == AlbumsSortOption.firstAdded,
                 onTap: () {
                   Navigator.pop(context);
-                  _applySort(LikedTracksSortOption.firstAdded);
+                  _applySort(AlbumsSortOption.firstAdded);
                 },
               ),
               _SortOption(
-                label: 'Track Name',
-                selected: _sortOption == LikedTracksSortOption.trackName,
+                label: 'Album Name',
+                selected: _sortOption == AlbumsSortOption.albumName,
                 onTap: () {
                   Navigator.pop(context);
-                  _applySort(LikedTracksSortOption.trackName);
-                },
-              ),
-              _SortOption(
-                label: 'Artist',
-                selected: _sortOption == LikedTracksSortOption.artist,
-                onTap: () {
-                  Navigator.pop(context);
-                  _applySort(LikedTracksSortOption.artist);
+                  _applySort(AlbumsSortOption.albumName);
                 },
               ),
             ],
@@ -137,18 +128,14 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          // ── Header with heart background ──
+          // ── Header ──────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Stack(
               children: [
                 Positioned(
                   right: -30,
                   top: -10,
-                  child: Icon(
-                    Icons.favorite,
-                    size: 220,
-                    color: AppColors.primary.withOpacity(0.25),
-                  ),
+                  child: _StackedSquaresDecoration(),
                 ),
                 SafeArea(
                   child: Padding(
@@ -156,7 +143,7 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Search bar row
+                        // ── Search bar row ───────────────────────────
                         Row(
                           children: [
                             IconButton(
@@ -181,7 +168,7 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
                                     fontSize: 14,
                                   ),
                                   decoration: const InputDecoration(
-                                    hintText: 'Search your likes',
+                                    hintText: 'Search 4 albums',
                                     hintStyle: TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 14,
@@ -223,12 +210,13 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
 
                         const SizedBox(height: 20),
 
+                        // ── Title ────────────────────────────────────
                         const Padding(
                           padding: EdgeInsets.only(
                             left: AppDimensions.spaceSmall,
                           ),
                           child: Text(
-                            'Your likes',
+                            'Albums',
                             style: TextStyle(
                               color: AppColors.textPrimary,
                               fontSize: 28,
@@ -238,50 +226,6 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
                         ),
 
                         const SizedBox(height: 20),
-
-                        // Shuffle + Play row
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              // Shuffle toggle — highlights when active
-                              IconButton(
-                                icon: Icon(
-                                  Icons.shuffle,
-                                  color: _isShuffled
-                                      ? AppColors.primary
-                                      : AppColors.textPrimary,
-                                  size: 24,
-                                ),
-                                onPressed: () =>
-                                    setState(() => _isShuffled = !_isShuffled),
-                              ),
-                              const SizedBox(width: 8),
-                              GestureDetector(
-                                onTap: () {
-                                  // TODO: start player with _filteredTracks,
-                                  // shuffle: _isShuffled
-                                },
-                                child: Container(
-                                  width: 52,
-                                  height: 52,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.play_arrow,
-                                    color: Colors.black,
-                                    size: 30,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 8),
                       ],
                     ),
                   ),
@@ -290,16 +234,24 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
             ),
           ),
 
-          // ── Track list ──
-          SliverToBoxAdapter(
-            child: ProfileTrackListSection(
-              title: '',
-              tracks: _filteredTracks,
-              onTrackTap: (_) {
-                // To do: start player at tapped index,
-                // shuffle: _isShuffled
-              },
-              onMoreTap: (track) => showTrackContextMenu(context, track),
+          // ── Album list ───────────────────────────────────────────────
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => AlbumTile(
+                album: _filteredAlbums[index],
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CollectionDetailsScreen(
+                      data: CollectionDetailsMapper.fromAlbum(
+                        _filteredAlbums[index],
+                      ),
+                    ),
+                  ),
+                ),
+                onMoreTap: () => showCollectionContextMenu(context),
+              ),
+              childCount: _filteredAlbums.length,
             ),
           ),
 
@@ -310,6 +262,40 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
   }
 }
 
+// ── Stacked squares background decoration ──────────────────────────────────
+class _StackedSquaresDecoration extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 220,
+      height: 220,
+      child: Stack(
+        children: List.generate(6, (i) {
+          final offset = i * 12.0;
+          return Positioned(
+            right: offset,
+            top: offset,
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.15 + i * 0.04),
+                  width: 1.5,
+                ),
+                borderRadius: BorderRadius.circular(
+                  AppDimensions.borderRadiusSmall,
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+// ── Sort option tile ────────────────────────────────────────────────────────
 class _SortOption extends StatelessWidget {
   final String label;
   final bool selected;

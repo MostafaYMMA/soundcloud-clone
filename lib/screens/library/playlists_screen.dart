@@ -411,7 +411,6 @@ class _CreatePlaylistSheetState extends State<_CreatePlaylistSheet> {
   void initState() {
     super.initState();
     _nameController.addListener(() => setState(() {}));
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _nameController.selection = TextSelection(
         baseOffset: 0,

@@ -1,4 +1,7 @@
 import '../models/track.dart';
+import '../models/recently_played_item.dart';
+import '../models/playlist.dart';
+import '../models/album.dart';
 
 class MockTracks {
   static const List<Track> likedTracks = [
@@ -97,6 +100,7 @@ class MockTracks {
           'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
   ];
+
   static const List<Track> historyTracks = [
     Track(
       id: '4',
@@ -139,6 +143,7 @@ class MockTracks {
           'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
   ];
+
   static const List<Track> recentlyPlayedTracks = [
     Track(
       id: '8',
@@ -150,7 +155,6 @@ class MockTracks {
       audioPath:
           'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
-
     Track(
       id: '3',
       title: 'Blinding Lights',
@@ -161,7 +165,6 @@ class MockTracks {
       audioPath:
           'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
-
     Track(
       id: '9',
       title: 'ROCKSTAR',
@@ -171,6 +174,68 @@ class MockTracks {
       duration: 178,
       audioPath:
           'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+    ),
+  ];
+
+  static List<RecentlyPlayedItem> get recentlyPlayedItems => [
+    RecentlyPlayedPlaylist(
+      Playlist(
+        id: 'p1',
+        userId: 'THRILLHO',
+        name: 'Somatic  -  Deep Bass  -  Brain Massage',
+        description: '',
+        coverUrl: '',
+        isPublic: true,
+        trackCount: 23,
+        tracks: [],
+      ),
+    ),
+    RecentlyPlayedAlbum(
+      Album(
+        id: 'a1',
+        title: 'Lana Del Rey - ULTRAVIOLENCE',
+        artist: 'Interscope Records',
+        releaseYear: 2014,
+        artworkUrl: '',
+        trackCount: 0,
+        likeCount: 0,
+      ),
+    ),
+    RecentlyPlayedPlaylist(
+      Playlist(
+        id: 'p2',
+        userId: 'Hana_Ahmed',
+        name: 'kennedy walsh jams',
+        description: '',
+        coverUrl: '',
+        isPublic: true,
+        trackCount: 112,
+        tracks: [],
+      ),
+    ),
+    RecentlyPlayedPlaylist(
+      Playlist(
+        id: 'p3',
+        userId: 'New!',
+        name: 'Buzzing Indie',
+        description: '',
+        coverUrl: '',
+        isPublic: true,
+        trackCount: 25,
+        tracks: [],
+      ),
+    ),
+    RecentlyPlayedPlaylist(
+      Playlist(
+        id: 'p4',
+        userId: 'SoundCloud',
+        name: 'Your Mix 1',
+        description: '',
+        coverUrl: '',
+        isPublic: false,
+        trackCount: 0,
+        tracks: [],
+      ),
     ),
   ];
 }
