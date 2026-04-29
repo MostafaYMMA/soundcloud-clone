@@ -40,14 +40,16 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
 
   void _onSearchChanged() {
     final query = _searchController.text.toLowerCase();
+
     setState(() {
-      _filteredTracks = _allTracks
-          .where(
-            (t) =>
-                t.title.toLowerCase().contains(query) ||
-                t.artist.toLowerCase().contains(query),
-          )
-          .toList();
+      _filteredTracks = _allTracks.where((t) {
+        final titleMatch = t.title.toLowerCase().contains(query);
+
+        final artistMatch =
+            t.artist?.displayName.toLowerCase().contains(query) ?? false;
+
+        return titleMatch || artistMatch;
+      }).toList();
     });
   }
 
@@ -65,7 +67,11 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
           _filteredTracks.sort((a, b) => a.title.compareTo(b.title));
           break;
         case LikedTracksSortOption.artist:
-          _filteredTracks.sort((a, b) => a.artist.compareTo(b.artist));
+          _filteredTracks.sort(
+            (a, b) =>
+                a.artist?.displayName.compareTo(b.artist?.displayName ?? '') ??
+                0,
+          );
           break;
       }
     });

@@ -27,6 +27,7 @@ class _RootScreenState extends State<RootScreen> {
 
   bool _isPlaying = false;
   bool _hasLoaded = false;
+
   Track _currentTrack = MockTracks.hotTrack;
 
   Duration _currentPosition = Duration.zero;
@@ -55,23 +56,20 @@ class _RootScreenState extends State<RootScreen> {
   void _listenToPlayer() {
     _positionSub = _player.positionStream.listen((position) {
       if (!mounted) return;
-      setState(() {
-        _currentPosition = position;
-      });
+      setState(() => _currentPosition = position);
     });
 
     _durationSub = _player.durationStream.listen((duration) {
       if (!mounted) return;
       setState(() {
-        _totalDuration = duration ?? Duration(seconds: _currentTrack.duration);
+        _totalDuration =
+            duration ?? Duration(seconds: _currentTrack.durationSeconds ?? 0);
       });
     });
 
-    _playerStateSub = _player.playerStateStream.listen((playerState) {
+    _playerStateSub = _player.playerStateStream.listen((state) {
       if (!mounted) return;
-      setState(() {
-        _isPlaying = playerState.playing;
-      });
+      setState(() => _isPlaying = state.playing);
     });
   }
 
@@ -85,28 +83,36 @@ class _RootScreenState extends State<RootScreen> {
   }
 
   Future<void> _handlePlay(Track track) async {
-    if (track.audioPath.isEmpty) return;
+    final url = track.streamUrl;
 
-    if (_currentTrack.id == track.id && _isPlaying) {
+    if (url.isEmpty) return;
+
+    // Pause if same track
+    if (_currentTrack.trackId == track.trackId && _isPlaying) {
       await _player.pause();
       return;
     }
 
-    if (_currentTrack.id != track.id || !_hasLoaded) {
+    // Load new track
+    if (_currentTrack.trackId != track.trackId || !_hasLoaded) {
       _hasLoaded = true;
       _currentTrack = track;
       _currentPosition = Duration.zero;
-      _totalDuration = Duration(seconds: track.duration);
 
-      await _player.setAsset(track.audioPath);
+      _totalDuration = Duration(seconds: track.durationSeconds ?? 0);
+
+      try {
+        await _player.setUrl(url);
+      } catch (e) {
+        debugPrint("Audio load failed: $e");
+        return;
+      }
     }
 
     await _player.play();
 
     if (!mounted) return;
-    setState(() {
-      _currentTrack = track;
-    });
+    setState(() => _currentTrack = track);
   }
 
   Future<void> _toggleCurrentTrack() async {
@@ -116,29 +122,25 @@ class _RootScreenState extends State<RootScreen> {
   Future<void> _seekTo(Duration position) async {
     final maxDuration = _totalDuration.inMilliseconds > 0
         ? _totalDuration
-        : Duration(seconds: _currentTrack.duration);
+        : Duration(seconds: _currentTrack.durationSeconds ?? 0);
 
-    Duration clamped = position;
-
-    if (clamped < Duration.zero) {
-      clamped = Duration.zero;
-    } else if (clamped > maxDuration) {
-      clamped = maxDuration;
-    }
+    final clamped = position < Duration.zero
+        ? Duration.zero
+        : position > maxDuration
+        ? maxDuration
+        : position;
 
     await _player.seek(clamped);
 
     if (!mounted) return;
-    setState(() {
-      _currentPosition = clamped;
-    });
+    setState(() => _currentPosition = clamped);
   }
 
   void _openFullPlayer() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => FullPlayer(
+        builder: (_) => FullPlayer(
           track: _currentTrack,
           player: _player,
           onPlayPause: _toggleCurrentTrack,
@@ -171,9 +173,7 @@ class _RootScreenState extends State<RootScreen> {
           ),
           BottomNavBar(
             onTabSelected: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
+              setState(() => _selectedIndex = index);
             },
           ),
         ],
