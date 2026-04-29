@@ -10,11 +10,19 @@ void main() {
     service = MusicService(dio: Dio()); // ✅ pass Dio instance
   });
 
-test('searchTracks returns a list', () async {
-  // existing test
-}, skip: 'Backend SSL fails in CI; should be mocked.');
+  test(
+    'searchTracks returns a list',
+    () async {
+      // existing test
+    },
+    skip: 'Backend SSL fails in CI; should be mocked.',
+  );
 
-test('searchTracks does not crash on empty result', () async {
-  // existing test
-}, skip: 'Backend SSL fails in CI; should be mocked.');
+  test(
+    'searchTracks does not crash on empty result',
+    () async {
+      // existing test
+    },
+    skip: 'Backend SSL fails in CI; should be mocked.',
+  );
 }

@@ -68,10 +68,11 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
     if (!mounted) return;
 
     if (detailedPlaylist == null) {
-      final error = ref.read(playlistProvider).error ?? 'Failed to open playlist.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      final error =
+          ref.read(playlistProvider).error ?? 'Failed to open playlist.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
       return;
     }
 
@@ -155,26 +156,25 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
       ),
       builder: (_) => _CreatePlaylistSheet(
         onCreate: (name, description) async {
-          await ref.read(playlistProvider.notifier).createPlaylist(
-                name: name,
-                description: description,
-              );
+          await ref
+              .read(playlistProvider.notifier)
+              .createPlaylist(name: name, description: description);
 
           final state = ref.read(playlistProvider);
 
           if (!mounted) return;
 
           if (state.error != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.error!)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.error!)));
             return;
           }
 
           if (state.successMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.successMessage!)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.successMessage!)));
 
             Navigator.pop(context);
             ref.read(playlistProvider.notifier).clearMessages();
@@ -211,7 +211,8 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: RefreshIndicator(
-        onRefresh: () => ref.read(playlistProvider.notifier).fetchLikedPlaylists(),
+        onRefresh: () =>
+            ref.read(playlistProvider.notifier).fetchLikedPlaylists(),
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(

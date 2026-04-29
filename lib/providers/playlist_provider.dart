@@ -45,8 +45,9 @@ class PlaylistState {
       isCreating: isCreating ?? this.isCreating,
       isLiking: isLiking ?? this.isLiking,
       error: clearError ? null : error ?? this.error,
-      successMessage:
-          clearSuccess ? null : successMessage ?? this.successMessage,
+      successMessage: clearSuccess
+          ? null
+          : successMessage ?? this.successMessage,
     );
   }
 }
@@ -96,7 +97,9 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
     final token = _token;
 
     if (token == null || token.isEmpty) {
-      state = state.copyWith(error: 'No access token found. Please log in again.');
+      state = state.copyWith(
+        error: 'No access token found. Please log in again.',
+      );
       return null;
     }
 
@@ -122,7 +125,9 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
     }
 
     if (token == null || token.isEmpty) {
-      state = state.copyWith(error: 'No access token found. Please log in again.');
+      state = state.copyWith(
+        error: 'No access token found. Please log in again.',
+      );
       return;
     }
 
@@ -155,7 +160,9 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
     final token = _token;
 
     if (token == null || token.isEmpty) {
-      state = state.copyWith(error: 'No access token found. Please log in again.');
+      state = state.copyWith(
+        error: 'No access token found. Please log in again.',
+      );
       return;
     }
 
@@ -166,10 +173,7 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
     );
 
     try {
-      await _service.likePlaylist(
-        playlistId: playlistId,
-        accessToken: token,
-      );
+      await _service.likePlaylist(playlistId: playlistId, accessToken: token);
 
       await fetchLikedPlaylists();
 
@@ -192,7 +196,9 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
     final token = _token;
 
     if (token == null || token.isEmpty) {
-      state = state.copyWith(error: 'No access token found. Please log in again.');
+      state = state.copyWith(
+        error: 'No access token found. Please log in again.',
+      );
       return;
     }
 

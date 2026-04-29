@@ -412,9 +412,6 @@ class _CollectionAvatar extends StatelessWidget {
       );
     }
 
-    return CircleAvatar(
-      radius: 18,
-      backgroundImage: NetworkImage(fixedPath),
-    );
+    return CircleAvatar(radius: 18, backgroundImage: NetworkImage(fixedPath));
   }
 }

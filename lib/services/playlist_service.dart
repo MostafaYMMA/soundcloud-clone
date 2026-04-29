@@ -156,10 +156,7 @@ class PlaylistService {
     try {
       final res = await _dio.post(
         '$baseUrl/playlists/',
-        data: {
-          'name': name,
-          'description': description ?? '',
-        },
+        data: {'name': name, 'description': description ?? ''},
         options: _authOptions(accessToken),
       );
 

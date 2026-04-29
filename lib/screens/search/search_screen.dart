@@ -66,10 +66,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (!mounted) return;
 
     if (detailedPlaylist == null) {
-      final error = ref.read(playlistProvider).error ?? 'Failed to open playlist.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      final error =
+          ref.read(playlistProvider).error ?? 'Failed to open playlist.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
       return;
     }
 
@@ -91,16 +92,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (!mounted) return;
 
     if (state.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.error!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(state.error!)));
       return;
     }
 
     if (state.successMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.successMessage!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(state.successMessage!)));
       ref.read(playlistProvider.notifier).clearMessages();
     }
   }
