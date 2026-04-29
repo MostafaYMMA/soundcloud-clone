@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:my_project/mock_data/mock_tracks.dart';
 import 'package:my_project/models/track.dart';
@@ -12,21 +13,23 @@ import 'package:my_project/screens/search/search_screen.dart';
 import 'package:my_project/screens/upgrade/upgrade_screen.dart';
 import 'package:my_project/widgets/full_player.dart';
 import 'package:my_project/widgets/mini_player.dart';
+import './providers/track_provider.dart';
 
-class RootScreen extends StatefulWidget {
+class RootScreen extends ConsumerStatefulWidget {
   const RootScreen({super.key});
 
   @override
-  State<RootScreen> createState() => _RootScreenState();
+  ConsumerState<RootScreen> createState() => _RootScreenState();
 }
 
-class _RootScreenState extends State<RootScreen> {
+class _RootScreenState extends ConsumerState<RootScreen> {
   int _selectedIndex = 0;
 
   final AudioPlayer _player = AudioPlayer();
 
   bool _isPlaying = false;
   bool _hasLoaded = false;
+
   Track _currentTrack = MockTracks.hotTrack;
 
   Duration _currentPosition = Duration.zero;
@@ -55,23 +58,20 @@ class _RootScreenState extends State<RootScreen> {
   void _listenToPlayer() {
     _positionSub = _player.positionStream.listen((position) {
       if (!mounted) return;
-      setState(() {
-        _currentPosition = position;
-      });
+      setState(() => _currentPosition = position);
     });
 
     _durationSub = _player.durationStream.listen((duration) {
       if (!mounted) return;
       setState(() {
-        _totalDuration = duration ?? Duration(seconds: _currentTrack.duration);
+        _totalDuration =
+            duration ?? Duration(seconds: _currentTrack.durationSeconds ?? 0);
       });
     });
 
-    _playerStateSub = _player.playerStateStream.listen((playerState) {
+    _playerStateSub = _player.playerStateStream.listen((state) {
       if (!mounted) return;
-      setState(() {
-        _isPlaying = playerState.playing;
-      });
+      setState(() => _isPlaying = state.playing);
     });
   }
 
@@ -84,29 +84,56 @@ class _RootScreenState extends State<RootScreen> {
     super.dispose();
   }
 
+  /// ✅ FIXED: now uses Riverpod correctly
   Future<void> _handlePlay(Track track) async {
-    if (track.audioPath.isEmpty) return;
+    try {
+      // 1. Fetch stream info from backend
+      final streamData = await ref
+          .read(tracksServiceProvider)
+          .getTrackStream(trackId: track.trackId);
 
-    if (_currentTrack.id == track.id && _isPlaying) {
-      await _player.pause();
-      return;
+      debugPrint("Stream data: $streamData");
+
+      final rawUrl = streamData['stream_url'];
+
+      if (rawUrl == null || rawUrl.toString().isEmpty) {
+        debugPrint("Invalid stream URL");
+        return;
+      }
+
+      // 2. Convert relative URL → absolute URL
+      final url = rawUrl.toString().startsWith('http')
+          ? rawUrl.toString()
+          : 'https://streamline-swp.duckdns.org$rawUrl';
+
+      debugPrint("Final audio URL: $url");
+
+      // 3. Pause if same track is playing
+      if (_currentTrack.trackId == track.trackId && _isPlaying) {
+        await _player.pause();
+        return;
+      }
+
+      // 4. Load new track if needed
+      if (_currentTrack.trackId != track.trackId || !_hasLoaded) {
+        _hasLoaded = true;
+        _currentTrack = track;
+        _currentPosition = Duration.zero;
+
+        try {
+          await _player.setUrl(url);
+        } catch (e) {
+          debugPrint("just_audio load error: $e");
+          return;
+        }
+      }
+
+      // 5. Play
+      await _player.play();
+    } catch (e, stack) {
+      debugPrint("Audio load failed: $e");
+      debugPrint("Stack trace: $stack");
     }
-
-    if (_currentTrack.id != track.id || !_hasLoaded) {
-      _hasLoaded = true;
-      _currentTrack = track;
-      _currentPosition = Duration.zero;
-      _totalDuration = Duration(seconds: track.duration);
-
-      await _player.setAsset(track.audioPath);
-    }
-
-    await _player.play();
-
-    if (!mounted) return;
-    setState(() {
-      _currentTrack = track;
-    });
   }
 
   Future<void> _toggleCurrentTrack() async {
@@ -116,29 +143,25 @@ class _RootScreenState extends State<RootScreen> {
   Future<void> _seekTo(Duration position) async {
     final maxDuration = _totalDuration.inMilliseconds > 0
         ? _totalDuration
-        : Duration(seconds: _currentTrack.duration);
+        : Duration(seconds: _currentTrack.durationSeconds ?? 0);
 
-    Duration clamped = position;
-
-    if (clamped < Duration.zero) {
-      clamped = Duration.zero;
-    } else if (clamped > maxDuration) {
-      clamped = maxDuration;
-    }
+    final clamped = position < Duration.zero
+        ? Duration.zero
+        : position > maxDuration
+        ? maxDuration
+        : position;
 
     await _player.seek(clamped);
 
     if (!mounted) return;
-    setState(() {
-      _currentPosition = clamped;
-    });
+    setState(() => _currentPosition = clamped);
   }
 
   void _openFullPlayer() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => FullPlayer(
+        builder: (_) => FullPlayer(
           track: _currentTrack,
           player: _player,
           onPlayPause: _toggleCurrentTrack,
@@ -152,7 +175,11 @@ class _RootScreenState extends State<RootScreen> {
     HomeScreen(onTrackTap: _handlePlay),
     const FeedScreen(),
     SearchScreen(),
-    LibraryScreen(onNavigate: _pushSubScreen, onBack: _popSubScreen),
+    LibraryScreen(
+      onNavigate: _pushSubScreen,
+      onBack: _popSubScreen,
+      onTrackTap: _handlePlay,
+    ),
     const UpgradeScreen(),
   ];
 
@@ -171,9 +198,7 @@ class _RootScreenState extends State<RootScreen> {
           ),
           BottomNavBar(
             onTabSelected: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
+              setState(() => _selectedIndex = index);
             },
           ),
         ],

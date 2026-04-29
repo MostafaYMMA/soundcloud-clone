@@ -3,19 +3,39 @@ import 'package:my_project/mock_data/mock_tracks.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
-import 'package:my_project/screens/home/more_like_section.dart';
 import 'package:my_project/screens/library/widgets/library_tile.dart';
+import 'package:my_project/screens/library/widgets/track_tile.dart';
+import 'package:my_project/screens/home/playlist_album_block.dart';
 import 'package:my_project/screens/library/liked_tracks_screen.dart';
 import 'package:my_project/screens/library/playlists_screen.dart';
 import 'package:my_project/screens/profile/profile_screen.dart';
+import 'package:my_project/screens/library/albums_screen.dart';
+import 'package:my_project/screens/library/collections_screen.dart';
+import 'package:my_project/screens/library/collections_details_mapper.dart';
+import 'package:my_project/models/recently_played_item.dart';
+import 'following_screen.dart';
+import 'insights_screen.dart';
+import 'uploads_screen.dart';
+import 'history_screen.dart';
+import 'recently_played_screen.dart';
+import 'context_menu_sheet.dart';
+import 'package:my_project/models/track.dart';
 
 class LibraryScreen extends StatelessWidget {
   final void Function(Widget) onNavigate;
   final VoidCallback? onBack;
-  const LibraryScreen({super.key, required this.onNavigate, this.onBack});
+  final Future<void> Function(Track track) onTrackTap;
 
+  const LibraryScreen({
+    super.key,
+    required this.onNavigate,
+    this.onBack,
+    required this.onTrackTap,
+  });
   @override
   Widget build(BuildContext context) {
+    final history = MockTracks.historyTracks;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -25,14 +45,12 @@ class LibraryScreen extends StatelessWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppDimensions.spaceMedium),
-
             child: Row(
               children: [
                 IconButton(
                   icon: const Icon(Icons.settings_outlined),
                   onPressed: () {},
                 ),
-
                 const SizedBox(width: AppDimensions.spaceSmall),
                 GestureDetector(
                   onTap: () {
@@ -58,9 +76,9 @@ class LibraryScreen extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
+          // ── Library menu tiles ───────────────────────────────────────
           SliverPadding(
-            padding: EdgeInsets.all(AppDimensions.spaceMedium),
-
+            padding: const EdgeInsets.all(AppDimensions.spaceMedium),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 LibraryTile(
@@ -70,42 +88,128 @@ class LibraryScreen extends StatelessWidget {
                 const SizedBox(height: AppDimensions.spaceSmall),
                 LibraryTile(
                   title: 'Playlists',
-                  onTap: () => onNavigate(PlaylistsScreen(onBack: onBack)),
+                  onTap: () => onNavigate(
+                    PlaylistsScreen(onBack: onBack, onTrackTap: onTrackTap),
+                  ),
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
-                LibraryTile(title: 'Albums', onTap: () {}),
+                LibraryTile(
+                  title: 'Albums',
+                  onTap: () => onNavigate(AlbumsScreen(onBack: onBack)),
+                ),
                 const SizedBox(height: AppDimensions.spaceSmall),
-                LibraryTile(title: 'Following', onTap: () {}),
+                LibraryTile(
+                  title: 'Following',
+                  onTap: () => onNavigate(FollowingScreen(onBack: onBack)),
+                ),
                 const SizedBox(height: AppDimensions.spaceSmall),
-                LibraryTile(title: 'Stations', onTap: () {}),
+                LibraryTile(
+                  title: 'Your insights',
+                  onTap: () => onNavigate(InsightsScreen(onBack: onBack)),
+                ),
                 const SizedBox(height: AppDimensions.spaceSmall),
-                LibraryTile(title: 'Your insights', onTap: () {}),
-                const SizedBox(height: AppDimensions.spaceSmall),
-                LibraryTile(title: 'Your uploads', onTap: () {}),
-                const SizedBox(height: AppDimensions.spaceSmall),
+                LibraryTile(
+                  title: 'Your uploads',
+                  onTap: () => onNavigate(UploadsScreen(onBack: onBack)),
+                ),
               ]),
             ),
           ),
 
-          SliverToBoxAdapter(
-            child: SizedBox(height: AppDimensions.spaceLarge), //break
+          const SliverToBoxAdapter(
+            child: SizedBox(height: AppDimensions.spaceLarge),
           ),
 
+          // ── Recently Played header ───────────────────────────────────
           SliverToBoxAdapter(
-            child: MoreLikeSection(
-              sectionTitle: 'Recently Played',
-              tracks: MockTracks.recentlyPlayedTracks,
+            child: _SectionHeader(
+              title: 'Recently Played',
+              onSeeAll: () => onNavigate(RecentlyPlayedScreen(onBack: onBack)),
             ),
           ),
 
+          // ── Recently Played — playlist/album horizontal boxes ────────
           SliverToBoxAdapter(
-            child: SizedBox(height: AppDimensions.spaceLarge), //break
+            child: PlaylistAlbumBlock(
+              sectionTitle: '',
+              items: MockTracks.recentlyPlayedItems,
+              onItemTap: (item) => switch (item) {
+                RecentlyPlayedPlaylist(:final playlist) => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CollectionDetailsScreen(
+                      data: CollectionDetailsMapper.fromPlaylist(playlist),
+                    ),
+                  ),
+                ),
+                RecentlyPlayedAlbum(:final album) => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CollectionDetailsScreen(
+                      data: CollectionDetailsMapper.fromAlbum(album),
+                    ),
+                  ),
+                ),
+              },
+            ),
           ),
 
+          const SliverToBoxAdapter(
+            child: SizedBox(height: AppDimensions.spaceLarge),
+          ),
+
+          // ── History header ───────────────────────────────────────────
           SliverToBoxAdapter(
-            child: MoreLikeSection(
-              sectionTitle: 'History',
-              tracks: MockTracks.historyTracks,
+            child: _SectionHeader(
+              title: 'History',
+              onSeeAll: () => onNavigate(HistoryScreen(onBack: onBack)),
+            ),
+          ),
+
+          // ── History — track tiles ────────────────────────────────────
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => TrackTile(
+                track: history[index],
+                onTap: () {},
+                onMoreTap: () => showTrackContextMenu(context, history[index]),
+              ),
+              childCount: history.length,
+            ),
+          ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Section header with "See all" button ────────────────────────────────────
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final VoidCallback onSeeAll;
+
+  const _SectionHeader({required this.title, required this.onSeeAll});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.spaceMedium,
+        vertical: AppDimensions.spaceSmall,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: AppTextStyles.heading2),
+          GestureDetector(
+            onTap: onSeeAll,
+            child: Text(
+              'See all',
+              style: AppTextStyles.artistName.copyWith(
+                color: AppColors.primary,
+              ),
             ),
           ),
         ],

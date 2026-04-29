@@ -3,32 +3,39 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
 import '../../models/track.dart';
+import '../../models/user.dart';
 import '../../mock_data/mock_tracks.dart';
-import '../profile/widgets/profile_track_list_section.dart';
+import 'widgets/track_tile.dart';
 import 'context_menu_sheet.dart';
 
-enum LikedTracksSortOption { recentlyAdded, firstAdded, trackName, artist }
+enum UploadsSortOption { recentlyAdded, firstAdded, trackName }
 
-class LikedTracksScreen extends StatefulWidget {
+class UploadsScreen extends StatefulWidget {
   final VoidCallback? onBack;
-  const LikedTracksScreen({super.key, this.onBack});
+  final User? currentUser;
+  const UploadsScreen({super.key, this.onBack, this.currentUser});
 
   @override
-  State<LikedTracksScreen> createState() => _LikedTracksScreenState();
+  State<UploadsScreen> createState() => _UploadsScreenState();
 }
 
-class _LikedTracksScreenState extends State<LikedTracksScreen> {
-  LikedTracksSortOption _sortOption = LikedTracksSortOption.recentlyAdded;
+class _UploadsScreenState extends State<UploadsScreen> {
+  UploadsSortOption _sortOption = UploadsSortOption.recentlyAdded;
   final TextEditingController _searchController = TextEditingController();
   List<Track> _filteredTracks = [];
-  List<Track> _allTracks = [];
-  bool _isShuffled = false; // passed to player on play, does not reorder list
+  List<Track> _userTracks = [];
 
   @override
   void initState() {
     super.initState();
-    _allTracks = List.from(MockTracks.recentlyPlayedTracks);
-    _filteredTracks = List.from(_allTracks);
+    _userTracks = MockTracks.recentlyPlayedTracks
+        .where(
+          (t) =>
+              t.formattedArtist.toLowerCase() ==
+              (widget.currentUser?.userName ?? '').toLowerCase(),
+        )
+        .toList();
+    _filteredTracks = List.from(_userTracks);
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -40,38 +47,29 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
 
   void _onSearchChanged() {
     final query = _searchController.text.toLowerCase();
-
     setState(() {
-      _filteredTracks = _allTracks.where((t) {
-        final titleMatch = t.title.toLowerCase().contains(query);
-
-        final artistMatch =
-            t.artist?.displayName.toLowerCase().contains(query) ?? false;
-
-        return titleMatch || artistMatch;
-      }).toList();
+      _filteredTracks = _userTracks
+          .where(
+            (t) =>
+                t.title.toLowerCase().contains(query) ||
+                t.formattedArtist.toLowerCase().contains(query),
+          )
+          .toList();
     });
   }
 
-  void _applySort(LikedTracksSortOption option) {
+  void _applySort(UploadsSortOption option) {
     setState(() {
       _sortOption = option;
       switch (option) {
-        case LikedTracksSortOption.recentlyAdded:
-          _filteredTracks = List.from(_allTracks);
+        case UploadsSortOption.recentlyAdded:
+          _filteredTracks = List.from(_userTracks);
           break;
-        case LikedTracksSortOption.firstAdded:
-          _filteredTracks = List.from(_allTracks.reversed);
+        case UploadsSortOption.firstAdded:
+          _filteredTracks = List.from(_userTracks.reversed);
           break;
-        case LikedTracksSortOption.trackName:
+        case UploadsSortOption.trackName:
           _filteredTracks.sort((a, b) => a.title.compareTo(b.title));
-          break;
-        case LikedTracksSortOption.artist:
-          _filteredTracks.sort(
-            (a, b) =>
-                a.artist?.displayName.compareTo(b.artist?.displayName ?? '') ??
-                0,
-          );
           break;
       }
     });
@@ -100,34 +98,26 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
               const SizedBox(height: AppDimensions.spaceMedium),
               _SortOption(
                 label: 'Recently Added',
-                selected: _sortOption == LikedTracksSortOption.recentlyAdded,
+                selected: _sortOption == UploadsSortOption.recentlyAdded,
                 onTap: () {
                   Navigator.pop(context);
-                  _applySort(LikedTracksSortOption.recentlyAdded);
+                  _applySort(UploadsSortOption.recentlyAdded);
                 },
               ),
               _SortOption(
                 label: 'First Added',
-                selected: _sortOption == LikedTracksSortOption.firstAdded,
+                selected: _sortOption == UploadsSortOption.firstAdded,
                 onTap: () {
                   Navigator.pop(context);
-                  _applySort(LikedTracksSortOption.firstAdded);
+                  _applySort(UploadsSortOption.firstAdded);
                 },
               ),
               _SortOption(
                 label: 'Track Name',
-                selected: _sortOption == LikedTracksSortOption.trackName,
+                selected: _sortOption == UploadsSortOption.trackName,
                 onTap: () {
                   Navigator.pop(context);
-                  _applySort(LikedTracksSortOption.trackName);
-                },
-              ),
-              _SortOption(
-                label: 'Artist',
-                selected: _sortOption == LikedTracksSortOption.artist,
-                onTap: () {
-                  Navigator.pop(context);
-                  _applySort(LikedTracksSortOption.artist);
+                  _applySort(UploadsSortOption.trackName);
                 },
               ),
             ],
@@ -143,18 +133,14 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          // ── Header with heart background ──
+          // ── Header ──────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Stack(
               children: [
                 Positioned(
                   right: -30,
                   top: -10,
-                  child: Icon(
-                    Icons.favorite,
-                    size: 220,
-                    color: AppColors.primary.withOpacity(0.25),
-                  ),
+                  child: _StackedRectsDecoration(),
                 ),
                 SafeArea(
                   child: Padding(
@@ -162,7 +148,6 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Search bar row
                         Row(
                           children: [
                             IconButton(
@@ -186,19 +171,20 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
                                     color: AppColors.textPrimary,
                                     fontSize: 14,
                                   ),
-                                  decoration: const InputDecoration(
-                                    hintText: 'Search your likes',
-                                    hintStyle: TextStyle(
+                                  decoration: InputDecoration(
+                                    hintText:
+                                        'Search ${_userTracks.length} tracks',
+                                    hintStyle: const TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 14,
                                     ),
-                                    prefixIcon: Icon(
+                                    prefixIcon: const Icon(
                                       Icons.search,
                                       color: AppColors.textSecondary,
                                       size: 20,
                                     ),
                                     border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(
+                                    contentPadding: const EdgeInsets.symmetric(
                                       vertical: 10,
                                     ),
                                   ),
@@ -234,7 +220,7 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
                             left: AppDimensions.spaceSmall,
                           ),
                           child: Text(
-                            'Your likes',
+                            'Your uploads',
                             style: TextStyle(
                               color: AppColors.textPrimary,
                               fontSize: 28,
@@ -244,50 +230,6 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
                         ),
 
                         const SizedBox(height: 20),
-
-                        // Shuffle + Play row
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              // Shuffle toggle — highlights when active
-                              IconButton(
-                                icon: Icon(
-                                  Icons.shuffle,
-                                  color: _isShuffled
-                                      ? AppColors.primary
-                                      : AppColors.textPrimary,
-                                  size: 24,
-                                ),
-                                onPressed: () =>
-                                    setState(() => _isShuffled = !_isShuffled),
-                              ),
-                              const SizedBox(width: 8),
-                              GestureDetector(
-                                onTap: () {
-                                  // TODO: start player with _filteredTracks,
-                                  // shuffle: _isShuffled
-                                },
-                                child: Container(
-                                  width: 52,
-                                  height: 52,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.play_arrow,
-                                    color: Colors.black,
-                                    size: 30,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 8),
                       ],
                     ),
                   ),
@@ -296,21 +238,118 @@ class _LikedTracksScreenState extends State<LikedTracksScreen> {
             ),
           ),
 
-          // ── Track list ──
-          SliverToBoxAdapter(
-            child: ProfileTrackListSection(
-              title: '',
-              tracks: _filteredTracks,
-              onTrackTap: (_) {
-                // To do: start player at tapped index,
-                // shuffle: _isShuffled
-              },
-              onMoreTap: (track) => showTrackContextMenu(context, track),
+          // ── Empty state or track list ────────────────────────────────
+          if (_userTracks.isEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(AppDimensions.spaceMedium),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'No uploads yet',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Your uploads will show up here.',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: AppDimensions.spaceLarge),
+                    _UploadButton(),
+                  ],
+                ),
+              ),
+            )
+          else ...[
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => TrackTile(
+                  track: _filteredTracks[index],
+                  onTap: () {},
+                  onMoreTap: () =>
+                      showTrackContextMenu(context, _filteredTracks[index]),
+                ),
+                childCount: _filteredTracks.length,
+              ),
             ),
-          ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(AppDimensions.spaceMedium),
+                child: _UploadButton(),
+              ),
+            ),
+          ],
 
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
+      ),
+    );
+  }
+}
+
+class _UploadButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {}, // hook up later
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Upload a track',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 8),
+          Icon(
+            Icons.cloud_upload_outlined,
+            color: AppColors.textPrimary,
+            size: 32,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StackedRectsDecoration extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 220,
+      height: 220,
+      child: Stack(
+        children: List.generate(6, (i) {
+          final offset = i * 12.0;
+          return Positioned(
+            right: offset,
+            top: offset,
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.purple.withOpacity(0.15 + i * 0.04),
+                  width: 1.5,
+                ),
+                borderRadius: BorderRadius.circular(
+                  AppDimensions.borderRadiusSmall,
+                ),
+              ),
+            ),
+          );
+        }),
       ),
     );
   }

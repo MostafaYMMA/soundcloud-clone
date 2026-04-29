@@ -13,16 +13,16 @@ class TrackTile extends TypeTile {
   });
 
   @override
-  Widget get leading => TileArtwork(url: track.artworkUrl);
+  Widget get leading => TileArtwork(url: track.artworkUrl ?? '');
 
   @override
   String get title => track.title;
 
   @override
-  String get subtitle => track.artist;
+  String get subtitle => track.formattedArtist;
 
   @override
-  Widget get meta => TileMeta([_formatDuration(track.duration)]);
+  Widget get meta => TileMeta([_formatDuration(track.durationSeconds ?? 0)]);
 
   String _formatDuration(int seconds) {
     final m = seconds ~/ 60;

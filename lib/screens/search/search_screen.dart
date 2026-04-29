@@ -48,6 +48,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       tracks: playlist.tracks
           .map(
             (track) => CollectionTrack(
+              id: track.id,
               title: track.title,
               artist: track.artist,
               artworkPath: track.artworkUrl,
@@ -78,6 +79,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => CollectionDetailsScreen(
+          playlistId: detailedPlaylist.id,
           data: _mapPlaylistToCollection(detailedPlaylist),
         ),
       ),

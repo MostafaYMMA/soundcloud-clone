@@ -13,10 +13,8 @@ class PlaylistTile extends TypeTile {
   });
 
   @override
-  Widget get leading => TileArtwork(
-        url: playlist.coverUrl,
-        placeholderIcon: Icons.queue_music,
-      );
+  Widget get leading =>
+      TileArtwork(url: playlist.coverUrl, placeholderIcon: Icons.queue_music);
 
   @override
   String get title => playlist.name;
@@ -25,9 +23,6 @@ class PlaylistTile extends TypeTile {
   String get subtitle => playlist.owner;
 
   @override
-  Widget get meta => TileMeta([
-        'Playlist',
-        '${playlist.trackCount} tracks',
-        //playlist.duration ?? '',
-      ]);
+  Widget get meta =>
+      TileMeta(['Playlist', '${playlist.trackCount} tracks', '']);
 }

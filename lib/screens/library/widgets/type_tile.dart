@@ -39,8 +39,9 @@ abstract class TypeTile extends StatelessWidget {
           children: [
             // Artwork
             ClipRRect(
-              borderRadius:
-                  BorderRadius.circular(AppDimensions.borderRadiusSmall),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.borderRadiusSmall,
+              ),
               child: SizedBox(width: 52, height: 52, child: leading),
             ),
 
@@ -52,19 +53,20 @@ abstract class TypeTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(title,
-                      style: AppTextStyles.trackTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
+                  Text(
+                    title,
+                    style: AppTextStyles.trackTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 2),
-                  Text(subtitle,
-                      style: AppTextStyles.artistName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                  if (meta != null) ...[
-                    const SizedBox(height: 2),
-                    meta!,
-                  ],
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.artistName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (meta != null) ...[const SizedBox(height: 2), meta!],
                 ],
               ),
             ),
@@ -122,17 +124,19 @@ class TileArtwork extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (url != null && url!.isNotEmpty) {
-      return Image.network(url!, fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _placeholder());
+      return Image.network(
+        url!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _placeholder(),
+      );
     }
     return _placeholder();
   }
 
   Widget _placeholder() => Container(
-        color: AppColors.surface,
-        child: Center(
-          child:
-              Icon(placeholderIcon, color: AppColors.textSecondary, size: 24),
-        ),
-      );
+    color: AppColors.surface,
+    child: Center(
+      child: Icon(placeholderIcon, color: AppColors.textSecondary, size: 24),
+    ),
+  );
 }
