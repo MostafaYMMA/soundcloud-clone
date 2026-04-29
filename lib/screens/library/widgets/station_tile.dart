@@ -15,10 +15,8 @@ class StationTile extends TypeTile {
   });
 
   @override
-  Widget get leading => TileArtwork(
-        url: station.artworkUrl,
-        placeholderIcon: Icons.radio,
-      );
+  Widget get leading =>
+      TileArtwork(url: station.artworkUrl, placeholderIcon: Icons.radio);
 
   @override
   String get title => station.title;
@@ -28,8 +26,8 @@ class StationTile extends TypeTile {
 
   @override
   Widget get meta => TileMeta([
-        'Artist Station',
-        duration ?? '',
-        '${station.trackCount} tracks',
-      ]);
+    'Artist Station',
+    duration ?? '',
+    '${station.trackCount} tracks',
+  ]);
 }
