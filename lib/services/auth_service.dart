@@ -64,15 +64,15 @@ class AuthService {
       print('GOOGLE LOGIN STATUS: ${result.statusCode}');
       print('GOOGLE LOGIN DATA: ${result.data}');
 
-  // POST /auth/facebook
-  Future<AuthTokens> facebookLogin(String facebookToken) async {
-    final result = await _dio.post(
-      '$_baseUrl/auth/facebook',
-      data: {'facebook_token': facebookToken},
-    );
-    return AuthTokens.fromJson(result.data);
+      return AuthTokens.fromJson(result.data);
+    } on DioException catch (e) {
+      print('GOOGLE LOGIN ERROR STATUS: ${e.response?.statusCode}');
+      print('GOOGLE LOGIN ERROR DATA: ${e.response?.data}');
+      rethrow;
+    }
   }
 
+  // POST /auth/facebook
   Future<AuthTokens> facebookLogin(String facebookToken) async {
     try {
       final result = await _dio.post(

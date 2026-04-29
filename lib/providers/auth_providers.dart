@@ -76,7 +76,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  // identifier can be email or username — matches API's LoginRequest
+  // identifier can be email or username - matches API's LoginRequest
   Future<void> login(String identifier, String password) async {
     state = const AuthState(isLoading: true);
     try {
