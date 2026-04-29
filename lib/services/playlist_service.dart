@@ -173,6 +173,9 @@ class PlaylistService {
     required String accessToken,
   }) async {
     try {
+      print('CALLING REMOVE TRACK ENDPOINT');
+      print('$baseUrl/playlists/$playlistId/tracks/$trackId');
+
       final res = await _dio.delete(
         '$baseUrl/playlists/$playlistId/tracks/$trackId',
         options: _authOptions(accessToken),
@@ -181,6 +184,8 @@ class PlaylistService {
       print('REMOVE TRACK STATUS: ${res.statusCode}');
       print('REMOVE TRACK DATA: ${res.data}');
     } on DioException catch (e) {
+      print('REMOVE TRACK ERROR STATUS: ${e.response?.statusCode}');
+      print('REMOVE TRACK ERROR DATA: ${e.response?.data}');
       throw Exception(_readableError(e));
     }
   }

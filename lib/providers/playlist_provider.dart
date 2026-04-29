@@ -243,15 +243,18 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
     }
   }
 
-  Future<void> removeTrack({
+  Future<bool> removeTrack({
     required String playlistId,
     required String trackId,
   }) async {
     final token = _token;
 
-    if (token == null) return;
+    if (token == null || token.isEmpty) {
+      state = state.copyWith(error: 'No access token.');
+      return false;
+    }
 
-    state = state.copyWith(isUpdating: true);
+    state = state.copyWith(isUpdating: true, clearError: true);
 
     try {
       await _service.removeTrackFromPlaylist(
@@ -264,8 +267,18 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
         isUpdating: false,
         successMessage: 'Track removed.',
       );
+
+      return true;
     } catch (e) {
-      state = state.copyWith(isUpdating: false, error: e.toString());
+      final errorMsg = e.toString().replaceFirst('Exception: ', '');
+
+      state = state.copyWith(isUpdating: false, error: errorMsg);
+
+      if (errorMsg.contains('only edit your own playlists')) {
+        return false;
+      }
+
+      return false;
     }
   }
 

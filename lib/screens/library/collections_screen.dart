@@ -144,10 +144,14 @@ class _CollectionDetailsScreenState
   }
 
   Future<void> _removeTrack(CollectionTrack track) async {
+    // 🔥 ADD THESE PRINTS HERE
+    print('REMOVING PLAYLIST ID: ${widget.playlistId}');
+    print('REMOVING TRACK ID: ${track.id}');
+
     if (track.id.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Track ID is missing.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Track ID is missing.')));
       return;
     }
 
@@ -156,14 +160,32 @@ class _CollectionDetailsScreenState
     });
 
     try {
-      await ref.read(playlistProvider.notifier).removeTrack(
-            playlistId: widget.playlistId,
-            trackId: track.id,
-          );
-
-      await ref.read(playlistProvider.notifier).fetchLikedPlaylists();
+      final success = await ref
+          .read(playlistProvider.notifier)
+          .removeTrack(playlistId: widget.playlistId, trackId: track.id);
 
       if (!mounted) return;
+
+      if (!success) {
+        final error =
+            ref.read(playlistProvider).error ?? 'Failed to remove track.';
+
+        String message;
+
+        if (error.contains('only edit your own playlists')) {
+          message = 'You can only edit your own playlists';
+        } else {
+          message = error;
+        }
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+
+        return;
+      }
+
+      await ref.read(playlistProvider.notifier).fetchLikedPlaylists();
 
       setState(() {
         _tracks.removeWhere((item) => item.id == track.id);
@@ -178,9 +200,9 @@ class _CollectionDetailsScreenState
       final error =
           ref.read(playlistProvider).error ?? 'Failed to remove track.';
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
     } finally {
       if (mounted) {
         setState(() {
@@ -206,7 +228,10 @@ class _CollectionDetailsScreenState
               vertical: AppDimensions.spaceMedium,
             ),
             child: ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              leading: const Icon(
+                Icons.delete_outline,
+                color: Colors.redAccent,
+              ),
               title: const Text(
                 'Remove from playlist',
                 style: TextStyle(color: Colors.white),
@@ -561,11 +586,7 @@ class _TrackTile extends StatelessWidget {
         else
           IconButton(
             onPressed: onMoreTap,
-            icon: const Icon(
-              Icons.more_horiz,
-              color: Colors.white70,
-              size: 26,
-            ),
+            icon: const Icon(Icons.more_horiz, color: Colors.white70, size: 26),
           ),
       ],
     );
