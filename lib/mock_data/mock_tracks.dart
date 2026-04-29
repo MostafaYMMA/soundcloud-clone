@@ -12,8 +12,7 @@ class MockTracks {
       artworkUrl: 'https://picsum.photos/seed/track1/150/150',
       likeCount: 142000,
       duration: 198,
-      audioPath:
-          'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+      audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
     Track(
       id: '2',
@@ -22,8 +21,7 @@ class MockTracks {
       artworkUrl: 'https://picsum.photos/seed/track2/150/150',
       likeCount: 98700,
       duration: 177,
-      audioPath:
-          'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+      audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
     Track(
       id: '3',
@@ -32,8 +30,7 @@ class MockTracks {
       artworkUrl: 'https://picsum.photos/seed/track3/150/150',
       likeCount: 210500,
       duration: 200,
-      audioPath:
-          'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+      audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
     Track(
       id: '4',
@@ -42,8 +39,7 @@ class MockTracks {
       artworkUrl: 'https://picsum.photos/seed/track4/150/150',
       likeCount: 187300,
       duration: 312,
-      audioPath:
-          'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+      audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
   ];
 
@@ -54,8 +50,7 @@ class MockTracks {
     artworkUrl: 'https://picsum.photos/seed/track5/150/150',
     likeCount: 82000,
     duration: 228,
-    audioPath:
-        'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+    audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
   );
 
   static const List<Track> recommendedTracks = [
@@ -66,8 +61,7 @@ class MockTracks {
       artworkUrl: 'https://picsum.photos/seed/track6/150/150',
       likeCount: 54000,
       duration: 149,
-      audioPath:
-          'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+      audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
     Track(
       id: '7',
@@ -76,8 +70,7 @@ class MockTracks {
       artworkUrl: 'https://picsum.photos/seed/track7/150/150',
       likeCount: 76800,
       duration: 231,
-      audioPath:
-          'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+      audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
     Track(
       id: '8',
@@ -86,8 +79,7 @@ class MockTracks {
       artworkUrl: 'https://picsum.photos/seed/track8/150/150',
       likeCount: 43200,
       duration: 183,
-      audioPath:
-          'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+      audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
     Track(
       id: '9',
@@ -96,10 +88,10 @@ class MockTracks {
       artworkUrl: 'https://picsum.photos/seed/track9/150/150',
       likeCount: 91500,
       duration: 178,
-      audioPath:
-          'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+      audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
   ];
+
   static const List<Track> historyTracks = [
     Track(
       id: '4',
@@ -108,8 +100,7 @@ class MockTracks {
       artworkUrl: 'https://picsum.photos/seed/track4/150/150',
       likeCount: 187300,
       duration: 312,
-      audioPath:
-          'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+      audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
     Track(
       id: '9',
@@ -118,8 +109,7 @@ class MockTracks {
       artworkUrl: 'https://picsum.photos/seed/track9/150/150',
       likeCount: 91500,
       duration: 178,
-      audioPath:
-          'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+      audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
     Track(
       id: '2',
@@ -128,8 +118,7 @@ class MockTracks {
       artworkUrl: 'https://picsum.photos/seed/track2/150/150',
       likeCount: 98700,
       duration: 177,
-      audioPath:
-          'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+      audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
     Track(
       id: '1',
@@ -138,10 +127,10 @@ class MockTracks {
       artworkUrl: 'https://picsum.photos/seed/track1/150/150',
       likeCount: 142000,
       duration: 198,
-      audioPath:
-          'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+      audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
   ];
+
   static const List<Track> recentlyPlayedTracks = [
     Track(
       id: '8',
@@ -150,10 +139,8 @@ class MockTracks {
       artworkUrl: 'https://picsum.photos/seed/track8/150/150',
       likeCount: 43200,
       duration: 183,
-      audioPath:
-          'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+      audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
-
     Track(
       id: '3',
       title: 'Blinding Lights',
@@ -161,10 +148,8 @@ class MockTracks {
       artworkUrl: 'https://picsum.photos/seed/track3/150/150',
       likeCount: 210500,
       duration: 200,
-      audioPath:
-          'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+      audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
-
     Track(
       id: '9',
       title: 'ROCKSTAR',
@@ -172,19 +157,21 @@ class MockTracks {
       artworkUrl: 'https://picsum.photos/seed/track9/150/150',
       likeCount: 91500,
       duration: 178,
-      audioPath:
-          'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
+      audioPath: 'assets/audio/tadashikeiji-gods-got-my-love-life-handled-319926.mp3',
     ),
   ];
+
   static List<RecentlyPlayedItem> get recentlyPlayedItems => [
     RecentlyPlayedPlaylist(
       Playlist(
         id: 'p1',
+        userId: 'THRILLHO',
         name: 'Somatic  -  Deep Bass  -  Brain Massage',
-        owner: 'THRILLHO',
-        trackCount: 23,
+        description: '',
         coverUrl: '',
-        duration: null,
+        isPublic: true,
+        trackCount: 23,
+        tracks: [],
       ),
     ),
     RecentlyPlayedAlbum(
@@ -201,31 +188,37 @@ class MockTracks {
     RecentlyPlayedPlaylist(
       Playlist(
         id: 'p2',
+        userId: 'Hana_Ahmed',
         name: 'kennedy walsh jams',
-        owner: 'Hana_Ahmed',
-        trackCount: 112,
+        description: '',
         coverUrl: '',
-        duration: null,
+        isPublic: true,
+        trackCount: 112,
+        tracks: [],
       ),
     ),
     RecentlyPlayedPlaylist(
       Playlist(
         id: 'p3',
+        userId: 'New!',
         name: 'Buzzing Indie',
-        owner: 'New!',
-        trackCount: 25,
+        description: '',
         coverUrl: '',
-        duration: null,
+        isPublic: true,
+        trackCount: 25,
+        tracks: [],
       ),
     ),
     RecentlyPlayedPlaylist(
       Playlist(
         id: 'p4',
+        userId: 'SoundCloud',
         name: 'Your Mix 1',
-        owner: 'SoundCloud',
-        trackCount: 0,
+        description: '',
         coverUrl: '',
-        duration: null,
+        isPublic: false,
+        trackCount: 0,
+        tracks: [],
       ),
     ),
   ];

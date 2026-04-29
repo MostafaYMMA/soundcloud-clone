@@ -20,15 +20,15 @@ class CollectionDetailsMapper {
   }
 
   static CollectionDetailsData fromPlaylist(Playlist playlist) {
-    return CollectionDetailsData(
-      type: CollectionType.playlist,
-      title: playlist.name,
-      artworkPath: playlist.coverUrl ?? '',
-      ownerName: playlist.owner,
-      ownerAvatarPath: playlist.coverUrl ?? '',
-      yearText: playlist.duration ?? '',
-      likesText: '${playlist.trackCount} tracks',
-      tracks: [], // populate when track data is available
-    );
-  }
+  return CollectionDetailsData(
+    type: CollectionType.playlist,
+    title: playlist.name,
+    artworkPath: playlist.coverUrl,
+    ownerName: playlist.owner,
+    ownerAvatarPath: playlist.coverUrl,
+    yearText: '${playlist.trackCount} tracks',  // ← was playlist.duration
+    likesText: playlist.owner,                  // ← was playlist.trackCount
+    tracks: [],
+  );
+}
 }
