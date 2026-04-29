@@ -174,10 +174,10 @@ void main() {
 
       final artist = MockTracks.recentlyPlayedTracks.first.artist;
 
-      await tester.enterText(find.byType(TextField), artist);
+      await tester.enterText(find.byType(TextField), artist?.displayName ?? '');
       await tester.pumpAndSettle();
 
-      expect(find.text(artist), findsWidgets);
+      expect(find.text(artist?.displayName ?? ''), findsWidgets);
     });
 
     testWidgets('no results case', (tester) async {
@@ -246,10 +246,17 @@ void main() {
       await tester.pumpAndSettle();
 
       final sorted = [...MockTracks.recentlyPlayedTracks]
-        ..sort((a, b) => a.artist.compareTo(b.artist));
+        ..sort(
+          (a, b) =>
+              a.artist?.displayName.compareTo(b.artist?.displayName ?? '') ?? 0,
+        );
 
-      final firstY = tester.getTopLeft(find.text(sorted[0].artist).first).dy;
-      final secondY = tester.getTopLeft(find.text(sorted[1].artist).first).dy;
+      final firstY = tester
+          .getTopLeft(find.text(sorted[0].artist?.displayName ?? '').first)
+          .dy;
+      final secondY = tester
+          .getTopLeft(find.text(sorted[1].artist?.displayName ?? '').first)
+          .dy;
 
       expect(firstY, lessThan(secondY));
     });
