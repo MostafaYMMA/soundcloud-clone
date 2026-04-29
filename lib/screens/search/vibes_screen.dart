@@ -97,6 +97,8 @@ class VibeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+
+                  /// PLAYLISTS TAB (FIXED NULL SAFETY)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -131,6 +133,8 @@ class VibeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+
+                  /// ALBUMS TAB (FIXED NULL SAFETY)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -175,6 +179,7 @@ class VibeScreen extends StatelessWidget {
   }
 }
 
+/// FIXED GRID TILE (prevents null crash)
 class _GridTile extends StatelessWidget {
   final dynamic track;
 
@@ -182,6 +187,10 @@ class _GridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String artworkUrl = track.artworkUrl ?? '';
+    final String title = track.title ?? 'Unknown';
+    final String artist = track.artist ?? 'Unknown';
+
     return GestureDetector(
       onTap: () {},
       child: Column(
@@ -190,12 +199,17 @@ class _GridTile extends StatelessWidget {
           ClipRRect(
             borderRadius:
                 BorderRadius.circular(AppDimensions.borderRadiusSharp),
-            child: track.artworkUrl.isNotEmpty
+            child: artworkUrl.isNotEmpty
                 ? Image.network(
-                    track.artworkUrl,
+                    artworkUrl,
                     width: double.infinity,
                     height: 140,
                     fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 140,
+                      color: AppColors.waveformInactive,
+                      child: const Icon(Icons.queue_music),
+                    ),
                   )
                 : Container(
                     height: 140,
@@ -205,13 +219,13 @@ class _GridTile extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            track.title,
+            title,
             style: AppTextStyles.artistName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
-            track.artist,
+            artist,
             style: AppTextStyles.caption,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
