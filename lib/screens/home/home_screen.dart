@@ -6,48 +6,46 @@ import 'package:my_project/screens/home/activity.dart';
 import '../../constants/app_dimensions.dart';
 import '../../providers/feed_provider.dart';
 import '../../providers/notifications_provider.dart';
+import '../../widgets/upload_track_sheet.dart';
 import 'your_likes_card.dart';
 import 'today_pick_card.dart';
 import 'more_like_section.dart';
 import 'albums_for_you_section.dart';
 
-// ─── FeedTrackItem → Track conversion ────────────────────────────────────────
-
 extension FeedTrackItemToTrack on FeedTrackItem {
   Track toTrack() => Track(
-    trackId: trackId,
-    title: title,
-    description: description,
-    genre: genre,
-    tags: tags,
-    releaseDate: releaseDate,
-    coverImageUrl: coverImageUrl,
-    streamUrl: streamUrl,
-    userId: artist.userId,
-    artist: TrackArtist(
-      userId: artist.userId,
-      username: artist.username,
-      displayName: artist.displayName,
-      profilePicture: artist.profilePicture,
-      followerCount: artist.followerCount,
-    ),
-    visibility: 'public',
-    processingStatus: 'ready',
-    playCount: playCount,
-    durationSeconds: durationSeconds,
-    likeCount: likeCount,
-    repostCount: repostCount,
-    commentCount: commentCount,
-    isLiked: isLiked,
-    isReposted: isReposted,
-    createdAt: createdAt,
-  );
+        trackId: trackId,
+        title: title,
+        description: description,
+        genre: genre,
+        tags: tags,
+        releaseDate: releaseDate,
+        coverImageUrl: coverImageUrl,
+        streamUrl: streamUrl,
+        userId: artist.userId,
+        artist: TrackArtist(
+          userId: artist.userId,
+          username: artist.username,
+          displayName: artist.displayName,
+          profilePicture: artist.profilePicture,
+          followerCount: artist.followerCount,
+        ),
+        visibility: 'public',
+        processingStatus: 'ready',
+        playCount: playCount,
+        durationSeconds: durationSeconds,
+        likeCount: likeCount,
+        repostCount: repostCount,
+        commentCount: commentCount,
+        isLiked: isLiked,
+        isReposted: isReposted,
+        createdAt: createdAt,
+      );
 }
-
-// ─── HomeScreen ───────────────────────────────────────────────────────────────
 
 class HomeScreen extends ConsumerStatefulWidget {
   final void Function(Track)? onTrackTap;
+
   const HomeScreen({super.key, this.onTrackTap});
 
   @override
@@ -63,6 +61,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ]);
   }
 
+  Future<void> _openUploadSheet() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      builder: (_) => const UploadTrackSheet(),
+    );
+
+    if (!mounted) return;
+    await _onRefresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     final unreadCount = ref.watch(unreadNotificationsCountProvider).value ?? 0;
@@ -76,10 +86,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.cloud_upload_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => Activity()),
-            ),
+            onPressed: _openUploadSheet,
           ),
           Badge(
             isLabelVisible: unreadCount > 0,
@@ -102,8 +109,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: AppDimensions.spaceSmall),
-
-              // ── Your Likes — first 6 tracks from /feed/following ──────────
               followingFeed.when(
                 loading: () => const SizedBox(
                   height: 200,
@@ -117,18 +122,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 data: (state) {
                   if (state.items.isEmpty) return const SizedBox();
                   return YourLikesCard(
-                    tracks: state.items
-                        .take(6)
-                        .map((i) => i.toTrack())
-                        .toList(),
+                    tracks: state.items.take(6).map((i) => i.toTrack()).toList(),
                     onTrackTap: widget.onTrackTap,
                   );
                 },
               ),
-
               const SizedBox(height: AppDimensions.spaceLarge),
-
-              // ── Today's Pick — first track from /feed/discover ────────────
               discoverFeed.when(
                 loading: () => const SizedBox(
                   height: 200,
@@ -146,10 +145,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       )
                     : const SizedBox(),
               ),
-
               const SizedBox(height: AppDimensions.spaceLarge),
-
-              // ── More of what you like — tracks 7–16 from following feed ───
               followingFeed.when(
                 loading: () => const SizedBox(),
                 error: (_, __) => const SizedBox(),
@@ -159,7 +155,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       .take(10)
                       .map((i) => i.toTrack())
                       .toList();
+
                   if (tracks.isEmpty) return const SizedBox();
+
                   return MoreLikeSection(
                     sectionTitle: 'More of what you like',
                     tracks: tracks,
@@ -167,10 +165,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   );
                 },
               ),
-
               const SizedBox(height: AppDimensions.spaceLarge),
-
-              // ── Mixed for You — tracks 2–11 from discover feed ────────────
               discoverFeed.when(
                 loading: () => const SizedBox(),
                 error: (_, __) => const SizedBox(),
@@ -180,7 +175,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       .take(10)
                       .map((i) => i.toTrack())
                       .toList();
+
                   if (tracks.isEmpty) return const SizedBox();
+
                   return MoreLikeSection(
                     sectionTitle: 'Mixed for You',
                     tracks: tracks,
@@ -188,32 +185,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   );
                 },
               ),
-
               const SizedBox(height: AppDimensions.spaceLarge),
-
-              // ── Albums for You — placeholder until album endpoint is wired ─
               const AlbumsForYouSection(
                 sectionTitle: 'Albums for You',
                 albums: [],
               ),
-
               const SizedBox(height: AppDimensions.spaceLarge),
-
-              // ── Cache debug banner (visible while testing) ─────────────────
               cachedFeed.when(
                 loading: () => const SizedBox(),
                 error: (_, __) => const SizedBox(),
                 data: (state) => Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
-                    'Cache: ${state.cacheHit ? "HIT ✓" : "MISS"} | '
+                    'Cache: ${state.cacheHit ? "HIT" : "MISS"} | '
                     '${state.queryTimeMs?.toStringAsFixed(1)}ms | '
                     'TTL ${state.cacheTtlSeconds}s',
                     style: const TextStyle(color: Colors.grey, fontSize: 10),
                   ),
                 ),
               ),
-
               const SizedBox(height: AppDimensions.spaceLarge),
             ],
           ),
@@ -222,8 +212,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 }
-
-// ─── Error tile with retry ────────────────────────────────────────────────────
 
 class _ErrorTile extends StatelessWidget {
   final String message;

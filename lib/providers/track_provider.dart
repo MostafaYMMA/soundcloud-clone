@@ -2,7 +2,6 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_project/services/track_service.dart';
 import '../models/track.dart';
 import '../services/track_service.dart';
 import 'auth_providers.dart';
@@ -314,10 +313,20 @@ class CreateTrackNotifier extends AsyncNotifier<Track?> {
     String? coverImagePath,
   }) async {
     state = const AsyncLoading();
+
+    final token = ref.read(authProvider).tokens?.accessToken;
+
+    if (token == null || token.isEmpty) {
+      final err = Exception('You are not logged in.');
+      state = AsyncError(err, StackTrace.current);
+      throw err;
+    }
+
     try {
       final track = await ref
           .read(tracksServiceProvider)
           .createTrack(
+            accessToken: token,
             title: title,
             description: description,
             filePath: filePath,
@@ -327,10 +336,25 @@ class CreateTrackNotifier extends AsyncNotifier<Track?> {
             visibility: visibility,
             coverImagePath: coverImagePath,
           );
+      print('========== UPLOADED TRACK ==========');
+      print('ID: ${track.trackId}');
+      print('TITLE: ${track.title}');
+      print('VISIBILITY: ${track.visibility}');
+      print('PROCESSING STATUS: ${track.processingStatus}');
+      print('===================================');
+
       state = AsyncData(track);
+
+      ref.read(followingFeedProvider.notifier).refresh();
+      ref.read(discoverFeedProvider.notifier).refresh();
+
       return track;
     } on DioException catch (e) {
       final err = Exception(_dioError(e));
+      state = AsyncError(err, StackTrace.current);
+      throw err;
+    } catch (e) {
+      final err = Exception(e.toString().replaceFirst('Exception: ', ''));
       state = AsyncError(err, StackTrace.current);
       throw err;
     }
