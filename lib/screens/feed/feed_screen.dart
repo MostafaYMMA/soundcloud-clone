@@ -172,10 +172,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
             gradient: LinearGradient(
               begin: Alignment.bottomCenter,
               end: Alignment.topCenter,
-              colors: [
-                Colors.black.withOpacity(0.8),
-                Colors.transparent,
-              ],
+              colors: [Colors.black.withOpacity(0.8), Colors.transparent],
             ),
           ),
         ),
@@ -198,10 +195,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
               const SizedBox(height: 6),
               Text(
                 artist,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
+                style: const TextStyle(color: Colors.white70, fontSize: 16),
               ),
             ],
           ),
