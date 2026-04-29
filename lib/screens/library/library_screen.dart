@@ -9,6 +9,9 @@ import 'package:my_project/screens/library/liked_tracks_screen.dart';
 import 'package:my_project/screens/library/playlists_screen.dart';
 import 'package:my_project/screens/profile/profile_screen.dart';
 import 'package:my_project/screens/library/albums_screen.dart';
+import 'following_screen.dart';
+import 'insights_screen.dart';
+import 'uploads_screen.dart';
 
 class LibraryScreen extends StatelessWidget {
   final void Function(Widget) onNavigate;
@@ -69,22 +72,28 @@ class LibraryScreen extends StatelessWidget {
                   onTap: () => onNavigate(LikedTracksScreen(onBack: onBack)),
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
+
                 LibraryTile(
                   title: 'Playlists',
                   onTap: () => onNavigate(PlaylistsScreen(onBack: onBack)),
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
+
                 LibraryTile(
                   title: 'Albums',
                   onTap: () => onNavigate(AlbumsScreen(onBack: onBack)),
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
 
-                LibraryTile(title: 'Following', onTap: () {}),
+                LibraryTile(
+                  title: 'Following', 
+                  onTap: () => onNavigate(FollowingScreen(onBack: onBack))
+                ),
                 const SizedBox(height: AppDimensions.spaceSmall),
-                LibraryTile(title: 'Your insights', onTap: () {}),
+
+                LibraryTile(title: 'Your insights', onTap: () => onNavigate(InsightsScreen(onBack: onBack)),),
                 const SizedBox(height: AppDimensions.spaceSmall),
-                LibraryTile(title: 'Your uploads', onTap: () {}),
+                LibraryTile(title: 'Your uploads', onTap: () => onNavigate(UploadsScreen(onBack: onBack))),
                 const SizedBox(height: AppDimensions.spaceSmall),
               ]),
             ),
