@@ -43,7 +43,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final isSearching = _query.isNotEmpty;
     //final resultsAsync = ref.watch(searchProvider(_query));
-    final resultsAsync = ref.watch(searchTracksProvider(_query)); // ✅
+    final resultsAsync = ref.watch(searchTracksProvider(_query)); 
 
     return Scaffold(
       appBar: AppBar(title: const Text('Search')),
