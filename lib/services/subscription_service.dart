@@ -38,12 +38,9 @@ class SubscriptionService {
     try {
       final response = await _dio.get(
         '$_baseUrl/subscriptions/me',
-        options: Options(
-          headers: {'Authorization': 'Bearer $accessToken'},
-        ),
+        options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
       );
-      return SubscriptionStatus.fromJson(
-          response.data as Map<String, dynamic>);
+      return SubscriptionStatus.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -60,10 +57,7 @@ class SubscriptionService {
     try {
       final response = await _dio.post(
         '$_baseUrl/subscriptions/upgrade',
-        data: {
-          'payment_token': paymentToken,
-          'plan': plan,
-        },
+        data: {'payment_token': paymentToken, 'plan': plan},
         options: Options(
           headers: {
             'Authorization': 'Bearer $accessToken',

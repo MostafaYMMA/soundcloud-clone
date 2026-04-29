@@ -99,5 +99,5 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
 
 final subscriptionProvider =
     StateNotifierProvider<SubscriptionNotifier, SubscriptionState>(
-  (ref) => SubscriptionNotifier(ref),
-);
+      (ref) => SubscriptionNotifier(ref),
+    );

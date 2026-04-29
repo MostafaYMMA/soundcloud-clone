@@ -7,11 +7,7 @@ import '../subscription/stripe_helper.dart';
 // ── Payment Bottom Sheet ─────────────────────────────────────────────────────
 
 /// Shows the card input sheet and triggers the upgrade flow.
-void showPaymentSheet(
-  BuildContext context,
-  WidgetRef ref,
-  UpgradePlan plan,
-) {
+void showPaymentSheet(BuildContext context, WidgetRef ref, UpgradePlan plan) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -206,7 +202,11 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
             Text(
               'Welcome to Artist Pro. Enjoy unlimited uploads and all premium features.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[400], fontSize: 13, height: 1.4),
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 13,
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 20),
             SizedBox(
@@ -343,9 +343,9 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
   }
 
   void _openRestrictionsScreen(UpgradePlan plan) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => RestrictionsScreen(plan: plan)),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => RestrictionsScreen(plan: plan)));
   }
 
   @override
@@ -386,18 +386,25 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                         padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF4CD38A).withOpacity(0.2),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                                color: const Color(0xFF4CD38A), width: 1),
+                              color: const Color(0xFF4CD38A),
+                              width: 1,
+                            ),
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.star_rounded,
-                                  color: Color(0xFF4CD38A), size: 16),
+                              Icon(
+                                Icons.star_rounded,
+                                color: Color(0xFF4CD38A),
+                                size: 16,
+                              ),
                               SizedBox(width: 6),
                               Text(
                                 'You\'re already on Premium',
@@ -440,14 +447,16 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                               double pageValue = _currentPage.toDouble();
                               if (_pageController.hasClients) {
                                 try {
-                                  pageValue = _pageController.page ??
+                                  pageValue =
+                                      _pageController.page ??
                                       _currentPage.toDouble();
                                 } catch (_) {
                                   pageValue = _currentPage.toDouble();
                                 }
                               }
-                              final double distance =
-                                  (pageValue - index).abs().clamp(0.0, 1.0);
+                              final double distance = (pageValue - index)
+                                  .abs()
+                                  .clamp(0.0, 1.0);
                               final double scale = 1 - (distance * 0.08);
                               final double verticalPadding = distance * 8;
                               final double opacity = 1 - (distance * 0.16);
@@ -456,7 +465,11 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                                 duration: const Duration(milliseconds: 180),
                                 curve: Curves.easeOut,
                                 padding: EdgeInsets.fromLTRB(
-                                    3, verticalPadding, 3, verticalPadding),
+                                  3,
+                                  verticalPadding,
+                                  3,
+                                  verticalPadding,
+                                ),
                                 child: Transform.scale(
                                   scale: scale,
                                   child: Opacity(
@@ -469,7 +482,8 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                                           _onSubscribePressed(_plans[index]),
                                       onRestrictionsPressed: () =>
                                           _openRestrictionsScreen(
-                                              _plans[index]),
+                                            _plans[index],
+                                          ),
                                     ),
                                   ),
                                 ),
@@ -500,7 +514,11 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                 width: double.infinity,
                 color: const Color(0xFF090909),
                 padding: EdgeInsets.fromLTRB(
-                    horizontalPadding, 34, horizontalPadding, 36),
+                  horizontalPadding,
+                  34,
+                  horizontalPadding,
+                  36,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -517,7 +535,10 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                     const Text(
                       'From fan-powered royalties to our audience-building artist plans, your subscription helps support the SoundCloud global community.',
                       style: TextStyle(
-                          color: Colors.white, fontSize: 13.5, height: 1.42),
+                        color: Colors.white,
+                        fontSize: 13.5,
+                        height: 1.42,
+                      ),
                     ),
                     const SizedBox(height: 28),
                     const Text(
@@ -533,15 +554,17 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                     const Text(
                       '– RAC, musician and producer',
                       style: TextStyle(
-                          color: Colors.white, fontSize: 13, height: 1.25),
+                        color: Colors.white,
+                        fontSize: 13,
+                        height: 1.25,
+                      ),
                     ),
                     const SizedBox(height: 28),
                     Center(
                       child: Container(
                         width: screenWidth < 380 ? 230 : 250,
                         height: screenWidth < 380 ? 230 : 250,
-                        decoration:
-                            const BoxDecoration(shape: BoxShape.circle),
+                        decoration: const BoxDecoration(shape: BoxShape.circle),
                         child: ClipOval(
                           child: Transform.scale(
                             scale: 1.2,
@@ -647,8 +670,11 @@ class UpgradePlanCard extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: const Center(
-                  child: Icon(Icons.star_rounded,
-                      color: Colors.white, size: 10),
+                  child: Icon(
+                    Icons.star_rounded,
+                    color: Colors.white,
+                    size: 10,
+                  ),
                 ),
               ),
             ],
@@ -672,8 +698,7 @@ class UpgradePlanCard extends StatelessWidget {
                 children: [
                   const Padding(
                     padding: EdgeInsets.only(top: 1),
-                    child:
-                        Icon(Icons.check, color: Colors.white, size: 15),
+                    child: Icon(Icons.check, color: Colors.white, size: 15),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -713,7 +738,9 @@ class UpgradePlanCard extends StatelessWidget {
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.black),
+                        strokeWidth: 2,
+                        color: Colors.black,
+                      ),
                     )
                   : Text(
                       isPremium ? 'Current plan ✓' : 'Subscribe now',
@@ -731,7 +758,10 @@ class UpgradePlanCard extends StatelessWidget {
             const Text(
               'Cancel anytime.',
               style: TextStyle(
-                  color: Colors.white70, fontSize: 11.4, height: 1.15),
+                color: Colors.white70,
+                fontSize: 11.4,
+                height: 1.15,
+              ),
             ),
           const SizedBox(height: 6),
           TextButton(
@@ -746,7 +776,10 @@ class UpgradePlanCard extends StatelessWidget {
             child: const Text(
               'Restrictions apply',
               style: TextStyle(
-                  color: Color(0xFF6EA3FF), fontSize: 12.6, height: 1.15),
+                color: Color(0xFF6EA3FF),
+                fontSize: 12.6,
+                height: 1.15,
+              ),
             ),
           ),
         ],
@@ -875,7 +908,10 @@ class _UpgradeFaqTileState extends State<UpgradeFaqTile> {
             child: Text(
               widget.faq.answer,
               style: const TextStyle(
-                  color: Colors.white, fontSize: 13, height: 1.4),
+                color: Colors.white,
+                fontSize: 13,
+                height: 1.4,
+              ),
             ),
           ),
       ],
@@ -895,8 +931,10 @@ class RestrictionsScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF090909),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Restrictions',
-            style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Restrictions',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -904,7 +942,10 @@ class RestrictionsScreen extends StatelessWidget {
           '${plan.title} ${plan.billingType} restrictions screen.\n\n'
           'Replace this placeholder with the real restrictions content later.',
           style: const TextStyle(
-              color: Colors.white, fontSize: 14, height: 1.5),
+            color: Colors.white,
+            fontSize: 14,
+            height: 1.5,
+          ),
         ),
       ),
     );

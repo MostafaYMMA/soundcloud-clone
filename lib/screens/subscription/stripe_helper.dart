@@ -28,20 +28,16 @@ class StripeHelper {
       // Create a card token directly — simplest approach for test mode
       final tokenData = await Stripe.instance.createToken(
         CreateTokenParams.card(
-          params: const CardTokenParams(
-            type: TokenType.Card,
-          ),
+          params: const CardTokenParams(type: TokenType.Card),
         ),
       );
       return tokenData.id;
     } on StripeException catch (e) {
-      final msg = e.error.localizedMessage ?? e.error.message ?? 'Payment cancelled';
+      final msg =
+          e.error.localizedMessage ?? e.error.message ?? 'Payment cancelled';
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(msg),
-            backgroundColor: Colors.red[700],
-          ),
+          SnackBar(content: Text(msg), backgroundColor: Colors.red[700]),
         );
       }
       return null;
@@ -65,10 +61,7 @@ class StripeHelper {
 /// Usage:
 ///   CardInputWidget(onCardChanged: (details) { ... })
 class CardInputWidget extends StatelessWidget {
-  const CardInputWidget({
-    super.key,
-    this.onCardChanged,
-  });
+  const CardInputWidget({super.key, this.onCardChanged});
 
   final void Function(CardFieldInputDetails?)? onCardChanged;
 
@@ -92,10 +85,7 @@ class CardInputWidget extends StatelessWidget {
           borderSide: const BorderSide(color: Colors.orange),
         ),
       ),
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 16,
-      ),
+      style: const TextStyle(color: Colors.white, fontSize: 16),
     );
   }
 }

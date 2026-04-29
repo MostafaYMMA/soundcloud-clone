@@ -15,7 +15,7 @@ import 'screens/subscription/stripe_helper.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized(); // must be first
-  initStripe();                              // then stripe
+  initStripe(); // then stripe
   runApp(const ProviderScope(child: SoundCloudApp())); // only one runApp
 }
 
