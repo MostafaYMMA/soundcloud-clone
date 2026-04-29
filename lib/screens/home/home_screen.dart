@@ -14,33 +14,33 @@ import 'albums_for_you_section.dart';
 
 extension FeedTrackItemToTrack on FeedTrackItem {
   Track toTrack() => Track(
-        trackId: trackId,
-        title: title,
-        description: description,
-        genre: genre,
-        tags: tags,
-        releaseDate: releaseDate,
-        coverImageUrl: coverImageUrl,
-        streamUrl: streamUrl,
-        userId: artist.userId,
-        artist: TrackArtist(
-          userId: artist.userId,
-          username: artist.username,
-          displayName: artist.displayName,
-          profilePicture: artist.profilePicture,
-          followerCount: artist.followerCount,
-        ),
-        visibility: 'public',
-        processingStatus: 'ready',
-        playCount: playCount,
-        durationSeconds: durationSeconds,
-        likeCount: likeCount,
-        repostCount: repostCount,
-        commentCount: commentCount,
-        isLiked: isLiked,
-        isReposted: isReposted,
-        createdAt: createdAt,
-      );
+    trackId: trackId,
+    title: title,
+    description: description,
+    genre: genre,
+    tags: tags,
+    releaseDate: releaseDate,
+    coverImageUrl: coverImageUrl,
+    streamUrl: streamUrl,
+    userId: artist.userId,
+    artist: TrackArtist(
+      userId: artist.userId,
+      username: artist.username,
+      displayName: artist.displayName,
+      profilePicture: artist.profilePicture,
+      followerCount: artist.followerCount,
+    ),
+    visibility: 'public',
+    processingStatus: 'ready',
+    playCount: playCount,
+    durationSeconds: durationSeconds,
+    likeCount: likeCount,
+    repostCount: repostCount,
+    commentCount: commentCount,
+    isLiked: isLiked,
+    isReposted: isReposted,
+    createdAt: createdAt,
+  );
 }
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -122,7 +122,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 data: (state) {
                   if (state.items.isEmpty) return const SizedBox();
                   return YourLikesCard(
-                    tracks: state.items.take(6).map((i) => i.toTrack()).toList(),
+                    tracks: state.items
+                        .take(6)
+                        .map((i) => i.toTrack())
+                        .toList(),
                     onTrackTap: widget.onTrackTap,
                   );
                 },

@@ -272,10 +272,8 @@ class _UploadsScreenState extends ConsumerState<UploadsScreen> {
                     (context, index) => TrackTile(
                       track: filteredTracks[index],
                       onTap: () => widget.onTrackTap(filteredTracks[index]),
-                      onMoreTap: () => showTrackContextMenu(
-                        context,
-                        filteredTracks[index],
-                      ),
+                      onMoreTap: () =>
+                          showTrackContextMenu(context, filteredTracks[index]),
                     ),
                     childCount: filteredTracks.length,
                   ),
@@ -320,11 +318,7 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Positioned(
-          right: -30,
-          top: -10,
-          child: _StackedRectsDecoration(),
-        ),
+        Positioned(right: -30, top: -10, child: _StackedRectsDecoration()),
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(8, 12, 16, 0),
