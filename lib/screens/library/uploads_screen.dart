@@ -274,7 +274,8 @@ class _UploadsScreenState extends State<UploadsScreen> {
                 (context, index) => TrackTile(
                   track: _filteredTracks[index],
                   onTap: () {},
-                  onMoreTap: () => showTrackContextMenu(context, _filteredTracks[index]),
+                  onMoreTap: () =>
+                      showTrackContextMenu(context, _filteredTracks[index]),
                 ),
                 childCount: _filteredTracks.length,
               ),

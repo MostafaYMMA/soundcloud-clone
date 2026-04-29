@@ -177,46 +177,56 @@ class MockTracks {
     ),
   ];
   static List<RecentlyPlayedItem> get recentlyPlayedItems => [
-  RecentlyPlayedPlaylist(Playlist(
-    id: 'p1',
-    name: 'Somatic  -  Deep Bass  -  Brain Massage',
-    owner: 'THRILLHO',
-    trackCount: 23,
-    coverUrl: '',
-    duration: null,
-  )),
- RecentlyPlayedAlbum(Album(
-  id: 'a1',
-  title: 'Lana Del Rey - ULTRAVIOLENCE',
-  artist: 'Interscope Records',
-  releaseYear: 2014,
-  artworkUrl: '',
-  trackCount: 0,
-  likeCount: 0,
-)),
-  RecentlyPlayedPlaylist(Playlist(
-    id: 'p2',
-    name: 'kennedy walsh jams',
-    owner: 'Hana_Ahmed',
-    trackCount: 112,
-    coverUrl: '',
-    duration: null,
-  )),
-  RecentlyPlayedPlaylist(Playlist(
-    id: 'p3',
-    name: 'Buzzing Indie',
-    owner: 'New!',
-    trackCount: 25,
-    coverUrl: '',
-    duration: null,
-  )),
-  RecentlyPlayedPlaylist(Playlist(
-    id: 'p4',
-    name: 'Your Mix 1',
-    owner: 'SoundCloud',
-    trackCount: 0,
-    coverUrl: '',
-    duration: null,
-  )),
-];
+    RecentlyPlayedPlaylist(
+      Playlist(
+        id: 'p1',
+        name: 'Somatic  -  Deep Bass  -  Brain Massage',
+        owner: 'THRILLHO',
+        trackCount: 23,
+        coverUrl: '',
+        duration: null,
+      ),
+    ),
+    RecentlyPlayedAlbum(
+      Album(
+        id: 'a1',
+        title: 'Lana Del Rey - ULTRAVIOLENCE',
+        artist: 'Interscope Records',
+        releaseYear: 2014,
+        artworkUrl: '',
+        trackCount: 0,
+        likeCount: 0,
+      ),
+    ),
+    RecentlyPlayedPlaylist(
+      Playlist(
+        id: 'p2',
+        name: 'kennedy walsh jams',
+        owner: 'Hana_Ahmed',
+        trackCount: 112,
+        coverUrl: '',
+        duration: null,
+      ),
+    ),
+    RecentlyPlayedPlaylist(
+      Playlist(
+        id: 'p3',
+        name: 'Buzzing Indie',
+        owner: 'New!',
+        trackCount: 25,
+        coverUrl: '',
+        duration: null,
+      ),
+    ),
+    RecentlyPlayedPlaylist(
+      Playlist(
+        id: 'p4',
+        name: 'Your Mix 1',
+        owner: 'SoundCloud',
+        trackCount: 0,
+        coverUrl: '',
+        duration: null,
+      ),
+    ),
+  ];
 }

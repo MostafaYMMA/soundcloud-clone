@@ -249,7 +249,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                     ),
                   ),
                 ),
-                onMoreTap:  () => showCollectionContextMenu(context),
+                onMoreTap: () => showCollectionContextMenu(context),
               ),
               childCount: _filteredAlbums.length,
             ),

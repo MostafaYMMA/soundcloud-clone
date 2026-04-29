@@ -55,29 +55,29 @@ class _RecentlyPlayedTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (item) {
       RecentlyPlayedPlaylist(:final playlist) => PlaylistTile(
-          playlist: playlist,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CollectionDetailsScreen(
-                data: CollectionDetailsMapper.fromPlaylist(playlist),
-              ),
+        playlist: playlist,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CollectionDetailsScreen(
+              data: CollectionDetailsMapper.fromPlaylist(playlist),
             ),
           ),
-          onMoreTap: () => showCollectionContextMenu(context),
         ),
+        onMoreTap: () => showCollectionContextMenu(context),
+      ),
       RecentlyPlayedAlbum(:final album) => AlbumTile(
-          album: album,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CollectionDetailsScreen(
-                data: CollectionDetailsMapper.fromAlbum(album),
-              ),
+        album: album,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CollectionDetailsScreen(
+              data: CollectionDetailsMapper.fromAlbum(album),
             ),
           ),
-          onMoreTap: () => showCollectionContextMenu(context),
         ),
+        onMoreTap: () => showCollectionContextMenu(context),
+      ),
     };
   }
 }
