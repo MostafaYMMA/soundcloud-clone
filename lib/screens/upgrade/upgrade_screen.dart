@@ -244,14 +244,17 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
   void _onSubscribePressed(UpgradePlan plan) {
     final subState = ref.read(subscriptionProvider);
 
-    // Already on this exact billing cycle → show manage dialog
-    if (subState.isCurrentPlanFor(plan.billingType)) {
-      _showManageDialog();
-      return;
-    }
-
-    // Already premium but different billing cycle → show change plan dialog
     if (subState.isPremium) {
+      final currentPlanIndex = _plans.lastIndexWhere(
+        (p) => subState.isCurrentPlanFor(p.billingType),
+      );
+      final isThisCurrentPlan = currentPlanIndex == _plans.indexOf(plan);
+
+      if (isThisCurrentPlan) {
+        _showManageDialog();
+        return;
+      }
+
       _showChangePlanDialog(plan);
       return;
     }
@@ -388,6 +391,13 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                       child: AnimatedBuilder(
                         animation: _pageController,
                         builder: (context, child) {
+                          // Find the single current plan index — last match wins
+                          // (Artist over Artist Pro for same billing cycle)
+                          final int currentPlanIndex = subState.isPremium
+                              ? _plans.lastIndexWhere(
+                                  (p) => subState.isCurrentPlanFor(p.billingType))
+                              : -1;
+
                           return PageView.builder(
                             controller: _pageController,
                             itemCount: _plans.length,
@@ -412,7 +422,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                                     opacity: opacity,
                                     child: UpgradePlanCard(
                                       plan: _plans[index],
-                                      isCurrentPlan: subState.isCurrentPlanFor(_plans[index].billingType),
+                                      isCurrentPlan: currentPlanIndex == index,
                                       isUpgrading: subState.isUpgrading,
                                       onSubscribePressed: () => _onSubscribePressed(_plans[index]),
                                       onRestrictionsPressed: () => _openRestrictionsScreen(_plans[index]),

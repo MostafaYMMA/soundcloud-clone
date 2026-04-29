@@ -21,8 +21,6 @@ class SubscriptionState {
 
   bool get isPremium => status?.isPremium ?? false;
 
-  /// True only for cards with matching billing cycle.
-  /// Pass the card's billingType ("Monthly" or "Yearly").
   bool isCurrentPlanFor(String billingType) {
     if (!isPremium) return false;
     if (billingType.toLowerCase() == 'monthly') return status?.isMonthly ?? false;
@@ -50,7 +48,17 @@ class SubscriptionState {
 // ── Notifier ─────────────────────────────────────────────────────────────────
 
 class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
-  SubscriptionNotifier(this._ref) : super(const SubscriptionState());
+  SubscriptionNotifier(this._ref) : super(const SubscriptionState()) {
+    // Reset and re-fetch whenever the auth token changes (login/logout)
+    _ref.listen(authProvider, (previous, next) {
+      final prevToken = previous?.tokens?.accessToken;
+      final nextToken = next.tokens?.accessToken;
+      if (prevToken != nextToken) {
+        state = const SubscriptionState(); // clear old state immediately
+        if (nextToken != null) fetchStatus(); // fetch for new account
+      }
+    });
+  }
 
   final Ref _ref;
   final _service = SubscriptionService();
