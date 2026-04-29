@@ -28,6 +28,6 @@ class PlaylistTile extends TypeTile {
   Widget get meta => TileMeta([
         'Playlist',
         '${playlist.trackCount} tracks',
-        playlist.duration ?? '',
+        //playlist.duration ?? '',
       ]);
 }
