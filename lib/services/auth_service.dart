@@ -3,7 +3,7 @@ import 'package:my_project/models/auth_token.dart';
 
 class AuthService {
   final Dio _dio;
-  String baseUrl = 'https://streamline-swp.duckdns.org/api/';
+  final String baseUrl = 'https://streamline-swp.duckdns.org/api';
 
   AuthService({required Dio dio}) : _dio = dio;
 
@@ -13,18 +13,18 @@ class AuthService {
     String displayName,
   ) async {
     await _dio.post(
-      '${baseUrl}auth/register',
+      '$baseUrl/auth/register',
       data: {'email': email, 'password': password, 'display_name': displayName},
     );
   }
 
   Future<void> verifyEmail(String token) async {
-    await _dio.post('${baseUrl}auth/verify-email', data: {'token': token});
+    await _dio.post('$baseUrl/auth/verify-email', data: {'token': token});
   }
 
   Future<void> resendVerification(String email) async {
     await _dio.post(
-      '${baseUrl}auth/resend-verification',
+      '$baseUrl/auth/resend-verification',
       data: {'email': email},
     );
   }
@@ -32,7 +32,7 @@ class AuthService {
   Future<AuthTokens> login(String email, String password) async {
     try {
       final result = await _dio.post(
-        '${baseUrl}auth/login',
+        '$baseUrl/auth/login',
         data: {'email': email, 'password': password},
       );
 
@@ -50,7 +50,7 @@ class AuthService {
   Future<AuthTokens> googleLogin(String googleIdToken) async {
     try {
       final result = await _dio.post(
-        '${baseUrl}auth/google',
+        '$baseUrl/auth/google',
         data: {'google_token': googleIdToken},
       );
 
@@ -65,28 +65,47 @@ class AuthService {
     }
   }
 
+  Future<AuthTokens> facebookLogin(String facebookToken) async {
+    try {
+      final result = await _dio.post(
+        '$baseUrl/auth/facebook',
+        data: {'facebook_token': facebookToken},
+      );
+
+      print('FACEBOOK LOGIN STATUS: ${result.statusCode}');
+      print('FACEBOOK LOGIN DATA: ${result.data}');
+
+      return AuthTokens.fromJson(result.data);
+    } on DioException catch (e) {
+      print('FACEBOOK LOGIN ERROR STATUS: ${e.response?.statusCode}');
+      print('FACEBOOK LOGIN ERROR DATA: ${e.response?.data}');
+      rethrow;
+    }
+  }
+
   Future<AuthTokens> refreshTokens(String refreshToken) async {
     final result = await _dio.post(
-      '${baseUrl}auth/refresh',
+      '$baseUrl/auth/refresh',
       data: {'refresh_token': refreshToken},
     );
+
     return AuthTokens.fromJson(result.data);
   }
 
   Future<void> logout(String accessToken) async {
     await _dio.post(
-      '${baseUrl}auth/logout',
+      '$baseUrl/auth/logout',
       options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
     );
   }
 
   Future<void> forgotPassword(String email) async {
-    await _dio.post('${baseUrl}auth/forgot-password', data: {'email': email});
+    await _dio.post('$baseUrl/auth/forgot-password', data: {'email': email});
   }
 
   Future<void> resetPassword(String token, String newPassword) async {
     await _dio.post(
-      '${baseUrl}auth/reset-password',
+      '$baseUrl/auth/reset-password',
       data: {'token': token, 'new_password': newPassword},
     );
   }
