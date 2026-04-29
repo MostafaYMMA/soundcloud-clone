@@ -214,9 +214,9 @@ class _TrackHeader extends StatelessWidget {
                   borderRadius: BorderRadius.circular(
                     AppDimensions.borderRadiusSmall,
                   ),
-                  child: track.artworkUrl.isNotEmpty
+                  child: (track.artworkUrl ?? '').isNotEmpty
                       ? Image.network(
-                          track.artworkUrl,
+                          track.artworkUrl!,
                           width: 72,
                           height: 72,
                           fit: BoxFit.cover,
@@ -239,7 +239,7 @@ class _TrackHeader extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                Text(track.artist, style: AppTextStyles.artistName),
+                Text(track.formattedArtist, style: AppTextStyles.artistName),
               ],
             ),
           ),

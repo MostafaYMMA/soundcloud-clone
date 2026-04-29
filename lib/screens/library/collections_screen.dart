@@ -382,7 +382,7 @@ class _TopSection extends StatelessWidget {
                 ),
                 Positioned.fill(
                   child: Material(
-                    color: Colors.black.withOpacity(0.28),
+                    color: Colors.transparent,
                     borderRadius: BorderRadius.circular(
                       AppDimensions.borderRadiusMedium,
                     ),
@@ -401,25 +401,7 @@ class _TopSection extends StatelessWidget {
                                   color: Colors.white,
                                 ),
                               )
-                            : Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: const [
-                                  Icon(
-                                    Icons.add_a_photo_outlined,
-                                    color: Colors.white,
-                                    size: 26,
-                                  ),
-                                  SizedBox(height: 6),
-                                  Text(
-                                    'Edit cover',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            : const SizedBox.shrink(),
                       ),
                     ),
                   ),

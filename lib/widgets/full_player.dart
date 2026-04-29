@@ -65,7 +65,7 @@ class _FullPlayerState extends State<FullPlayer> {
           builder: (context, durationSnapshot) {
             final totalDuration =
                 durationSnapshot.data ??
-                Duration(seconds: widget.track.duration);
+                Duration(seconds: widget.track.durationSeconds ?? 0);
 
             return StreamBuilder<Duration>(
               stream: widget.player.positionStream,
@@ -83,7 +83,7 @@ class _FullPlayerState extends State<FullPlayer> {
                 final elapsed = currentPosition.inSeconds;
                 final totalSeconds = totalDuration.inSeconds > 0
                     ? totalDuration.inSeconds
-                    : widget.track.duration;
+                    : widget.track.durationSeconds ?? 0;
 
                 return Scaffold(
                   backgroundColor: Colors.black,
@@ -152,7 +152,10 @@ class _FullPlayerState extends State<FullPlayer> {
               children: [
                 Text(widget.track.title, style: AppTextStyles.heading2),
                 const SizedBox(height: 4),
-                Text(widget.track.artist, style: AppTextStyles.artistName),
+                Text(
+                  widget.track.artist?.displayName ?? 'Unknown Artist',
+                  style: AppTextStyles.artistName,
+                ),
                 const SizedBox(height: AppDimensions.spaceSmall),
                 const Row(
                   children: [
