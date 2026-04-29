@@ -23,9 +23,6 @@ class PlaylistTile extends TypeTile {
   String get subtitle => playlist.owner;
 
   @override
-  Widget get meta => TileMeta([
-    'Playlist',
-    '${playlist.trackCount} tracks',
-     '',
-  ]);
+  Widget get meta =>
+      TileMeta(['Playlist', '${playlist.trackCount} tracks', '']);
 }

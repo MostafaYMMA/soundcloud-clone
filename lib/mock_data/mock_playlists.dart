@@ -1,5 +1,3 @@
-
-
 import '../models/playlist.dart';
 
 class MockPlaylists {
