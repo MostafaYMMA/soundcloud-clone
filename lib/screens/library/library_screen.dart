@@ -3,13 +3,16 @@ import 'package:my_project/mock_data/mock_tracks.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
-import 'package:my_project/screens/home/more_like_section.dart';
 import 'package:my_project/screens/library/widgets/library_tile.dart';
 import 'package:my_project/screens/library/widgets/track_tile.dart';
+import 'package:my_project/screens/home/playlist_album_block.dart';
 import 'package:my_project/screens/library/liked_tracks_screen.dart';
 import 'package:my_project/screens/library/playlists_screen.dart';
 import 'package:my_project/screens/profile/profile_screen.dart';
 import 'package:my_project/screens/library/albums_screen.dart';
+import 'package:my_project/screens/library/collections_screen.dart';
+import 'package:my_project/screens/library/collections_details_mapper.dart';
+import 'package:my_project/models/recently_played_item.dart';
 import 'following_screen.dart';
 import 'insights_screen.dart';
 import 'uploads_screen.dart';
@@ -24,7 +27,6 @@ class LibraryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final recentlyPlayed = MockTracks.recentlyPlayedTracks;
     final history = MockTracks.historyTracks;
 
     return Scaffold(
@@ -117,9 +119,30 @@ class LibraryScreen extends StatelessWidget {
             ),
           ),
 
-          // ── Recently Played — original horizontal boxes ───────────────
+          // ── Recently Played — playlist/album horizontal boxes ────────
           SliverToBoxAdapter(
-            child: MoreLikeSection(sectionTitle: '', tracks: recentlyPlayed),
+            child: PlaylistAlbumBlock(
+              sectionTitle: '',
+              items: MockTracks.recentlyPlayedItems,
+              onItemTap: (item) => switch (item) {
+                RecentlyPlayedPlaylist(:final playlist) => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CollectionDetailsScreen(
+                        data: CollectionDetailsMapper.fromPlaylist(playlist),
+                      ),
+                    ),
+                  ),
+                RecentlyPlayedAlbum(:final album) => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CollectionDetailsScreen(
+                        data: CollectionDetailsMapper.fromAlbum(album),
+                      ),
+                    ),
+                  ),
+              },
+            ),
           ),
 
           const SliverToBoxAdapter(
