@@ -48,8 +48,9 @@ class _AlbumsScreenState extends ConsumerState<AlbumsScreen> {
 
     if (detailed == null) {
       final error = ref.read(albumProvider).error ?? 'Failed to open album.';
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
       return;
     }
 
@@ -123,12 +124,12 @@ class _AlbumsScreenState extends ConsumerState<AlbumsScreen> {
     List<Album> result = query.isEmpty
         ? List.from(source)
         : source
-            .where(
-              (a) =>
-                  a.title.toLowerCase().contains(query) ||
-                  a.artist.toLowerCase().contains(query),
-            )
-            .toList();
+              .where(
+                (a) =>
+                    a.title.toLowerCase().contains(query) ||
+                    a.artist.toLowerCase().contains(query),
+              )
+              .toList();
 
     switch (_sortOption) {
       case AlbumsSortOption.recentlyAdded:

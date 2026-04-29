@@ -71,10 +71,7 @@ class AlbumNotifier extends StateNotifier<AlbumState> {
     }
 
     try {
-      return await _service.getAlbumById(
-        albumId: albumId,
-        accessToken: token,
-      );
+      return await _service.getAlbumById(albumId: albumId, accessToken: token);
     } catch (e) {
       state = state.copyWith(
         error: e.toString().replaceFirst('Exception: ', ''),
@@ -84,9 +81,7 @@ class AlbumNotifier extends StateNotifier<AlbumState> {
   }
 }
 
-final albumProvider = StateNotifierProvider<AlbumNotifier, AlbumState>(
-  (ref) {
-    final service = AlbumService(dio: Dio());
-    return AlbumNotifier(service, ref);
-  },
-);
+final albumProvider = StateNotifierProvider<AlbumNotifier, AlbumState>((ref) {
+  final service = AlbumService(dio: Dio());
+  return AlbumNotifier(service, ref);
+});
