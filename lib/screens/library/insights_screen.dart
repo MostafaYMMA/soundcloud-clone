@@ -59,17 +59,23 @@ class _InsightsScreenState extends State<InsightsScreen>
                   const SizedBox(width: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary,
                       borderRadius: BorderRadius.circular(
-                          AppDimensions.borderRadiusPill),
+                        AppDimensions.borderRadiusPill,
+                      ),
                     ),
-                    child: const Text('NEW',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'NEW',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -79,11 +85,7 @@ class _InsightsScreenState extends State<InsightsScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _SoundCloudTab(),
-          _AllPlatformsTab(),
-          _FansTab(),
-        ],
+        children: [_SoundCloudTab(), _AllPlatformsTab(), _FansTab()],
       ),
     );
   }
@@ -106,12 +108,16 @@ class _SoundCloudTab extends StatelessWidget {
             height: 220,
             decoration: BoxDecoration(
               color: const Color(0xFF1A1A1A),
-              borderRadius:
-                  BorderRadius.circular(AppDimensions.borderRadiusSmall),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.borderRadiusSmall,
+              ),
             ),
             child: Center(
-              child: Icon(Icons.equalizer_rounded,
-                  size: 80, color: AppColors.primary.withOpacity(0.6)),
+              child: Icon(
+                Icons.equalizer_rounded,
+                size: 80,
+                color: AppColors.primary.withOpacity(0.6),
+              ),
             ),
           ),
 
@@ -177,12 +183,16 @@ class _AllPlatformsTab extends StatelessWidget {
             height: 260,
             decoration: BoxDecoration(
               color: const Color(0xFF1A1A1A),
-              borderRadius:
-                  BorderRadius.circular(AppDimensions.borderRadiusSmall),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.borderRadiusSmall,
+              ),
             ),
             child: Center(
-              child: Icon(Icons.multitrack_audio_rounded,
-                  size: 80, color: Colors.purple.withOpacity(0.6)),
+              child: Icon(
+                Icons.multitrack_audio_rounded,
+                size: 80,
+                color: Colors.purple.withOpacity(0.6),
+              ),
             ),
           ),
 
@@ -248,12 +258,16 @@ class _FansTab extends StatelessWidget {
             height: 260,
             decoration: BoxDecoration(
               color: const Color(0xFF1A1A1A),
-              borderRadius:
-                  BorderRadius.circular(AppDimensions.borderRadiusSmall),
+              borderRadius: BorderRadius.circular(
+                AppDimensions.borderRadiusSmall,
+              ),
             ),
             child: Center(
-              child: Icon(Icons.people_alt_rounded,
-                  size: 80, color: Colors.redAccent.withOpacity(0.6)),
+              child: Icon(
+                Icons.people_alt_rounded,
+                size: 80,
+                color: Colors.redAccent.withOpacity(0.6),
+              ),
             ),
           ),
 
@@ -331,8 +345,9 @@ class _PromoButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: AppColors.textPrimary),
           shape: RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.circular(AppDimensions.borderRadiusSmall),
+            borderRadius: BorderRadius.circular(
+              AppDimensions.borderRadiusSmall,
+            ),
           ),
         ),
         child: Text(

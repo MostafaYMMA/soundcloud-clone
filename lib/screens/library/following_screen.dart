@@ -35,13 +35,13 @@ class _FollowingScreenState extends State<FollowingScreen> {
   }
 
   void _onSearchChanged() {
-  final query = _searchController.text.toLowerCase();
-  setState(() {
-    _filteredUsers = _allUsers
-        .where((u) => (u.userName ?? '').toLowerCase().contains(query))
-        .toList();
-  });
-}
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredUsers = _allUsers
+          .where((u) => (u.userName ?? '').toLowerCase().contains(query))
+          .toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,13 +64,14 @@ class _FollowingScreenState extends State<FollowingScreen> {
             child: Padding(
               padding: const EdgeInsets.all(AppDimensions.spaceMedium),
               child: GestureDetector(
-                onTap:  () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                builder: (_) => TrueFriendsScreen(onBack: () => Navigator.pop(context)),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        TrueFriendsScreen(onBack: () => Navigator.pop(context)),
+                  ),
                 ),
-                ),
-                
+
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppDimensions.spaceMedium,
@@ -78,8 +79,9 @@ class _FollowingScreenState extends State<FollowingScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.borderRadiusSmall),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.borderRadiusSmall,
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -89,26 +91,38 @@ class _FollowingScreenState extends State<FollowingScreen> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                              color: AppColors.textSecondary, width: 1.5),
+                            color: AppColors.textSecondary,
+                            width: 1.5,
+                          ),
                         ),
-                        child: const Icon(Icons.group_outlined,
-                            color: AppColors.textSecondary, size: 24),
+                        child: const Icon(
+                          Icons.group_outlined,
+                          color: AppColors.textSecondary,
+                          size: 24,
+                        ),
                       ),
                       const SizedBox(width: AppDimensions.spaceMedium),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('People who follow you back',
-                                style: AppTextStyles.trackTitle),
+                            Text(
+                              'People who follow you back',
+                              style: AppTextStyles.trackTitle,
+                            ),
                             const SizedBox(height: 2),
-                            Text('See your true friends',
-                                style: AppTextStyles.artistName),
+                            Text(
+                              'See your true friends',
+                              style: AppTextStyles.artistName,
+                            ),
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right,
-                          color: AppColors.textSecondary, size: 24),
+                      const Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textSecondary,
+                        size: 24,
+                      ),
                     ],
                   ),
                 ),
@@ -118,22 +132,19 @@ class _FollowingScreenState extends State<FollowingScreen> {
 
           // ── User list ────────────────────────────────────────────────
           SliverList(
-  delegate: SliverChildBuilderDelegate(
-    (context, index) {
-      final user = _filteredUsers[index];
-      return UserTile(
-        avatarUrl: user.avatarUrl,
-        userName: user.userName,
-        location: user.location,
-        followers: user.followers,
-        isFollowing: true,
-        onNotificationTap: () {},
-        onTap: () {},
-      );
-    },
-    childCount: _filteredUsers.length,
-  ),
-),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final user = _filteredUsers[index];
+              return UserTile(
+                avatarUrl: user.avatarUrl,
+                userName: user.userName,
+                location: user.location,
+                followers: user.followers,
+                isFollowing: true,
+                onNotificationTap: () {},
+                onTap: () {},
+              );
+            }, childCount: _filteredUsers.length),
+          ),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
