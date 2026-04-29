@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:my_project/mock_data/mock_tracks.dart';
 import 'package:my_project/models/track.dart';
@@ -12,15 +13,16 @@ import 'package:my_project/screens/search/search_screen.dart';
 import 'package:my_project/screens/upgrade/upgrade_screen.dart';
 import 'package:my_project/widgets/full_player.dart';
 import 'package:my_project/widgets/mini_player.dart';
+import './providers/track_provider.dart';
 
-class RootScreen extends StatefulWidget {
+class RootScreen extends ConsumerStatefulWidget {
   const RootScreen({super.key});
 
   @override
-  State<RootScreen> createState() => _RootScreenState();
+  ConsumerState<RootScreen> createState() => _RootScreenState();
 }
 
-class _RootScreenState extends State<RootScreen> {
+class _RootScreenState extends ConsumerState<RootScreen> {
   int _selectedIndex = 0;
 
   final AudioPlayer _player = AudioPlayer();
@@ -82,37 +84,56 @@ class _RootScreenState extends State<RootScreen> {
     super.dispose();
   }
 
+  /// ✅ FIXED: now uses Riverpod correctly
   Future<void> _handlePlay(Track track) async {
-    final url = track.streamUrl;
+    try {
+      // 1. Fetch stream info from backend
+      final streamData = await ref
+          .read(tracksServiceProvider)
+          .getTrackStream(trackId: track.trackId);
 
-    if (url.isEmpty) return;
+      debugPrint("Stream data: $streamData");
 
-    // Pause if same track
-    if (_currentTrack.trackId == track.trackId && _isPlaying) {
-      await _player.pause();
-      return;
-    }
+      final rawUrl = streamData['stream_url'];
 
-    // Load new track
-    if (_currentTrack.trackId != track.trackId || !_hasLoaded) {
-      _hasLoaded = true;
-      _currentTrack = track;
-      _currentPosition = Duration.zero;
-
-      _totalDuration = Duration(seconds: track.durationSeconds ?? 0);
-
-      try {
-        await _player.setUrl(url);
-      } catch (e) {
-        debugPrint("Audio load failed: $e");
+      if (rawUrl == null || rawUrl.toString().isEmpty) {
+        debugPrint("Invalid stream URL");
         return;
       }
+
+      // 2. Convert relative URL → absolute URL
+      final url = rawUrl.toString().startsWith('http')
+          ? rawUrl.toString()
+          : 'https://streamline-swp.duckdns.org$rawUrl';
+
+      debugPrint("Final audio URL: $url");
+
+      // 3. Pause if same track is playing
+      if (_currentTrack.trackId == track.trackId && _isPlaying) {
+        await _player.pause();
+        return;
+      }
+
+      // 4. Load new track if needed
+      if (_currentTrack.trackId != track.trackId || !_hasLoaded) {
+        _hasLoaded = true;
+        _currentTrack = track;
+        _currentPosition = Duration.zero;
+
+        try {
+          await _player.setUrl(url);
+        } catch (e) {
+          debugPrint("just_audio load error: $e");
+          return;
+        }
+      }
+
+      // 5. Play
+      await _player.play();
+    } catch (e, stack) {
+      debugPrint("Audio load failed: $e");
+      debugPrint("Stack trace: $stack");
     }
-
-    await _player.play();
-
-    if (!mounted) return;
-    setState(() => _currentTrack = track);
   }
 
   Future<void> _toggleCurrentTrack() async {
