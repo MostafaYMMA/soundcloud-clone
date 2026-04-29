@@ -93,15 +93,13 @@ class PlaylistTiles extends StatelessWidget {
                     borderRadius: BorderRadius.circular(
                       AppDimensions.borderRadiusSharp,
                     ),
-                    child:
-                        playlist.coverUrl.isNotEmpty
+                    child: playlist.coverUrl.isNotEmpty
                         ? Image.network(
-                        playlist.coverUrl,
+                            playlist.coverUrl,
                             width: AppDimensions.trackArtworkSmall,
                             height: AppDimensions.trackArtworkSmall,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
-                              
                               return const _PlaylistCoverPlaceholder();
                             },
                           )
