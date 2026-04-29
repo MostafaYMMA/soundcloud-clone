@@ -28,9 +28,11 @@ class _UploadsScreenState extends State<UploadsScreen> {
   void initState() {
     super.initState();
     _userTracks = MockTracks.recentlyPlayedTracks
-        .where((t) =>
-            t.artist.toLowerCase() ==
-            (widget.currentUser?.userName ?? '').toLowerCase())
+        .where(
+          (t) =>
+              t.artist.toLowerCase() ==
+              (widget.currentUser?.userName ?? '').toLowerCase(),
+        )
         .toList();
     _filteredTracks = List.from(_userTracks);
     _searchController.addListener(_onSearchChanged);
@@ -46,9 +48,11 @@ class _UploadsScreenState extends State<UploadsScreen> {
     final query = _searchController.text.toLowerCase();
     setState(() {
       _filteredTracks = _userTracks
-          .where((t) =>
-              t.title.toLowerCase().contains(query) ||
-              t.artist.toLowerCase().contains(query))
+          .where(
+            (t) =>
+                t.title.toLowerCase().contains(query) ||
+                t.artist.toLowerCase().contains(query),
+          )
           .toList();
     });
   }
@@ -146,8 +150,11 @@ class _UploadsScreenState extends State<UploadsScreen> {
                         Row(
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.chevron_left,
-                                  color: Colors.white, size: 28),
+                              icon: const Icon(
+                                Icons.chevron_left,
+                                color: Colors.white,
+                                size: 28,
+                              ),
                               onPressed: () => widget.onBack?.call(),
                             ),
                             Expanded(
@@ -160,20 +167,25 @@ class _UploadsScreenState extends State<UploadsScreen> {
                                 child: TextField(
                                   controller: _searchController,
                                   style: const TextStyle(
-                                      color: AppColors.textPrimary,
-                                      fontSize: 14),
+                                    color: AppColors.textPrimary,
+                                    fontSize: 14,
+                                  ),
                                   decoration: InputDecoration(
                                     hintText:
                                         'Search ${_userTracks.length} tracks',
                                     hintStyle: const TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 14),
-                                    prefixIcon: const Icon(Icons.search,
-                                        color: AppColors.textSecondary,
-                                        size: 20),
+                                      color: AppColors.textSecondary,
+                                      fontSize: 14,
+                                    ),
+                                    prefixIcon: const Icon(
+                                      Icons.search,
+                                      color: AppColors.textSecondary,
+                                      size: 20,
+                                    ),
                                     border: InputBorder.none,
                                     contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 10),
+                                      vertical: 10,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -187,10 +199,14 @@ class _UploadsScreenState extends State<UploadsScreen> {
                                 decoration: BoxDecoration(
                                   color: AppColors.surface,
                                   borderRadius: BorderRadius.circular(
-                                      AppDimensions.borderRadiusPill),
+                                    AppDimensions.borderRadiusPill,
+                                  ),
                                 ),
-                                child: const Icon(Icons.sort,
-                                    color: AppColors.primary, size: 22),
+                                child: const Icon(
+                                  Icons.sort,
+                                  color: AppColors.primary,
+                                  size: 22,
+                                ),
                               ),
                             ),
                           ],
@@ -200,7 +216,8 @@ class _UploadsScreenState extends State<UploadsScreen> {
 
                         const Padding(
                           padding: EdgeInsets.only(
-                              left: AppDimensions.spaceSmall),
+                            left: AppDimensions.spaceSmall,
+                          ),
                           child: Text(
                             'Your uploads',
                             style: TextStyle(
@@ -228,15 +245,22 @@ class _UploadsScreenState extends State<UploadsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('No uploads yet',
-                        style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold)),
+                    const Text(
+                      'No uploads yet',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 6),
-                    const Text('Your uploads will show up here.',
-                        style: TextStyle(
-                            color: AppColors.textSecondary, fontSize: 14)),
+                    const Text(
+                      'Your uploads will show up here.',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
                     const SizedBox(height: AppDimensions.spaceLarge),
                     _UploadButton(),
                   ],
@@ -286,8 +310,11 @@ class _UploadButton extends StatelessWidget {
             ),
           ),
           SizedBox(height: 8),
-          Icon(Icons.cloud_upload_outlined,
-              color: AppColors.textPrimary, size: 32),
+          Icon(
+            Icons.cloud_upload_outlined,
+            color: AppColors.textPrimary,
+            size: 32,
+          ),
         ],
       ),
     );
@@ -314,8 +341,9 @@ class _StackedRectsDecoration extends StatelessWidget {
                   color: Colors.purple.withOpacity(0.15 + i * 0.04),
                   width: 1.5,
                 ),
-                borderRadius:
-                    BorderRadius.circular(AppDimensions.borderRadiusSmall),
+                borderRadius: BorderRadius.circular(
+                  AppDimensions.borderRadiusSmall,
+                ),
               ),
             ),
           );

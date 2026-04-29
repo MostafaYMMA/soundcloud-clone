@@ -72,8 +72,11 @@ class _UserTileState extends State<UserTile> {
               ),
             ),
 
-            const Icon(Icons.notifications_active_outlined,
-                color: Colors.white, size: 56),
+            const Icon(
+              Icons.notifications_active_outlined,
+              color: Colors.white,
+              size: 56,
+            ),
 
             const SizedBox(height: AppDimensions.spaceLarge),
 
@@ -91,10 +94,7 @@ class _UserTileState extends State<UserTile> {
             const Text(
               'Never miss an update from your favorite artists.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 15,
-              ),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
             ),
 
             const SizedBox(height: AppDimensions.spaceExtraLarge),
@@ -112,14 +112,14 @@ class _UserTileState extends State<UserTile> {
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.borderRadiusPill),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.borderRadiusPill,
+                    ),
                   ),
                 ),
                 child: const Text(
                   'Enable notifications',
-                  style: TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -163,11 +163,14 @@ class _UserTileState extends State<UserTile> {
               backgroundColor: AppColors.surface,
               backgroundImage:
                   (widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty)
-                      ? NetworkImage(widget.avatarUrl!)
-                      : null,
+                  ? NetworkImage(widget.avatarUrl!)
+                  : null,
               child: (widget.avatarUrl == null || widget.avatarUrl!.isEmpty)
-                  ? const Icon(Icons.person,
-                      color: AppColors.textSecondary, size: 28)
+                  ? const Icon(
+                      Icons.person,
+                      color: AppColors.textSecondary,
+                      size: 28,
+                    )
                   : null,
             ),
 
@@ -187,20 +190,27 @@ class _UserTileState extends State<UserTile> {
                   ),
                   if (widget.location != null) ...[
                     const SizedBox(height: 2),
-                    Text(widget.location!,
-                        style: AppTextStyles.artistName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
+                    Text(
+                      widget.location!,
+                      style: AppTextStyles.artistName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                   if (widget.followers != null) ...[
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        const Icon(Icons.person,
-                            size: 12, color: AppColors.textSecondary),
+                        const Icon(
+                          Icons.person,
+                          size: 12,
+                          color: AppColors.textSecondary,
+                        ),
                         const SizedBox(width: 4),
-                        Text(_formattedFollowers,
-                            style: AppTextStyles.artistName),
+                        Text(
+                          _formattedFollowers,
+                          style: AppTextStyles.artistName,
+                        ),
                       ],
                     ),
                   ],
@@ -220,8 +230,9 @@ class _UserTileState extends State<UserTile> {
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.borderRadiusPill),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.borderRadiusPill,
+                  ),
                 ),
                 child: Text(
                   _isFollowing ? 'Following' : 'Follow',
@@ -235,8 +246,11 @@ class _UserTileState extends State<UserTile> {
             // ── Notification bell ────────────────────────────────────
             GestureDetector(
               onTap: _showNotificationsSheet,
-              child: const Icon(Icons.notifications_none,
-                  color: AppColors.textSecondary, size: 24),
+              child: const Icon(
+                Icons.notifications_none,
+                color: AppColors.textSecondary,
+                size: 24,
+              ),
             ),
           ],
         ),

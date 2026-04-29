@@ -86,14 +86,20 @@ class LibraryScreen extends StatelessWidget {
                 const SizedBox(height: AppDimensions.spaceSmall),
 
                 LibraryTile(
-                  title: 'Following', 
-                  onTap: () => onNavigate(FollowingScreen(onBack: onBack))
+                  title: 'Following',
+                  onTap: () => onNavigate(FollowingScreen(onBack: onBack)),
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
 
-                LibraryTile(title: 'Your insights', onTap: () => onNavigate(InsightsScreen(onBack: onBack)),),
+                LibraryTile(
+                  title: 'Your insights',
+                  onTap: () => onNavigate(InsightsScreen(onBack: onBack)),
+                ),
                 const SizedBox(height: AppDimensions.spaceSmall),
-                LibraryTile(title: 'Your uploads', onTap: () => onNavigate(UploadsScreen(onBack: onBack))),
+                LibraryTile(
+                  title: 'Your uploads',
+                  onTap: () => onNavigate(UploadsScreen(onBack: onBack)),
+                ),
                 const SizedBox(height: AppDimensions.spaceSmall),
               ]),
             ),

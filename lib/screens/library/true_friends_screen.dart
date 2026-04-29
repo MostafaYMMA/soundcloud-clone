@@ -62,11 +62,15 @@ class _TrueFriendsScreenState extends State<TrueFriendsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('No one followed you back yet',
-                      style: AppTextStyles.heading2),
+                  Text(
+                    'No one followed you back yet',
+                    style: AppTextStyles.heading2,
+                  ),
                   const SizedBox(height: 8),
-                  Text('People who follow you back will show up here.',
-                      style: AppTextStyles.artistName),
+                  Text(
+                    'People who follow you back will show up here.',
+                    style: AppTextStyles.artistName,
+                  ),
                 ],
               ),
             )
@@ -93,8 +97,11 @@ class _TrueFriendsScreenState extends State<TrueFriendsScreen> {
                             color: AppColors.textSecondary,
                             fontSize: 14,
                           ),
-                          prefixIcon: Icon(Icons.search,
-                              color: AppColors.textSecondary, size: 20),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(vertical: 10),
                         ),
@@ -103,22 +110,19 @@ class _TrueFriendsScreenState extends State<TrueFriendsScreen> {
                   ),
                 ),
                 SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final user = _filteredUsers[index];
-                      return UserTile(
-                        avatarUrl: user.avatarUrl,
-                        userName: user.userName,
-                        location: user.location,
-                        followers: user.followers,
-                        isFollowing: true,
-                       
-                        onNotificationTap: () {},
-                        onTap: () {},
-                      );
-                    },
-                    childCount: _filteredUsers.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final user = _filteredUsers[index];
+                    return UserTile(
+                      avatarUrl: user.avatarUrl,
+                      userName: user.userName,
+                      location: user.location,
+                      followers: user.followers,
+                      isFollowing: true,
+
+                      onNotificationTap: () {},
+                      onTap: () {},
+                    );
+                  }, childCount: _filteredUsers.length),
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: 100)),
               ],
