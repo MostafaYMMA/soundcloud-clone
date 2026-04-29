@@ -19,7 +19,7 @@ class VibeScreen extends StatelessWidget {
     ];
 
     return DefaultTabController(
-      length: 4,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: Text(vibe),
@@ -57,7 +57,6 @@ class VibeScreen extends StatelessWidget {
               unselectedLabelColor: AppColors.textSecondary,
               overlayColor: WidgetStatePropertyAll(AppColors.background),
               tabs: [
-                Tab(text: "All"),
                 Tab(text: "Trending"),
                 Tab(text: "Playlists"),
                 Tab(text: "Albums"),
@@ -67,7 +66,6 @@ class VibeScreen extends StatelessWidget {
             Expanded(
               child: TabBarView(
                 children: [
-                  const Center(child: Text("All content")),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
