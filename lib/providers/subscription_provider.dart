@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/subscription_service.dart';
-import '../providers/auth_providers.dart';
+import '../../services/subscription_service.dart';
+import '../../providers/auth_providers.dart';
 
 // ── State ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +20,15 @@ class SubscriptionState {
   });
 
   bool get isPremium => status?.isPremium ?? false;
+
+  /// True only for cards with matching billing cycle.
+  /// Pass the card's billingType ("Monthly" or "Yearly").
+  bool isCurrentPlanFor(String billingType) {
+    if (!isPremium) return false;
+    if (billingType.toLowerCase() == 'monthly') return status?.isMonthly ?? false;
+    if (billingType.toLowerCase() == 'yearly') return status?.isYearly ?? false;
+    return false;
+  }
 
   SubscriptionState copyWith({
     SubscriptionStatus? status,
@@ -52,7 +61,6 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
   Future<void> fetchStatus() async {
     final token = _token;
     if (token == null) return;
-
     state = state.copyWith(isLoading: true);
     try {
       final status = await _service.getMySubscription(accessToken: token);
@@ -62,23 +70,24 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
     }
   }
 
-  /// Upgrade to Premium using a Stripe payment token.
-  /// [paymentToken] comes from flutter_stripe after the user enters card details.
-  Future<bool> upgrade({required String paymentToken}) async {
+  /// Upgrade to Premium.
+  /// [isYearly] determines which endpoint to hit.
+  Future<bool> upgrade({
+    required String paymentToken,
+    required bool isYearly,
+  }) async {
     final token = _token;
     if (token == null) {
       state = state.copyWith(error: 'Not logged in.');
       return false;
     }
-
     state = state.copyWith(isUpgrading: true);
     try {
       final message = await _service.upgrade(
         accessToken: token,
         paymentToken: paymentToken,
-        plan: 'Premium',
+        isYearly: isYearly,
       );
-      // Refresh status after successful upgrade
       await fetchStatus();
       state = state.copyWith(isUpgrading: false, successMessage: message);
       return true;
@@ -99,5 +108,5 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
 
 final subscriptionProvider =
     StateNotifierProvider<SubscriptionNotifier, SubscriptionState>(
-      (ref) => SubscriptionNotifier(ref),
-    );
+  (ref) => SubscriptionNotifier(ref),
+);

@@ -3,17 +3,21 @@ import 'package:dio/dio.dart';
 const String _baseUrl = 'https://streamline-swp.duckdns.org/api';
 
 class SubscriptionStatus {
-  final String plan; // "Free" or "Premium"
+  final String plan;          // "Free" or "Premium"
   final int tracksUploaded;
-  final int? limit; // null for Premium (unlimited)
+  final int? limit;           // null = unlimited (Premium)
+  final String? billingCycle; // "monthly", "yearly", or null (Free)
 
   const SubscriptionStatus({
     required this.plan,
     required this.tracksUploaded,
     required this.limit,
+    required this.billingCycle,
   });
 
   bool get isPremium => plan == 'Premium';
+  bool get isMonthly => billingCycle == 'monthly';
+  bool get isYearly => billingCycle == 'yearly';
 
   factory SubscriptionStatus.fromJson(Map<String, dynamic> json) {
     final data = json['data'] as Map<String, dynamic>;
@@ -21,17 +25,16 @@ class SubscriptionStatus {
       plan: data['plan'] as String,
       tracksUploaded: data['tracks_uploaded'] as int,
       limit: data['limit'] as int?,
+      billingCycle: data['billing_cycle'] as String?,
     );
   }
 }
 
 class SubscriptionService {
   SubscriptionService({Dio? dio}) : _dio = dio ?? Dio();
-
   final Dio _dio;
 
   /// GET /subscriptions/me
-  /// Returns the current user's plan, tracks uploaded, and upload limit.
   Future<SubscriptionStatus> getMySubscription({
     required String accessToken,
   }) async {
@@ -46,18 +49,23 @@ class SubscriptionService {
     }
   }
 
-  /// POST /subscriptions/upgrade
-  /// Sends a Stripe payment token and plan name to upgrade the user.
-  /// Returns success message on 200.
+  /// POST /subscriptions/upgrade/monthly  — charges $9.99
+  /// POST /subscriptions/upgrade/yearly   — charges $99.99
   Future<String> upgrade({
     required String accessToken,
-    required String paymentToken, // e.g. "tok_visa" in test mode
-    required String plan, // "Premium"
+    required String paymentToken,
+    required bool isYearly,
   }) async {
+    final endpoint = isYearly
+        ? '$_baseUrl/subscriptions/upgrade/yearly'
+        : '$_baseUrl/subscriptions/upgrade/monthly';
     try {
       final response = await _dio.post(
-        '$_baseUrl/subscriptions/upgrade',
-        data: {'payment_token': paymentToken, 'plan': plan},
+        endpoint,
+        data: {
+          'payment_token': paymentToken,
+          'plan': 'Premium',
+        },
         options: Options(
           headers: {
             'Authorization': 'Bearer $accessToken',
@@ -75,11 +83,9 @@ class SubscriptionService {
   Exception _handleError(DioException e) {
     final statusCode = e.response?.statusCode;
     final responseData = e.response?.data;
-
     if (statusCode == 402) {
       return Exception('Payment failed. Please check your card details.');
     } else if (statusCode == 422) {
-      // Validation error from backend
       final detail = responseData?['detail'];
       if (detail is List && detail.isNotEmpty) {
         final msg = detail.first['msg'] ?? 'Validation error';
