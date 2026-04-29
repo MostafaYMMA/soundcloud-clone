@@ -1,7 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
+import '../../providers/playlist_provider.dart';
 
 enum CollectionType { playlist, album, station }
 
@@ -43,13 +49,34 @@ class CollectionDetailsData {
   });
 }
 
-class CollectionDetailsScreen extends StatelessWidget {
+class CollectionDetailsScreen extends ConsumerStatefulWidget {
+  final String playlistId;
   final CollectionDetailsData data;
 
-  const CollectionDetailsScreen({super.key, required this.data});
+  const CollectionDetailsScreen({
+    super.key,
+    required this.playlistId,
+    required this.data,
+  });
+
+  @override
+  ConsumerState<CollectionDetailsScreen> createState() =>
+      _CollectionDetailsScreenState();
+}
+
+class _CollectionDetailsScreenState
+    extends ConsumerState<CollectionDetailsScreen> {
+  late String _currentCoverPath;
+  bool _isUploadingCover = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentCoverPath = widget.data.artworkPath;
+  }
 
   String get _typeLabel {
-    switch (data.type) {
+    switch (widget.data.type) {
       case CollectionType.playlist:
         return 'Playlist';
       case CollectionType.album:
@@ -60,11 +87,62 @@ class CollectionDetailsScreen extends StatelessWidget {
   }
 
   String get _metaText {
-    return '${data.yearText} • $_typeLabel';
+    return '${widget.data.yearText} • $_typeLabel';
+  }
+
+  Future<void> _pickAndUploadCover() async {
+    final picker = ImagePicker();
+
+    final image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+
+    if (image == null) return;
+
+    setState(() {
+      _isUploadingCover = true;
+    });
+
+    try {
+      await ref.read(playlistProvider.notifier).uploadCover(
+            playlistId: widget.playlistId,
+            filePath: image.path,
+          );
+
+      await ref.read(playlistProvider.notifier).fetchLikedPlaylists();
+
+      if (!mounted) return;
+
+      setState(() {
+        _currentCoverPath = image.path;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cover updated successfully.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+
+      final error =
+          ref.read(playlistProvider).error ?? 'Failed to upload cover.';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingCover = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final data = widget.data;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -74,7 +152,13 @@ class CollectionDetailsScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.all(AppDimensions.spaceMedium),
                 children: [
-                  _TopSection(data: data, metaText: _metaText),
+                  _TopSection(
+                    data: data,
+                    metaText: _metaText,
+                    coverPath: _currentCoverPath,
+                    isUploadingCover: _isUploadingCover,
+                    onEditCover: _pickAndUploadCover,
+                  ),
                   const SizedBox(height: AppDimensions.spaceLarge),
                   _ActionRow(likesText: data.likesText),
                   const SizedBox(height: AppDimensions.spaceLarge),
@@ -121,8 +205,17 @@ class CollectionDetailsScreen extends StatelessWidget {
 class _TopSection extends StatelessWidget {
   final CollectionDetailsData data;
   final String metaText;
+  final String coverPath;
+  final bool isUploadingCover;
+  final VoidCallback onEditCover;
 
-  const _TopSection({required this.data, required this.metaText});
+  const _TopSection({
+    required this.data,
+    required this.metaText,
+    required this.coverPath,
+    required this.isUploadingCover,
+    required this.onEditCover,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -152,11 +245,59 @@ class _TopSection extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _CollectionImage(
-              path: data.artworkPath,
-              width: 140,
-              height: 140,
-              borderRadius: AppDimensions.borderRadiusMedium,
+            Stack(
+              children: [
+                _CollectionImage(
+                  path: coverPath,
+                  width: 140,
+                  height: 140,
+                  borderRadius: AppDimensions.borderRadiusMedium,
+                ),
+                Positioned.fill(
+                  child: Material(
+                    color: Colors.black.withOpacity(0.28),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.borderRadiusMedium,
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.borderRadiusMedium,
+                      ),
+                      onTap: isUploadingCover ? null : onEditCover,
+                      child: Center(
+                        child: isUploadingCover
+                            ? const SizedBox(
+                                width: 26,
+                                height: 26,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Icon(
+                                    Icons.add_a_photo_outlined,
+                                    color: Colors.white,
+                                    size: 26,
+                                  ),
+                                  SizedBox(height: 6),
+                                  Text(
+                                    'Edit cover',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(width: AppDimensions.spaceMedium),
             Expanded(
@@ -294,26 +435,6 @@ class _TrackTile extends StatelessWidget {
                   fontSize: 15,
                 ),
               ),
-              if (!track.isAvailable) ...[
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_off,
-                      color: Colors.white60,
-                      size: 15,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Not available',
-                      style: AppTextStyles.caption.copyWith(
-                        color: Colors.white60,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
             ],
           ),
         ),
@@ -342,6 +463,14 @@ class _CollectionImage extends StatelessWidget {
 
     if (url.startsWith('http')) return url;
 
+    if (url.startsWith('/api/uploads')) {
+      return 'https://streamline-swp.duckdns.org$url';
+    }
+
+    if (url.startsWith('/api/')) {
+      return 'https://streamline-swp.duckdns.org$url';
+    }
+
     if (url.startsWith('/')) {
       return 'https://streamline-swp.duckdns.org$url';
     }
@@ -351,6 +480,18 @@ class _CollectionImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (path.isNotEmpty && File(path).existsSync()) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Image.file(
+          File(path),
+          width: width,
+          height: height,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+
     final fixedPath = _fixMediaUrl(path);
 
     if (fixedPath.isEmpty) {

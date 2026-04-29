@@ -78,6 +78,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => CollectionDetailsScreen(
+          playlistId: detailedPlaylist.id,
           data: _mapPlaylistToCollection(detailedPlaylist),
         ),
       ),
