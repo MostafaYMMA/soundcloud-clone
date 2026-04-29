@@ -24,6 +24,7 @@ class VibeScreen extends StatelessWidget {
         appBar: AppBar(
           title: Text(vibe),
         ),
+        appBar: AppBar(title: Text(vibe)),
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -77,6 +78,7 @@ class VibeScreen extends StatelessWidget {
                           'Trending',
                           style: AppTextStyles.heading1,
                         ),
+                        child: Text('Trending', style: AppTextStyles.heading1),
                       ),
                       const SizedBox(height: AppDimensions.spaceSmall),
                       Expanded(
@@ -106,10 +108,6 @@ class VibeScreen extends StatelessWidget {
                         padding: EdgeInsets.symmetric(
                           horizontal: AppDimensions.spaceLarge,
                         ),
-                        child: Text(
-                          'Playlists',
-                          style: AppTextStyles.heading1,
-                        ),
                       ),
                       const SizedBox(height: AppDimensions.spaceSmall),
                       Expanded(
@@ -124,6 +122,11 @@ class VibeScreen extends StatelessWidget {
                             crossAxisSpacing: 12,
                             childAspectRatio: 0.95,
                           ),
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                childAspectRatio: 0.95,
+                              ),
                           itemCount: trendingTracks.length,
                           itemBuilder: (context, index) {
                             final track = trendingTracks[index];
@@ -142,10 +145,6 @@ class VibeScreen extends StatelessWidget {
                         padding: EdgeInsets.symmetric(
                           horizontal: AppDimensions.spaceLarge,
                         ),
-                        child: Text(
-                          'Albums',
-                          style: AppTextStyles.heading1,
-                        ),
                       ),
                       const SizedBox(height: AppDimensions.spaceSmall),
                       Expanded(
@@ -155,11 +154,6 @@ class VibeScreen extends StatelessWidget {
                           ),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            childAspectRatio: 0.95,
-                          ),
                           itemCount: trendingTracks.length,
                           itemBuilder: (context, index) {
                             final track = trendingTracks[index];
@@ -197,9 +191,10 @@ class _GridTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius:
-                BorderRadius.circular(AppDimensions.borderRadiusSharp),
-            child: artworkUrl.isNotEmpty
+            borderRadius: BorderRadius.circular(
+              AppDimensions.borderRadiusSharp,
+            ),
+            child: track.artworkUrl.isNotEmpty
                 ? Image.network(
                     artworkUrl,
                     width: double.infinity,

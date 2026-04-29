@@ -69,14 +69,12 @@ class VibesSection extends StatelessWidget {
 
               return GestureDetector(
                 onTap: () {
-                   Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => VibeScreen(
-        vibe: vibe["title"],
-      ),
-    ),
-                   );
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => VibeScreen(vibe: vibe["title"]),
+                    ),
+                  );
                 },
                 child: Container(
                   height: _tileHeight(index),
