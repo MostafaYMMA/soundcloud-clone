@@ -66,10 +66,7 @@ class AlbumService {
     } else {
       raw = [];
     }
-    return raw
-        .whereType<Map<String, dynamic>>()
-        .map(Album.fromJson)
-        .toList();
+    return raw.whereType<Map<String, dynamic>>().map(Album.fromJson).toList();
   }
 
   /// GET /albums/liked

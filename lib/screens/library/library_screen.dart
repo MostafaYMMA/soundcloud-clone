@@ -171,8 +171,7 @@ class LibraryScreen extends ConsumerWidget {
                 (context, index) => TrackTile(
                   track: tracks[index],
                   onTap: () => onTrackTap(tracks[index]),
-                  onMoreTap: () =>
-                      showTrackContextMenu(context, tracks[index]),
+                  onMoreTap: () => showTrackContextMenu(context, tracks[index]),
                 ),
                 childCount: tracks.length,
               ),

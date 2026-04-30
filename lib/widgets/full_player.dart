@@ -462,11 +462,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
           gradient: RadialGradient(
             center: Alignment(-0.3, -0.3),
             radius: 1.3,
-            colors: [
-              Color(0xFF8B1A1A),
-              Color(0xFF3A0808),
-              Color(0xFF0D0303),
-            ],
+            colors: [Color(0xFF8B1A1A), Color(0xFF3A0808), Color(0xFF0D0303)],
           ),
         ),
       );
@@ -478,9 +474,8 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        errorBuilder: (context, error, stackTrace) => Container(
-          color: Colors.black,
-        ),
+        errorBuilder: (context, error, stackTrace) =>
+            Container(color: Colors.black),
       ),
     );
   }
