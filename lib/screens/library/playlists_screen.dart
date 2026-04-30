@@ -178,7 +178,6 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
     );
   }
 
-
   Future<void> _removePlaylistFromLikes(Playlist playlist) async {
     await ref.read(playlistProvider.notifier).unlikePlaylist(playlist.id);
 
@@ -220,10 +219,7 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  leading: const Icon(
-                    Icons.favorite,
-                    color: AppColors.primary,
-                  ),
+                  leading: const Icon(Icons.favorite, color: AppColors.primary),
                   title: const Text(
                     'Remove from liked playlists',
                     style: TextStyle(color: AppColors.textPrimary),

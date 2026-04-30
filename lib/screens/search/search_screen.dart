@@ -230,7 +230,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 style: const TextStyle(color: Colors.white),
               ),
               subtitle: Text(
-                playlist.description.isEmpty ? 'Playlist' : playlist.description,
+                playlist.description.isEmpty
+                    ? 'Playlist'
+                    : playlist.description,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.white70),
