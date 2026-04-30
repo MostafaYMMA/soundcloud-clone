@@ -399,13 +399,8 @@ final _fakeAuthOverride = authProvider.overrideWith((ref) {
     tokens: AuthTokens(
       accessToken: 'fake-access-token',
       refreshToken: 'fake-refresh-token',
-      
     ),
-    user: User(
-      id: 'fake-id',
-      email: 'test@test.com',
-      userName: 'testuser',
-    ),
+    user: User(id: 'fake-id', email: 'test@test.com', userName: 'testuser'),
   );
   return notifier;
 });
@@ -416,21 +411,21 @@ final _fakeUserLikedTracksOverride = userLikedTracksProvider.overrideWith(
 );
 
 List<Override> get _overrides => [
-      _fakeAuthOverride,
-      _fakeUserLikedTracksOverride,
-    ];
+  _fakeAuthOverride,
+  _fakeUserLikedTracksOverride,
+];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 Widget wrap(Widget child) => ProviderScope(
-      overrides: _overrides,
-      child: MaterialApp(home: child),
-    );
+  overrides: _overrides,
+  child: MaterialApp(home: child),
+);
 
 Widget wrappedRoot() => ProviderScope(
-      overrides: _overrides,
-      child: const MaterialApp(home: FakeRoot()),
-    );
+  overrides: _overrides,
+  child: const MaterialApp(home: FakeRoot()),
+);
 
 Finder appBarTitle(String text) =>
     find.descendant(of: find.byType(AppBar), matching: find.text(text));
@@ -671,13 +666,18 @@ void main() {
       await tester.pumpAndSettle();
 
       final sorted = [..._fakeTracks]
-        ..sort((a, b) => (a.artist?.displayName ?? '')
-            .compareTo(b.artist?.displayName ?? ''));
+        ..sort(
+          (a, b) => (a.artist?.displayName ?? '').compareTo(
+            b.artist?.displayName ?? '',
+          ),
+        );
 
       final valid = sorted
-          .where((t) =>
-              t.artist?.displayName != null &&
-              t.artist!.displayName.isNotEmpty)
+          .where(
+            (t) =>
+                t.artist?.displayName != null &&
+                t.artist!.displayName.isNotEmpty,
+          )
           .toList();
 
       if (valid.length >= 2) {
