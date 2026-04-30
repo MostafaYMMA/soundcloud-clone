@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/track_provider.dart';
 import '../../providers/liked_tracks_provider.dart';
+import '../../providers/followers_provider.dart';
 
 class FullPlayer extends ConsumerStatefulWidget {
   const FullPlayer({
