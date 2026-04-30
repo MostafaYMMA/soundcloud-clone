@@ -56,8 +56,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String password,
     required String displayName,
     String accountType = 'listener',
-  }) async {
-    state = const AuthState(isLoading: true);
+
   // ─────────────────────────────────────────────
   // 🔥 BOOTSTRAP (restore login)
   // ─────────────────────────────────────────────
