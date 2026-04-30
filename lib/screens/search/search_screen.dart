@@ -312,10 +312,7 @@ class _SquareImage extends StatelessWidget {
   final String imageUrl;
   final IconData fallbackIcon;
 
-  const _SquareImage({
-    required this.imageUrl,
-    required this.fallbackIcon,
-  });
+  const _SquareImage({required this.imageUrl, required this.fallbackIcon});
 
   @override
   Widget build(BuildContext context) {
