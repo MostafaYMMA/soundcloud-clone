@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_colors.dart';
@@ -5,9 +7,10 @@ import '../../models/track.dart';
 
 class YourLikesCard extends StatelessWidget {
   final List<Track> tracks;
-  final void Function(Track)? onTrackTap;
+  // Called with (allTracks, selectedIndex) — used for both tile taps and shuffle.
+  final void Function(List<Track>, int)? onQueuePlay;
 
-  const YourLikesCard({super.key, required this.tracks, this.onTrackTap});
+  const YourLikesCard({super.key, required this.tracks, this.onQueuePlay});
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +38,6 @@ class YourLikesCard extends StatelessWidget {
           child: Row(
             children: [
               SizedBox(
-                //This sized box is teh the heart emoji (Shape + Border)
                 width: 52,
                 height: 52,
                 child: Stack(
@@ -50,7 +52,7 @@ class YourLikesCard extends StatelessWidget {
                       left: 4,
                       child: Icon(
                         Icons.favorite_border,
-                        color: AppColors.primary.withOpacity(0.9),
+                        color: AppColors.primary.withValues(alpha: 0.9),
                         size: 44,
                       ),
                     ),
@@ -66,7 +68,7 @@ class YourLikesCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const Spacer(), //Like Flex in CSSS
+              const Spacer(),
               Container(
                 decoration: const BoxDecoration(
                   color: Colors.black38,
@@ -78,7 +80,12 @@ class YourLikesCard extends StatelessWidget {
                     color: Colors.white,
                     size: 20,
                   ),
-                  onPressed: () {}, // To be implemented
+                  onPressed: tracks.isEmpty
+                      ? null
+                      : () {
+                          final index = Random().nextInt(tracks.length);
+                          onQueuePlay?.call(tracks, index);
+                        },
                 ),
               ),
             ],
@@ -86,7 +93,6 @@ class YourLikesCard extends StatelessWidget {
         ),
 
         Padding(
-          //Like Column and Row but has Gridview (Square like shape)
           padding: const EdgeInsets.only(
             left: AppDimensions.spaceMedium,
             right: AppDimensions.spaceMedium,
@@ -94,19 +100,17 @@ class YourLikesCard extends StatelessWidget {
           ),
           child: GridView.count(
             crossAxisCount: 2,
-            shrinkWrap:
-                true, //Throws an error if removed (Grid try to fill the whole page although it is inside a colums)
+            shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: AppDimensions.spaceSmall,
             mainAxisSpacing: AppDimensions.spaceSmall,
             childAspectRatio: 2.8,
             children: [
-              for (final track in tracks)
+              for (int i = 0; i < tracks.length; i++)
                 _TrackGridTile(
-                  title: track.title,
-                  artist: track.artist?.displayName ?? 'Unknown Artist',
-                  track: track,
-                  onTrackTap: onTrackTap,
+                  title: tracks[i].title,
+                  artist: tracks[i].artist?.displayName ?? 'Unknown Artist',
+                  onTap: () => onQueuePlay?.call(tracks, i),
                 ),
             ],
           ),
@@ -119,20 +123,14 @@ class YourLikesCard extends StatelessWidget {
 class _TrackGridTile extends StatelessWidget {
   final String title;
   final String artist;
-  final Track? track;
-  final void Function(Track)? onTrackTap;
+  final VoidCallback? onTap;
 
-  const _TrackGridTile({
-    required this.title,
-    required this.artist,
-    this.track,
-    this.onTrackTap,
-  });
+  const _TrackGridTile({required this.title, required this.artist, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: track != null ? () => onTrackTap?.call(track!) : null,
+      onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFF212121),
@@ -141,7 +139,6 @@ class _TrackGridTile extends StatelessWidget {
         child: Row(
           children: [
             ClipRRect(
-              //Container but it can cut parts of burders (To have smooth top left and bottom right corners but hsarp at the right half )
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(AppDimensions.borderRadiusSmall),
                 bottomLeft: Radius.circular(AppDimensions.borderRadiusSmall),
@@ -157,7 +154,7 @@ class _TrackGridTile extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: AppDimensions.spaceSmall), //BReak
+            const SizedBox(width: AppDimensions.spaceSmall),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

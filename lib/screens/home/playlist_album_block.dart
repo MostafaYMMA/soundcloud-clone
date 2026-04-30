@@ -3,9 +3,6 @@ import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
 import '../../constants/app_colors.dart';
 import '../../models/recently_played_item.dart';
-import '../../models/playlist.dart';
-import '../../models/album.dart';
-import 'more_like_section.dart';
 
 class PlaylistAlbumBlock extends StatelessWidget {
   final String sectionTitle;
@@ -20,7 +17,7 @@ class PlaylistAlbumBlock extends StatelessWidget {
   });
 
   String _coverUrl(RecentlyPlayedItem item) => switch (item) {
-    RecentlyPlayedPlaylist(:final playlist) => playlist.coverUrl ?? '',
+    RecentlyPlayedPlaylist(:final playlist) => playlist.coverUrl,
     RecentlyPlayedAlbum(:final album) => album.artworkUrl,
   };
 

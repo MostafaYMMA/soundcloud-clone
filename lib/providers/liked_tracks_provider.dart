@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/track.dart';
 
 final likedTracksProvider =
     StateNotifierProvider<LikedTracksNotifier, Set<String>>(
