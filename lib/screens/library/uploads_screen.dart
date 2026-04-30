@@ -1,42 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
 import '../../models/track.dart';
 import '../../models/user.dart';
-import '../../mock_data/mock_tracks.dart';
-import 'widgets/track_tile.dart';
+import '../../providers/auth_providers.dart';
+import '../../providers/track_provider.dart';
+import '../../widgets/upload_track_sheet.dart';
 import 'context_menu_sheet.dart';
+import 'widgets/track_tile.dart';
 
 enum UploadsSortOption { recentlyAdded, firstAdded, trackName }
 
-class UploadsScreen extends StatefulWidget {
+class UploadsScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
   final User? currentUser;
-  const UploadsScreen({super.key, this.onBack, this.currentUser});
+  final Future<void> Function(Track track) onTrackTap;
+
+  const UploadsScreen({
+    super.key,
+    this.onBack,
+    this.currentUser,
+    required this.onTrackTap,
+  });
 
   @override
-  State<UploadsScreen> createState() => _UploadsScreenState();
+  ConsumerState<UploadsScreen> createState() => _UploadsScreenState();
 }
 
-class _UploadsScreenState extends State<UploadsScreen> {
+class _UploadsScreenState extends ConsumerState<UploadsScreen> {
   UploadsSortOption _sortOption = UploadsSortOption.recentlyAdded;
   final TextEditingController _searchController = TextEditingController();
-  List<Track> _filteredTracks = [];
-  List<Track> _userTracks = [];
 
   @override
   void initState() {
     super.initState();
-    _userTracks = MockTracks.recentlyPlayedTracks
-        .where(
-          (t) =>
-              t.formattedArtist.toLowerCase() ==
-              (widget.currentUser?.userName ?? '').toLowerCase(),
-        )
-        .toList();
-    _filteredTracks = List.from(_userTracks);
-    _searchController.addListener(_onSearchChanged);
+    _searchController.addListener(() => setState(() {}));
   }
 
   @override
@@ -45,34 +46,65 @@ class _UploadsScreenState extends State<UploadsScreen> {
     super.dispose();
   }
 
-  void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredTracks = _userTracks
-          .where(
-            (t) =>
-                t.title.toLowerCase().contains(query) ||
-                t.formattedArtist.toLowerCase().contains(query),
-          )
-          .toList();
-    });
+  String get _username {
+    return widget.currentUser?.userName ??
+        ref.read(authProvider).user?.userName ??
+        '';
   }
 
-  void _applySort(UploadsSortOption option) {
-    setState(() {
-      _sortOption = option;
-      switch (option) {
-        case UploadsSortOption.recentlyAdded:
-          _filteredTracks = List.from(_userTracks);
-          break;
-        case UploadsSortOption.firstAdded:
-          _filteredTracks = List.from(_userTracks.reversed);
-          break;
-        case UploadsSortOption.trackName:
-          _filteredTracks.sort((a, b) => a.title.compareTo(b.title));
-          break;
-      }
-    });
+  List<Track> _filterAndSortTracks(List<Track> tracks) {
+    final query = _searchController.text.trim().toLowerCase();
+
+    var result = tracks.where((track) {
+      if (query.isEmpty) return true;
+      return track.title.toLowerCase().contains(query) ||
+          track.formattedArtist.toLowerCase().contains(query);
+    }).toList();
+
+    switch (_sortOption) {
+      case UploadsSortOption.recentlyAdded:
+        result.sort((a, b) {
+          final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return bDate.compareTo(aDate);
+        });
+        break;
+      case UploadsSortOption.firstAdded:
+        result.sort((a, b) {
+          final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return aDate.compareTo(bDate);
+        });
+        break;
+      case UploadsSortOption.trackName:
+        result.sort((a, b) => a.title.compareTo(b.title));
+        break;
+    }
+
+    return result;
+  }
+
+  Future<void> _openUploadSheet() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.background,
+      builder: (_) => const UploadTrackSheet(),
+    );
+
+    if (!mounted) return;
+
+    final username = _username;
+    if (username.isNotEmpty) {
+      ref.invalidate(userTracksProvider(username));
+    }
+  }
+
+  Future<void> _refreshUploads() async {
+    final username = _username;
+    if (username.isNotEmpty) {
+      ref.invalidate(userTracksProvider(username));
+    }
   }
 
   void _showSortBottomSheet() {
@@ -101,7 +133,7 @@ class _UploadsScreenState extends State<UploadsScreen> {
                 selected: _sortOption == UploadsSortOption.recentlyAdded,
                 onTap: () {
                   Navigator.pop(context);
-                  _applySort(UploadsSortOption.recentlyAdded);
+                  setState(() => _sortOption = UploadsSortOption.recentlyAdded);
                 },
               ),
               _SortOption(
@@ -109,7 +141,7 @@ class _UploadsScreenState extends State<UploadsScreen> {
                 selected: _sortOption == UploadsSortOption.firstAdded,
                 onTap: () {
                   Navigator.pop(context);
-                  _applySort(UploadsSortOption.firstAdded);
+                  setState(() => _sortOption = UploadsSortOption.firstAdded);
                 },
               ),
               _SortOption(
@@ -117,7 +149,7 @@ class _UploadsScreenState extends State<UploadsScreen> {
                 selected: _sortOption == UploadsSortOption.trackName,
                 onTap: () {
                   Navigator.pop(context);
-                  _applySort(UploadsSortOption.trackName);
+                  setState(() => _sortOption = UploadsSortOption.trackName);
                 },
               ),
             ],
@@ -129,177 +161,262 @@ class _UploadsScreenState extends State<UploadsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final username = _username;
+
+    if (username.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: Center(
+            child: Text(
+              'Please log in to see your uploads.',
+              style: AppTextStyles.caption.copyWith(color: Colors.white70),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final uploadsAsync = ref.watch(userTracksProvider(username));
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          // ── Header ──────────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Stack(
-              children: [
-                Positioned(
-                  right: -30,
-                  top: -10,
-                  child: _StackedRectsDecoration(),
-                ),
-                SafeArea(
+      body: RefreshIndicator(
+        onRefresh: _refreshUploads,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: _Header(
+                onSortTap: _showSortBottomSheet,
+                onBack: widget.onBack,
+                searchController: _searchController,
+              ),
+            ),
+            uploadsAsync.when(
+              loading: () => const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (error, _) => SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 12, 16, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(
-                                Icons.chevron_left,
-                                color: Colors.white,
-                                size: 28,
-                              ),
-                              onPressed: () => widget.onBack?.call(),
-                            ),
-                            Expanded(
-                              child: Container(
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1E1E1E),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: TextField(
-                                  controller: _searchController,
-                                  style: const TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontSize: 14,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText:
-                                        'Search ${_userTracks.length} tracks',
-                                    hintStyle: const TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 14,
-                                    ),
-                                    prefixIcon: const Icon(
-                                      Icons.search,
-                                      color: AppColors.textSecondary,
-                                      size: 20,
-                                    ),
-                                    border: InputBorder.none,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      vertical: 10,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            GestureDetector(
-                              onTap: _showSortBottomSheet,
-                              child: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: AppColors.surface,
-                                  borderRadius: BorderRadius.circular(
-                                    AppDimensions.borderRadiusPill,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.sort,
-                                  color: AppColors.primary,
-                                  size: 22,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        const Padding(
-                          padding: EdgeInsets.only(
-                            left: AppDimensions.spaceSmall,
-                          ),
-                          child: Text(
-                            'Your uploads',
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-                      ],
+                    padding: const EdgeInsets.all(AppDimensions.spaceMedium),
+                    child: Text(
+                      error.toString(),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white70),
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
+              data: (tracks) {
+                final filteredTracks = _filterAndSortTracks(tracks);
 
-          // ── Empty state or track list ────────────────────────────────
-          if (_userTracks.isEmpty)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(AppDimensions.spaceMedium),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'No uploads yet',
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                if (tracks.isEmpty) {
+                  return SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppDimensions.spaceMedium),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'No uploads yet',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Your uploads will show up here.',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: AppDimensions.spaceLarge),
+                          _UploadButton(onTap: _openUploadSheet),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Your uploads will show up here.',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
+                  );
+                }
+
+                if (filteredTracks.isEmpty) {
+                  return SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppDimensions.spaceMedium),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'No matching tracks.',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const SizedBox(height: AppDimensions.spaceLarge),
+                          _UploadButton(onTap: _openUploadSheet),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: AppDimensions.spaceLarge),
-                    _UploadButton(),
-                  ],
-                ),
-              ),
-            )
-          else ...[
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => TrackTile(
-                  track: _filteredTracks[index],
-                  onTap: () {},
-                  onMoreTap: () =>
-                      showTrackContextMenu(context, _filteredTracks[index]),
-                ),
-                childCount: _filteredTracks.length,
-              ),
+                  );
+                }
+
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => TrackTile(
+                      track: filteredTracks[index],
+                      onTap: () => widget.onTrackTap(filteredTracks[index]),
+                      onMoreTap: () =>
+                          showTrackContextMenu(context, filteredTracks[index]),
+                    ),
+                    childCount: filteredTracks.length,
+                  ),
+                );
+              },
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(AppDimensions.spaceMedium),
-                child: _UploadButton(),
-              ),
+            uploadsAsync.maybeWhen(
+              data: (tracks) {
+                if (tracks.isEmpty) {
+                  return const SliverToBoxAdapter(child: SizedBox.shrink());
+                }
+
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppDimensions.spaceMedium),
+                    child: _UploadButton(onTap: _openUploadSheet),
+                  ),
+                );
+              },
+              orElse: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
             ),
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
-
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
+        ),
       ),
     );
   }
 }
 
+class _Header extends StatelessWidget {
+  final VoidCallback onSortTap;
+  final VoidCallback? onBack;
+  final TextEditingController searchController;
+
+  const _Header({
+    required this.onSortTap,
+    required this.onBack,
+    required this.searchController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned(right: -30, top: -10, child: _StackedRectsDecoration()),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 12, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.chevron_left,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                      onPressed: () => onBack?.call(),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E1E1E),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: TextField(
+                          controller: searchController,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
+                          ),
+                          decoration: const InputDecoration(
+                            hintText: 'Search your tracks',
+                            hintStyle: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                            ),
+                            prefixIcon: Icon(
+                              Icons.search,
+                              color: AppColors.textSecondary,
+                              size: 20,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(vertical: 10),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: onSortTap,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.borderRadiusPill,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.sort,
+                          color: AppColors.primary,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Padding(
+                  padding: EdgeInsets.only(left: AppDimensions.spaceSmall),
+                  child: Text(
+                    'Your uploads',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _UploadButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _UploadButton({required this.onTap});
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {}, // hook up later
+      onTap: onTap,
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

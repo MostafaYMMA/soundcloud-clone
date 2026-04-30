@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_project/mock_data/mock_tracks.dart';
+import 'package:my_project/models/track.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
@@ -19,7 +20,6 @@ import 'uploads_screen.dart';
 import 'history_screen.dart';
 import 'recently_played_screen.dart';
 import 'context_menu_sheet.dart';
-import 'package:my_project/models/track.dart';
 
 class LibraryScreen extends StatelessWidget {
   final void Function(Widget) onNavigate;
@@ -32,6 +32,7 @@ class LibraryScreen extends StatelessWidget {
     this.onBack,
     required this.onTrackTap,
   });
+
   @override
   Widget build(BuildContext context) {
     final history = MockTracks.historyTracks;
@@ -76,7 +77,6 @@ class LibraryScreen extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
-          // ── Library menu tiles ───────────────────────────────────────
           SliverPadding(
             padding: const EdgeInsets.all(AppDimensions.spaceMedium),
             sliver: SliverList(
@@ -89,7 +89,11 @@ class LibraryScreen extends StatelessWidget {
                 LibraryTile(
                   title: 'Playlists',
                   onTap: () => onNavigate(
-                    PlaylistsScreen(onBack: onBack, onTrackTap: onTrackTap),
+                    PlaylistsScreen(
+                      onBack: onBack,
+                      onTrackTap: onTrackTap,
+                      onNavigate: onNavigate,
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
@@ -110,25 +114,22 @@ class LibraryScreen extends StatelessWidget {
                 const SizedBox(height: AppDimensions.spaceSmall),
                 LibraryTile(
                   title: 'Your uploads',
-                  onTap: () => onNavigate(UploadsScreen(onBack: onBack)),
+                  onTap: () => onNavigate(
+                    UploadsScreen(onBack: onBack, onTrackTap: onTrackTap),
+                  ),
                 ),
               ]),
             ),
           ),
-
           const SliverToBoxAdapter(
             child: SizedBox(height: AppDimensions.spaceLarge),
           ),
-
-          // ── Recently Played header ───────────────────────────────────
           SliverToBoxAdapter(
             child: _SectionHeader(
               title: 'Recently Played',
               onSeeAll: () => onNavigate(RecentlyPlayedScreen(onBack: onBack)),
             ),
           ),
-
-          // ── Recently Played — playlist/album horizontal boxes ────────
           SliverToBoxAdapter(
             child: PlaylistAlbumBlock(
               sectionTitle: '',
@@ -153,31 +154,25 @@ class LibraryScreen extends StatelessWidget {
               },
             ),
           ),
-
           const SliverToBoxAdapter(
             child: SizedBox(height: AppDimensions.spaceLarge),
           ),
-
-          // ── History header ───────────────────────────────────────────
           SliverToBoxAdapter(
             child: _SectionHeader(
               title: 'History',
               onSeeAll: () => onNavigate(HistoryScreen(onBack: onBack)),
             ),
           ),
-
-          // ── History — track tiles ────────────────────────────────────
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) => TrackTile(
                 track: history[index],
-                onTap: () {},
+                onTap: () => onTrackTap(history[index]),
                 onMoreTap: () => showTrackContextMenu(context, history[index]),
               ),
               childCount: history.length,
             ),
           ),
-
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
@@ -185,7 +180,6 @@ class LibraryScreen extends StatelessWidget {
   }
 }
 
-// ── Section header with "See all" button ────────────────────────────────────
 class _SectionHeader extends StatelessWidget {
   final String title;
   final VoidCallback onSeeAll;

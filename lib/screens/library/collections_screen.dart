@@ -57,12 +57,14 @@ class CollectionDetailsScreen extends ConsumerStatefulWidget {
   final String? playlistId;
   final CollectionDetailsData data;
   final Future<void> Function(CollectionTrack track)? onTrackTap;
+  final VoidCallback? onBack;
 
   const CollectionDetailsScreen({
     super.key,
     this.playlistId,
     required this.data,
     this.onTrackTap,
+    this.onBack,
   });
 
   @override
@@ -108,6 +110,7 @@ class _CollectionDetailsScreenState
       );
       return;
     }
+
     final picker = ImagePicker();
 
     final image = await picker.pickImage(
@@ -164,8 +167,6 @@ class _CollectionDetailsScreenState
       );
       return;
     }
-    print('REMOVING PLAYLIST ID: ${widget.playlistId}');
-    print('REMOVING TRACK ID: ${track.id}');
 
     if (track.id.isEmpty) {
       ScaffoldMessenger.of(
@@ -189,13 +190,9 @@ class _CollectionDetailsScreenState
         final error =
             ref.read(playlistProvider).error ?? 'Failed to remove track.';
 
-        String message;
-
-        if (error.contains('only edit your own playlists')) {
-          message = 'You can only edit your own playlists';
-        } else {
-          message = error;
-        }
+        final message = error.contains('only edit your own playlists')
+            ? 'You can only edit your own playlists'
+            : error;
 
         ScaffoldMessenger.of(
           context,
@@ -285,6 +282,7 @@ class _CollectionDetailsScreenState
                     coverPath: _currentCoverPath,
                     isUploadingCover: _isUploadingCover,
                     onEditCover: _pickAndUploadCover,
+                    onBack: widget.onBack,
                   ),
                   const SizedBox(height: AppDimensions.spaceLarge),
                   _ActionRow(likesText: data.likesText),
@@ -340,6 +338,7 @@ class _TopSection extends StatelessWidget {
   final String coverPath;
   final bool isUploadingCover;
   final VoidCallback onEditCover;
+  final VoidCallback? onBack;
 
   const _TopSection({
     required this.data,
@@ -347,6 +346,7 @@ class _TopSection extends StatelessWidget {
     required this.coverPath,
     required this.isUploadingCover,
     required this.onEditCover,
+    this.onBack,
   });
 
   @override
@@ -357,7 +357,7 @@ class _TopSection extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: InkWell(
             borderRadius: BorderRadius.circular(100),
-            onTap: () => Navigator.pop(context),
+            onTap: onBack ?? () => Navigator.pop(context),
             child: Container(
               width: 44,
               height: 44,
@@ -521,7 +521,6 @@ class _TrackTile extends StatelessWidget {
     return '${track.artist}, ${track.secondaryArtist}';
   }
 
-  @override
   @override
   Widget build(BuildContext context) {
     return GestureDetector(

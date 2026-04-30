@@ -2,7 +2,6 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_project/services/track_service.dart';
 import '../models/track.dart';
 import '../services/track_service.dart';
 import 'auth_providers.dart';
@@ -140,9 +139,7 @@ class FollowingFeedNotifier extends StateNotifier<FeedState> {
     if (!state.hasMore || state.isFetchingMore || state.nextCursor == null) {
       return;
     }
-
     state = state.copyWith(isFetchingMore: true);
-
     try {
       final data = await _service.getFollowingFeed(
         limit: 20,
@@ -225,9 +222,7 @@ class DiscoverFeedNotifier extends StateNotifier<FeedState> {
     if (!state.hasMore || state.isFetchingMore || state.nextCursor == null) {
       return;
     }
-
     state = state.copyWith(isFetchingMore: true);
-
     try {
       final data = await _service.getDiscoverFeed(
         limit: 20,
@@ -311,8 +306,18 @@ class CreateTrackNotifier extends AsyncNotifier<Track?> {
     String? coverImagePath,
   }) async {
     state = const AsyncLoading();
+
+    final token = ref.read(authProvider).tokens?.accessToken;
+
+    if (token == null || token.isEmpty) {
+      final err = Exception('You are not logged in.');
+      state = AsyncError(err, StackTrace.current);
+      throw err;
+    }
+
     try {
       final track = await ref.read(tracksServiceProvider).createTrack(
+            accessToken: token,
             title: title,
             description: description,
             filePath: filePath,
@@ -322,10 +327,26 @@ class CreateTrackNotifier extends AsyncNotifier<Track?> {
             visibility: visibility,
             coverImagePath: coverImagePath,
           );
+
+      print('========== UPLOADED TRACK ==========');
+      print('ID: ${track.trackId}');
+      print('TITLE: ${track.title}');
+      print('VISIBILITY: ${track.visibility}');
+      print('PROCESSING STATUS: ${track.processingStatus}');
+      print('===================================');
+
       state = AsyncData(track);
+
+      ref.read(followingFeedProvider.notifier).refresh();
+      ref.read(discoverFeedProvider.notifier).refresh();
+
       return track;
     } on DioException catch (e) {
       final err = Exception(_dioError(e));
+      state = AsyncError(err, StackTrace.current);
+      throw err;
+    } catch (e) {
+      final err = Exception(e.toString().replaceFirst('Exception: ', ''));
       state = AsyncError(err, StackTrace.current);
       throw err;
     }
@@ -433,18 +454,16 @@ class ToggleTrackLikeNotifier extends FamilyAsyncNotifier<void, String> {
         await service.likeTrack(trackId: arg);
       }
 
-      // ── Update feeds optimistically ───────────────────────────────
+      // Update feeds optimistically
       ref.read(followingFeedProvider.notifier).toggleLike(arg);
       ref.read(discoverFeedProvider.notifier).toggleLike(arg);
 
-      // ── Refresh single track cache ────────────────────────────────
+      // Refresh single track cache
       ref.invalidate(trackProvider(arg));
 
-      // ── DO NOT invalidate userLikedTracksProvider here ────────────
-      // Invalidating it would trigger setAll() in LikedTracksScreen
-      // with stale server data, stomping the optimistic toggle in
-      // likedTracksProvider (the Set<String> the heart icon reads from).
-      // The screen's pull-to-refresh handles re-syncing when needed.
+      // DO NOT invalidate userLikedTracksProvider here —
+      // it would trigger setAll() in LikedTracksScreen with stale
+      // server data, stomping the optimistic toggle in likedTracksProvider.
     } on DioException catch (e) {
       throw Exception(_dioError(e));
     }
