@@ -6,6 +6,10 @@ import '../models/follower.dart';
 import '../services/followers_service.dart';
 import 'auth_providers.dart';
 
+// ─── Follow key ───────────────────────────────────────────────────────────────
+
+typedef FollowKey = ({String userId, String username});
+
 // ─── Service Provider ─────────────────────────────────────────────────────────
 
 final followersServiceProvider = Provider<FollowersService>((ref) {
@@ -54,102 +58,117 @@ final userFollowingProvider =
           .getUserFollowing(username: username);
     });
 
-// ─── POST/DELETE /users/{username}/follow ─────────────────────────────────────
-//
-// Handles follow + unfollow with optimistic UI updates.
-// The notifier tracks whether the current user is following `username`.
-// Call [toggle] to flip the state; the provider will call the correct endpoint.
+// ─── POST/DELETE /users/{username}/follow ────────────────────────────────────
 
-class FollowNotifier extends FamilyAsyncNotifier<bool, String> {
-  /// [arg] is the target username.
-  @override
-  Future<bool> build(String arg) async {
-    // Derive initial state from the "my following" list so the button renders
-    // correctly without an extra network call.
-    // Falls back to false if the list isn't loaded yet.
-    final followingAsync = ref.watch(myFollowingProvider);
-    return followingAsync.maybeWhen(
-      data: (res) => res.following.any((f) => f.username == arg),
-      orElse: () => false,
-    );
-  }
+class FollowNotifier extends StateNotifier<_FollowState> {
+  final FollowersService _service;
+  final String _username;
+  final Ref _ref;
+
+  FollowNotifier({
+    required FollowersService service,
+    required String username,
+    required bool initiallyFollowing,
+    required Ref ref,
+  }) : _service = service,
+       _username = username,
+       _ref = ref,
+       super(_FollowState(isFollowing: initiallyFollowing));
 
   Future<void> toggle() async {
-    final currentlyFollowing = state.valueOrNull ?? false;
+    if (state.isLoading) return;
 
-    // Optimistic update
-    state = AsyncData(!currentlyFollowing);
+    final prev = state.isFollowing;
+    state = state.copyWith(isFollowing: !prev, isLoading: true);
 
     try {
-      if (currentlyFollowing) {
-        await ref.read(followersServiceProvider).unfollowUser(username: arg);
+      if (prev) {
+        await _service.unfollowUser(username: _username);
       } else {
-        await ref.read(followersServiceProvider).followUser(username: arg);
+        await _service.followUser(username: _username);
       }
-      // Refresh social graph caches
-      ref.invalidate(myFollowingProvider);
-      ref.invalidate(userFollowersProvider(arg));
-      ref.invalidate(userFollowingProvider(arg));
-    } on DioException catch (e) {
-      // Rollback on failure
-      state = AsyncData(currentlyFollowing);
-      state = AsyncError(Exception(_dioError(e)), StackTrace.current);
-    } catch (e) {
-      state = AsyncData(currentlyFollowing);
-      state = AsyncError(e, StackTrace.current);
+      state = state.copyWith(isLoading: false);
+      // Invalidate so FollowingScreen re-fetches the updated list
+      _ref.invalidate(myFollowingProvider);
+    } catch (_) {
+      state = state.copyWith(isFollowing: prev, isLoading: false);
     }
   }
 }
 
+class _FollowState {
+  final bool isFollowing;
+  final bool isLoading;
+
+  const _FollowState({required this.isFollowing, this.isLoading = false});
+
+  _FollowState copyWith({bool? isFollowing, bool? isLoading}) => _FollowState(
+    isFollowing: isFollowing ?? this.isFollowing,
+    isLoading: isLoading ?? this.isLoading,
+  );
+}
+
+// Keyed by userId — one instance per artist shared across the whole app.
+// Username is carried along for the API call.
+// ref.watch (not read) ensures the notifier rebuilds when myFollowingProvider
+// loads or refreshes, so the correct isFollowing state is reflected on every
+// track by the same artist across the whole app.
 final followProvider =
-    AsyncNotifierProviderFamily<FollowNotifier, bool, String>(
-      FollowNotifier.new,
-    );
+    StateNotifierProvider.family<FollowNotifier, _FollowState, FollowKey>((
+      ref,
+      key,
+    ) {
+      final followingAsync = ref.watch(myFollowingProvider);
+      final initiallyFollowing = followingAsync.maybeWhen(
+        data: (res) => res.following.any((f) => f.userId == key.userId),
+        orElse: () => false,
+      );
+
+      return FollowNotifier(
+        service: ref.read(followersServiceProvider),
+        username: key.username,
+        initiallyFollowing: initiallyFollowing,
+        ref: ref,
+      );
+    });
 
 // ─── POST/DELETE /users/{username}/block ──────────────────────────────────────
-//
-// Tracks block state for a given username.
-// Call [toggle] to block or unblock.
-// After blocking, the target user is also unfollowed on the server side
-// (standard platform behaviour), so related caches are invalidated.
 
-class BlockNotifier extends FamilyAsyncNotifier<bool, String> {
-  /// [arg] is the target username.
-  @override
-  Future<bool> build(String arg) async => false; // no "blocked list" endpoint in spec
+class BlockNotifier extends StateNotifier<_FollowState> {
+  final FollowersService _service;
+  final String _username;
+
+  BlockNotifier({required FollowersService service, required String username})
+    : _service = service,
+      _username = username,
+      super(const _FollowState(isFollowing: false));
 
   Future<void> toggle() async {
-    final currentlyBlocked = state.valueOrNull ?? false;
+    if (state.isLoading) return;
 
-    // Optimistic update
-    state = AsyncData(!currentlyBlocked);
+    final prev = state.isFollowing;
+    state = state.copyWith(isFollowing: !prev, isLoading: true);
 
     try {
-      if (currentlyBlocked) {
-        await ref.read(followersServiceProvider).unblockUser(username: arg);
+      if (prev) {
+        await _service.unblockUser(username: _username);
       } else {
-        await ref.read(followersServiceProvider).blockUser(username: arg);
-        // Blocking typically removes the follow relationship on both sides.
-        ref.invalidate(followProvider(arg));
-        ref.invalidate(myFollowingProvider);
-        ref.invalidate(myFollowersProvider);
-        ref.invalidate(userFollowersProvider(arg));
-        ref.invalidate(userFollowingProvider(arg));
+        await _service.blockUser(username: _username);
       }
-    } on DioException catch (e) {
-      // Rollback on failure
-      state = AsyncData(currentlyBlocked);
-      state = AsyncError(Exception(_dioError(e)), StackTrace.current);
-    } catch (e) {
-      state = AsyncData(currentlyBlocked);
-      state = AsyncError(e, StackTrace.current);
+      state = state.copyWith(isLoading: false);
+    } catch (_) {
+      state = state.copyWith(isFollowing: prev, isLoading: false);
     }
   }
 }
 
-final blockProvider = AsyncNotifierProviderFamily<BlockNotifier, bool, String>(
-  BlockNotifier.new,
-);
+final blockProvider =
+    StateNotifierProvider.family<BlockNotifier, _FollowState, String>(
+      (ref, username) => BlockNotifier(
+        service: ref.read(followersServiceProvider),
+        username: username,
+      ),
+    );
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

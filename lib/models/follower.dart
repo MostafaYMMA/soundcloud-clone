@@ -1,59 +1,70 @@
 // models/follower.dart
 
-/// Represents a single follower entry.
-/// Mapped from the API's FollowerListResponse → items[].
-///
-/// ⚠️  NOTE: The OpenAPI spec only references the schema by name
-/// (`FollowerListResponse`, `FollowingListResponse`) without expanding the
-/// fields.  The model below uses the fields that are universally present in
-/// social-graph APIs of this type.  Adjust field names to match your actual
-/// backend once you inspect a live response or the full schema.
 class Follower {
-  final String username;
+  final String userId;
+  final String? username;
   final String? displayName;
   final String? avatarUrl;
   final String? bio;
-  final bool? isFollowing; // whether *the current user* follows them back
+  final bool? isFollowing;
+  final bool? isPremium;
+  final String? followedAt;
 
   const Follower({
-    required this.username,
+    required this.userId,
+    this.username,
     this.displayName,
     this.avatarUrl,
     this.bio,
     this.isFollowing,
+    this.isPremium,
+    this.followedAt,
   });
 
   factory Follower.fromJson(Map<String, dynamic> json) {
     return Follower(
-      username: json['username'] as String,
-      displayName: json['display_name'] as String?,
-      avatarUrl: json['avatar_url'] as String?,
-      bio: json['bio'] as String?,
+      userId: json['user_id']?.toString() ?? '',
+      username: json['username']?.toString(),
+      displayName: json['display_name']?.toString(),
+      avatarUrl:
+          json['profile_picture']?.toString() ?? json['avatar_url']?.toString(),
+      bio: json['bio']?.toString(),
       isFollowing: json['is_following'] as bool?,
+      isPremium: json['is_premium'] as bool?,
+      followedAt: json['followed_at']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'username': username,
+    'user_id': userId,
+    if (username != null) 'username': username,
     if (displayName != null) 'display_name': displayName,
-    if (avatarUrl != null) 'avatar_url': avatarUrl,
+    if (avatarUrl != null) 'profile_picture': avatarUrl,
     if (bio != null) 'bio': bio,
     if (isFollowing != null) 'is_following': isFollowing,
+    if (isPremium != null) 'is_premium': isPremium,
+    if (followedAt != null) 'followed_at': followedAt,
   };
 
   Follower copyWith({
+    String? userId,
     String? username,
     String? displayName,
     String? avatarUrl,
     String? bio,
     bool? isFollowing,
+    bool? isPremium,
+    String? followedAt,
   }) {
     return Follower(
+      userId: userId ?? this.userId,
       username: username ?? this.username,
       displayName: displayName ?? this.displayName,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       bio: bio ?? this.bio,
       isFollowing: isFollowing ?? this.isFollowing,
+      isPremium: isPremium ?? this.isPremium,
+      followedAt: followedAt ?? this.followedAt,
     );
   }
 
@@ -62,48 +73,46 @@ class Follower {
       identical(this, other) ||
       other is Follower &&
           runtimeType == other.runtimeType &&
-          username == other.username;
+          userId == other.userId;
 
   @override
-  int get hashCode => username.hashCode;
+  int get hashCode => userId.hashCode;
 }
 
-// ─── FollowerListResponse wrapper ─────────────────────────────────────────────
+// ─── FollowerListResponse ─────────────────────────────────────────────────────
 
 class FollowerListResponse {
   final List<Follower> followers;
-  final int? total;
+  final int? count;
 
-  const FollowerListResponse({required this.followers, this.total});
+  const FollowerListResponse({required this.followers, this.count});
 
   factory FollowerListResponse.fromJson(Map<String, dynamic> json) {
-    final List raw = json['followers'] as List? ?? [];
+    final List raw = (json['followers'] ?? json['items'] ?? []) as List? ?? [];
     return FollowerListResponse(
       followers: raw
           .map((e) => Follower.fromJson(e as Map<String, dynamic>))
           .toList(),
-      total: json['total'] as int?,
+      count: json['count'] as int?,
     );
   }
 }
 
-// ─── FollowingListResponse wrapper ───────────────────────────────────────────
+// ─── FollowingListResponse ────────────────────────────────────────────────────
 
-/// "Following" entries share the same shape as followers in most APIs.
-/// Reuse [Follower] and wrap in a dedicated response class for type-safety.
 class FollowingListResponse {
   final List<Follower> following;
-  final int? total;
+  final int? count;
 
-  const FollowingListResponse({required this.following, this.total});
+  const FollowingListResponse({required this.following, this.count});
 
   factory FollowingListResponse.fromJson(Map<String, dynamic> json) {
-    final List raw = json['following'] as List? ?? [];
+    final List raw = (json['following'] ?? json['items'] ?? []) as List? ?? [];
     return FollowingListResponse(
       following: raw
           .map((e) => Follower.fromJson(e as Map<String, dynamic>))
           .toList(),
-      total: json['total'] as int?,
+      count: json['count'] as int?,
     );
   }
 }
