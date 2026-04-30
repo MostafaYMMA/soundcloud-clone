@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_project/models/track.dart';
+import 'package:my_project/widgets/upload_track_sheet.dart';
 
+import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../models/feed_response.dart';
 import '../../providers/album_provider.dart';
@@ -76,6 +78,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ]);
   }
 
+  Future<void> _openUploadSheet() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.background,
+      builder: (_) => const UploadTrackSheet(),
+    );
+
+    if (!mounted) return;
+
+    await _onRefresh();
+  }
+
   Future<void> _logout() async {
     if (_isLoggingOut) return;
 
@@ -105,6 +120,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: const Text('Home'),
         automaticallyImplyLeading: false,
         leading: IconButton(
+          tooltip: 'Logout',
           icon: _isLoggingOut
               ? const SizedBox(
                   width: 18,
@@ -116,16 +132,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: 'Upload track',
             icon: const Icon(Icons.cloud_upload_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const Activity()),
-            ),
+            onPressed: _openUploadSheet,
           ),
           Badge(
             isLabelVisible: unreadCount > 0,
             label: Text('$unreadCount'),
             child: IconButton(
+              tooltip: 'Notifications',
               icon: const Icon(Icons.notifications_outlined),
               onPressed: () => Navigator.push(
                 context,
