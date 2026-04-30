@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'dart:io';
 import '../models/user.dart';
 
 class UserService {
@@ -159,7 +158,7 @@ class UserService {
       queryParameters: {'limit': limit},
       options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
     );
-    return res.data['data'] ?? [];
+    return (res.data['data']?['items'] as List?) ?? [];
   }
 
   // GET /users/me/listening-history
@@ -172,7 +171,7 @@ class UserService {
       queryParameters: {'limit': limit},
       options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
     );
-    return res.data['data'] ?? [];
+    return (res.data['data']?['items'] as List?) ?? [];
   }
 
   // POST /users/{username}/follow

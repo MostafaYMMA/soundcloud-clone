@@ -139,9 +139,7 @@ class FollowingFeedNotifier extends StateNotifier<FeedState> {
     if (!state.hasMore || state.isFetchingMore || state.nextCursor == null) {
       return;
     }
-
     state = state.copyWith(isFetchingMore: true);
-
     try {
       final data = await _service.getFollowingFeed(
         limit: 20,
@@ -164,7 +162,6 @@ class FollowingFeedNotifier extends StateNotifier<FeedState> {
     }
   }
 
-  /// Optimistically toggle like on a track in the feed.
   void toggleLike(String trackId) {
     state = state.copyWith(
       items: state.items.map((t) {
@@ -225,9 +222,7 @@ class DiscoverFeedNotifier extends StateNotifier<FeedState> {
     if (!state.hasMore || state.isFetchingMore || state.nextCursor == null) {
       return;
     }
-
     state = state.copyWith(isFetchingMore: true);
-
     try {
       final data = await _service.getDiscoverFeed(
         limit: 20,
@@ -271,7 +266,7 @@ final discoverFeedProvider =
       return DiscoverFeedNotifier(ref.read(tracksServiceProvider));
     });
 
-// ─── POST /tracks/{track_id}/plays ────────────────────────────────────────────
+// ─── POST /tracks/{track_id}/plays ───────────────────────────────────────────
 
 class RecordPlayNotifier extends FamilyAsyncNotifier<void, String> {
   @override
@@ -336,6 +331,7 @@ class CreateTrackNotifier extends AsyncNotifier<Track?> {
             visibility: visibility,
             coverImagePath: coverImagePath,
           );
+
       print('========== UPLOADED TRACK ==========');
       print('ID: ${track.trackId}');
       print('TITLE: ${track.title}');
@@ -365,7 +361,7 @@ final createTrackProvider = AsyncNotifierProvider<CreateTrackNotifier, Track?>(
   CreateTrackNotifier.new,
 );
 
-// ─── PUT /tracks/{track_id} — Update track ────────────────────────────────────
+// ─── PUT /tracks/{track_id} — Update track ───────────────────────────────────
 
 class UpdateTrackNotifier extends FamilyAsyncNotifier<Track?, String> {
   @override
@@ -397,10 +393,7 @@ class UpdateTrackNotifier extends FamilyAsyncNotifier<Track?, String> {
           );
 
       state = AsyncData(track);
-
-      // refresh cached single track
       ref.invalidate(trackProvider(arg));
-
       return track;
     } on DioException catch (e) {
       final err = Exception(_dioError(e));
@@ -415,7 +408,7 @@ final updateTrackProvider =
       UpdateTrackNotifier.new,
     );
 
-// ─── DELETE /tracks/{track_id} ────────────────────────────────────────────────
+// ─── DELETE /tracks/{track_id} ───────────────────────────────────────────────
 
 class DeleteTrackNotifier extends FamilyAsyncNotifier<void, String> {
   @override
@@ -424,7 +417,6 @@ class DeleteTrackNotifier extends FamilyAsyncNotifier<void, String> {
   Future<void> delete() async {
     try {
       await ref.read(tracksServiceProvider).deleteTrack(trackId: arg);
-      // Remove from both feeds so the UI updates instantly.
       ref.read(followingFeedProvider.notifier).refresh();
       ref.read(discoverFeedProvider.notifier).refresh();
     } on DioException catch (e) {
@@ -448,3 +440,43 @@ String _dioError(DioException e) {
   if (status == 413) return 'File is too large.';
   return 'Something went wrong. Please try again.';
 }
+
+// ─── POST+DELETE /likes/tracks/{track_id} ────────────────────────────────────
+
+class ToggleTrackLikeNotifier extends FamilyAsyncNotifier<void, String> {
+  @override
+  Future<void> build(String arg) async {}
+
+  Future<void> toggle({
+    required bool currentlyLiked,
+    required String username,
+  }) async {
+    final service = ref.read(tracksServiceProvider);
+
+    try {
+      if (currentlyLiked) {
+        await service.unlikeTrack(trackId: arg);
+      } else {
+        await service.likeTrack(trackId: arg);
+      }
+
+      // Update feeds optimistically
+      ref.read(followingFeedProvider.notifier).toggleLike(arg);
+      ref.read(discoverFeedProvider.notifier).toggleLike(arg);
+
+      // Refresh single track cache
+      ref.invalidate(trackProvider(arg));
+
+      // DO NOT invalidate userLikedTracksProvider here —
+      // it would trigger setAll() in LikedTracksScreen with stale
+      // server data, stomping the optimistic toggle in likedTracksProvider.
+    } on DioException catch (e) {
+      throw Exception(_dioError(e));
+    }
+  }
+}
+
+final toggleTrackLikeProvider =
+    AsyncNotifierProviderFamily<ToggleTrackLikeNotifier, void, String>(
+      ToggleTrackLikeNotifier.new,
+    );

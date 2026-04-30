@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_project/models/track.dart';
-import '../../models/feed_response.dart';
-import 'package:my_project/screens/home/activity.dart';
+
 import '../../constants/app_dimensions.dart';
+import '../../models/feed_response.dart';
+import '../../providers/album_provider.dart';
+import '../../providers/auth_providers.dart';
 import '../../providers/feed_provider.dart';
 import '../../providers/notifications_provider.dart';
-import '../../widgets/upload_track_sheet.dart';
-import 'your_likes_card.dart';
-import 'today_pick_card.dart';
-import 'more_like_section.dart';
+import '../auth/welcome_screen.dart';
+import 'activity.dart';
 import 'albums_for_you_section.dart';
+import 'more_like_section.dart';
+import 'today_pick_card.dart';
+import 'your_likes_card.dart';
 
 extension FeedTrackItemToTrack on FeedTrackItem {
   Track toTrack() => Track(
@@ -45,32 +48,49 @@ extension FeedTrackItemToTrack on FeedTrackItem {
 
 class HomeScreen extends ConsumerStatefulWidget {
   final void Function(Track)? onTrackTap;
+  final void Function(List<Track>, int)? onQueuePlay;
 
-  const HomeScreen({super.key, this.onTrackTap});
+  const HomeScreen({super.key, this.onTrackTap, this.onQueuePlay});
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _isLoggingOut = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(albumProvider.notifier).fetchLikedAlbums();
+    });
+  }
+
   Future<void> _onRefresh() async {
     await Future.wait([
       ref.read(followingFeedProvider.notifier).refresh(),
       ref.read(discoverFeedProvider.notifier).refresh(),
       ref.read(cachedDiscoverFeedProvider.notifier).refresh(),
+      ref.read(albumProvider.notifier).fetchLikedAlbums(),
     ]);
   }
 
-  Future<void> _openUploadSheet() async {
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      builder: (_) => const UploadTrackSheet(),
-    );
+  Future<void> _logout() async {
+    if (_isLoggingOut) return;
+
+    setState(() {
+      _isLoggingOut = true;
+    });
+
+    await ref.read(authProvider.notifier).logout();
 
     if (!mounted) return;
-    await _onRefresh();
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      (route) => false,
+    );
   }
 
   @override
@@ -83,10 +103,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: _isLoggingOut
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.logout),
+          onPressed: _isLoggingOut ? null : _logout,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.cloud_upload_outlined),
-            onPressed: _openUploadSheet,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const Activity()),
+            ),
           ),
           Badge(
             isLabelVisible: unreadCount > 0,
@@ -95,7 +129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               icon: const Icon(Icons.notifications_outlined),
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => Activity()),
+                MaterialPageRoute(builder: (_) => const Activity()),
               ),
             ),
           ),
@@ -121,12 +155,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 data: (state) {
                   if (state.items.isEmpty) return const SizedBox();
+
                   return YourLikesCard(
                     tracks: state.items
                         .take(6)
-                        .map((i) => i.toTrack())
+                        .map((item) => item.toTrack())
                         .toList(),
-                    onTrackTap: widget.onTrackTap,
+                    onQueuePlay: widget.onQueuePlay,
                   );
                 },
               ),
@@ -156,7 +191,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   final tracks = state.items
                       .skip(6)
                       .take(10)
-                      .map((i) => i.toTrack())
+                      .map((item) => item.toTrack())
                       .toList();
 
                   if (tracks.isEmpty) return const SizedBox();
@@ -176,7 +211,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   final tracks = state.items
                       .skip(1)
                       .take(10)
-                      .map((i) => i.toTrack())
+                      .map((item) => item.toTrack())
                       .toList();
 
                   if (tracks.isEmpty) return const SizedBox();
@@ -189,9 +224,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
               ),
               const SizedBox(height: AppDimensions.spaceLarge),
-              const AlbumsForYouSection(
-                sectionTitle: 'Albums for You',
-                albums: [],
+              Builder(
+                builder: (_) {
+                  final albums = ref.watch(albumProvider).likedAlbums;
+                  if (albums.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return AlbumsForYouSection(
+                    sectionTitle: 'Albums for You',
+                    albums: albums,
+                  );
+                },
               ),
               const SizedBox(height: AppDimensions.spaceLarge),
               cachedFeed.when(
