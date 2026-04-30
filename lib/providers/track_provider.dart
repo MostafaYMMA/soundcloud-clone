@@ -165,7 +165,6 @@ class FollowingFeedNotifier extends StateNotifier<FeedState> {
     }
   }
 
-  /// Optimistically toggle like on a track in the feed.
   void toggleLike(String trackId) {
     state = state.copyWith(
       items: state.items.map((t) {
@@ -184,8 +183,8 @@ class FollowingFeedNotifier extends StateNotifier<FeedState> {
 
 final followingFeedProvider =
     StateNotifierProvider<FollowingFeedNotifier, FeedState>((ref) {
-      return FollowingFeedNotifier(ref.read(tracksServiceProvider));
-    });
+  return FollowingFeedNotifier(ref.read(tracksServiceProvider));
+});
 
 // ─── GET /feed/discover (paginated) ──────────────────────────────────────────
 
@@ -269,10 +268,10 @@ class DiscoverFeedNotifier extends StateNotifier<FeedState> {
 
 final discoverFeedProvider =
     StateNotifierProvider<DiscoverFeedNotifier, FeedState>((ref) {
-      return DiscoverFeedNotifier(ref.read(tracksServiceProvider));
-    });
+  return DiscoverFeedNotifier(ref.read(tracksServiceProvider));
+});
 
-// ─── POST /tracks/{track_id}/plays ────────────────────────────────────────────
+// ─── POST /tracks/{track_id}/plays ───────────────────────────────────────────
 
 class RecordPlayNotifier extends FamilyAsyncNotifier<void, String> {
   @override
@@ -280,9 +279,7 @@ class RecordPlayNotifier extends FamilyAsyncNotifier<void, String> {
 
   Future<void> record({int? durationListenedSeconds}) async {
     try {
-      await ref
-          .read(tracksServiceProvider)
-          .recordPlay(
+      await ref.read(tracksServiceProvider).recordPlay(
             trackId: arg,
             durationListenedSeconds: durationListenedSeconds,
           );
@@ -294,8 +291,8 @@ class RecordPlayNotifier extends FamilyAsyncNotifier<void, String> {
 
 final recordPlayProvider =
     AsyncNotifierProviderFamily<RecordPlayNotifier, void, String>(
-      RecordPlayNotifier.new,
-    );
+  RecordPlayNotifier.new,
+);
 
 // ─── POST /tracks/ — Create track ────────────────────────────────────────────
 
@@ -315,9 +312,7 @@ class CreateTrackNotifier extends AsyncNotifier<Track?> {
   }) async {
     state = const AsyncLoading();
     try {
-      final track = await ref
-          .read(tracksServiceProvider)
-          .createTrack(
+      final track = await ref.read(tracksServiceProvider).createTrack(
             title: title,
             description: description,
             filePath: filePath,
@@ -341,7 +336,7 @@ final createTrackProvider = AsyncNotifierProvider<CreateTrackNotifier, Track?>(
   CreateTrackNotifier.new,
 );
 
-// ─── PUT /tracks/{track_id} — Update track ────────────────────────────────────
+// ─── PUT /tracks/{track_id} — Update track ───────────────────────────────────
 
 class UpdateTrackNotifier extends FamilyAsyncNotifier<Track?, String> {
   @override
@@ -359,9 +354,7 @@ class UpdateTrackNotifier extends FamilyAsyncNotifier<Track?, String> {
     state = const AsyncLoading();
 
     try {
-      final track = await ref
-          .read(tracksServiceProvider)
-          .updateTrack(
+      final track = await ref.read(tracksServiceProvider).updateTrack(
             trackId: arg,
             title: title,
             description: description,
@@ -373,10 +366,7 @@ class UpdateTrackNotifier extends FamilyAsyncNotifier<Track?, String> {
           );
 
       state = AsyncData(track);
-
-      // refresh cached single track
       ref.invalidate(trackProvider(arg));
-
       return track;
     } on DioException catch (e) {
       final err = Exception(_dioError(e));
@@ -388,10 +378,10 @@ class UpdateTrackNotifier extends FamilyAsyncNotifier<Track?, String> {
 
 final updateTrackProvider =
     AsyncNotifierProviderFamily<UpdateTrackNotifier, Track?, String>(
-      UpdateTrackNotifier.new,
-    );
+  UpdateTrackNotifier.new,
+);
 
-// ─── DELETE /tracks/{track_id} ────────────────────────────────────────────────
+// ─── DELETE /tracks/{track_id} ───────────────────────────────────────────────
 
 class DeleteTrackNotifier extends FamilyAsyncNotifier<void, String> {
   @override
@@ -400,7 +390,6 @@ class DeleteTrackNotifier extends FamilyAsyncNotifier<void, String> {
   Future<void> delete() async {
     try {
       await ref.read(tracksServiceProvider).deleteTrack(trackId: arg);
-      // Remove from both feeds so the UI updates instantly.
       ref.read(followingFeedProvider.notifier).refresh();
       ref.read(discoverFeedProvider.notifier).refresh();
     } on DioException catch (e) {
@@ -411,10 +400,8 @@ class DeleteTrackNotifier extends FamilyAsyncNotifier<void, String> {
 
 final deleteTrackProvider =
     AsyncNotifierProviderFamily<DeleteTrackNotifier, void, String>(
-      DeleteTrackNotifier.new,
-    );
-
-
+  DeleteTrackNotifier.new,
+);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -426,6 +413,9 @@ String _dioError(DioException e) {
   if (status == 413) return 'File is too large.';
   return 'Something went wrong. Please try again.';
 }
+
+// ─── POST+DELETE /likes/tracks/{track_id} ────────────────────────────────────
+
 class ToggleTrackLikeNotifier extends FamilyAsyncNotifier<void, String> {
   @override
   Future<void> build(String arg) async {}
@@ -443,15 +433,18 @@ class ToggleTrackLikeNotifier extends FamilyAsyncNotifier<void, String> {
         await service.likeTrack(trackId: arg);
       }
 
-      // Refresh liked tracks page
-      ref.invalidate(userLikedTracksProvider(username));
-
-      // Update feeds instantly
+      // ── Update feeds optimistically ───────────────────────────────
       ref.read(followingFeedProvider.notifier).toggleLike(arg);
       ref.read(discoverFeedProvider.notifier).toggleLike(arg);
 
-      // Refresh single track
+      // ── Refresh single track cache ────────────────────────────────
       ref.invalidate(trackProvider(arg));
+
+      // ── DO NOT invalidate userLikedTracksProvider here ────────────
+      // Invalidating it would trigger setAll() in LikedTracksScreen
+      // with stale server data, stomping the optimistic toggle in
+      // likedTracksProvider (the Set<String> the heart icon reads from).
+      // The screen's pull-to-refresh handles re-syncing when needed.
     } on DioException catch (e) {
       throw Exception(_dioError(e));
     }
@@ -460,5 +453,5 @@ class ToggleTrackLikeNotifier extends FamilyAsyncNotifier<void, String> {
 
 final toggleTrackLikeProvider =
     AsyncNotifierProviderFamily<ToggleTrackLikeNotifier, void, String>(
-      ToggleTrackLikeNotifier.new,
-    );
+  ToggleTrackLikeNotifier.new,
+);

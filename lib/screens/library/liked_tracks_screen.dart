@@ -7,6 +7,7 @@ import '../../constants/app_text_styles.dart';
 import '../../models/track.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/track_provider.dart';
+import '../../providers/liked_tracks_provider.dart';
 import '../profile/widgets/profile_track_list_section.dart';
 import 'context_menu_sheet.dart';
 
@@ -14,7 +15,6 @@ enum LikedTracksSortOption { recentlyAdded, firstAdded, trackName, artist }
 
 class LikedTracksScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
-
   const LikedTracksScreen({super.key, this.onBack});
 
   @override
@@ -23,18 +23,19 @@ class LikedTracksScreen extends ConsumerStatefulWidget {
 
 class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
   LikedTracksSortOption _sortOption = LikedTracksSortOption.recentlyAdded;
-
   final TextEditingController _searchController = TextEditingController();
-
-  List<Track> _allTracks = [];
-  List<Track> _filteredTracks = [];
-
   bool _isShuffled = false;
+
+  /// Ensures we only seed likedTracksProvider once per screen visit.
+  /// Without this, every rebuild (including the one triggered by
+  /// toggleLocal) calls setAll() with stale server data, stomping
+  /// the optimistic heart toggle.
+  bool _seeded = false;
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_onSearchChanged);
+    _searchController.addListener(() => setState(() {}));
   }
 
   @override
@@ -43,64 +44,34 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
     super.dispose();
   }
 
-  void _setTracks(List<Track> tracks) {
-    _allTracks = List.from(tracks);
-    _applySort(_sortOption, refreshSearch: false);
-    _onSearchChanged();
-  }
+  List<Track> _process(List<Track> source) {
+    final query = _searchController.text.trim().toLowerCase();
 
-  void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase().trim();
+    List<Track> result = query.isEmpty
+        ? List.from(source)
+        : source.where((t) {
+            final titleMatch = t.title.toLowerCase().contains(query);
+            final artistMatch =
+                (t.artist?.displayName ?? '').toLowerCase().contains(query);
+            return titleMatch || artistMatch;
+          }).toList();
 
-    setState(() {
-      if (query.isEmpty) {
-        _filteredTracks = List.from(_allTracks);
-        return;
-      }
-
-      _filteredTracks = _allTracks.where((track) {
-        final titleMatch = track.title.toLowerCase().contains(query);
-
-        final artistMatch =
-            track.artist?.displayName.toLowerCase().contains(query) ?? false;
-
-        return titleMatch || artistMatch;
-      }).toList();
-    });
-  }
-
-  void _applySort(
-    LikedTracksSortOption option, {
-    bool refreshSearch = true,
-  }) {
-    _sortOption = option;
-
-    switch (option) {
+    switch (_sortOption) {
       case LikedTracksSortOption.recentlyAdded:
-        _allTracks = List.from(_allTracks);
         break;
-
       case LikedTracksSortOption.firstAdded:
-        _allTracks = List.from(_allTracks.reversed);
+        result = result.reversed.toList();
         break;
-
       case LikedTracksSortOption.trackName:
-        _allTracks.sort((a, b) => a.title.compareTo(b.title));
+        result.sort((a, b) => a.title.compareTo(b.title));
         break;
-
       case LikedTracksSortOption.artist:
-        _allTracks.sort(
-          (a, b) =>
-              (a.artist?.displayName ?? '').compareTo(
-                b.artist?.displayName ?? '',
-              ),
-        );
+        result.sort((a, b) => (a.artist?.displayName ?? '')
+            .compareTo(b.artist?.displayName ?? ''));
         break;
     }
 
-    if (refreshSearch) {
-      _onSearchChanged();
-    }
+    return result;
   }
 
   void _showSortBottomSheet() {
@@ -112,66 +83,52 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
           top: Radius.circular(AppDimensions.borderRadiusMedium),
         ),
       ),
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: AppDimensions.spaceLarge,
-            horizontal: AppDimensions.spaceMedium,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Sort by', style: AppTextStyles.heading2),
-              const SizedBox(height: AppDimensions.spaceMedium),
-
-              _SortOption(
-                label: 'Recently Added',
-                selected: _sortOption == LikedTracksSortOption.recentlyAdded,
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _applySort(LikedTracksSortOption.recentlyAdded);
-                  });
-                },
-              ),
-
-              _SortOption(
-                label: 'First Added',
-                selected: _sortOption == LikedTracksSortOption.firstAdded,
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _applySort(LikedTracksSortOption.firstAdded);
-                  });
-                },
-              ),
-
-              _SortOption(
-                label: 'Track Name',
-                selected: _sortOption == LikedTracksSortOption.trackName,
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _applySort(LikedTracksSortOption.trackName);
-                  });
-                },
-              ),
-
-              _SortOption(
-                label: 'Artist',
-                selected: _sortOption == LikedTracksSortOption.artist,
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _applySort(LikedTracksSortOption.artist);
-                  });
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: AppDimensions.spaceLarge,
+          horizontal: AppDimensions.spaceMedium,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Sort by', style: AppTextStyles.heading2),
+            const SizedBox(height: AppDimensions.spaceMedium),
+            _SortOption(
+              label: 'Recently Added',
+              selected: _sortOption == LikedTracksSortOption.recentlyAdded,
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _sortOption = LikedTracksSortOption.recentlyAdded);
+              },
+            ),
+            _SortOption(
+              label: 'First Added',
+              selected: _sortOption == LikedTracksSortOption.firstAdded,
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _sortOption = LikedTracksSortOption.firstAdded);
+              },
+            ),
+            _SortOption(
+              label: 'Track Name',
+              selected: _sortOption == LikedTracksSortOption.trackName,
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _sortOption = LikedTracksSortOption.trackName);
+              },
+            ),
+            _SortOption(
+              label: 'Artist',
+              selected: _sortOption == LikedTracksSortOption.artist,
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _sortOption = LikedTracksSortOption.artist);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -183,212 +140,204 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
       return const Scaffold(
         backgroundColor: AppColors.background,
         body: Center(
-          child: Text(
-            'You are not logged in.',
-            style: TextStyle(color: Colors.white),
-          ),
+          child: Text('You are not logged in.',
+              style: TextStyle(color: Colors.white)),
         ),
       );
     }
 
     final likedTracksAsync = ref.watch(userLikedTracksProvider(username));
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: likedTracksAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+    return likedTracksAsync.when(
+      loading: () => const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+            child: CircularProgressIndicator(color: AppColors.primary)),
+      ),
+      error: (e, _) => Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Text(e.toString(),
+              style: const TextStyle(color: Colors.white)),
         ),
-
-        error: (e, _) => Center(
-          child: Text(
-            e.toString(),
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-
-        data: (tracks) {
+      ),
+      data: (tracks) {
+        // ── Seed only once so optimistic toggles are never stomped ────
+        if (!_seeded) {
+          _seeded = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _setTracks(tracks);
+            ref
+                .read(likedTracksProvider.notifier)
+                .setAll(tracks.map((t) => t.trackId).toSet());
           });
+        }
 
-          return CustomScrollView(
-            slivers: [
-              // ── Header ─────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Stack(
-                  children: [
-                    Positioned(
-                      right: -30,
-                      top: -10,
-                      child: Icon(
-                        Icons.favorite,
-                        size: 220,
-                        color: AppColors.primary.withOpacity(0.25),
+        final displayed = _process(tracks);
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: RefreshIndicator(
+            onRefresh: () {
+              // Reset seed flag so refreshed data re-syncs the Set
+              _seeded = false;
+              return ref.refresh(userLikedTracksProvider(username).future);
+            },
+            child: CustomScrollView(
+              slivers: [
+                // ── Header ─────────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -30,
+                        top: -10,
+                        child: Icon(
+                          Icons.favorite,
+                          size: 220,
+                          color: AppColors.primary.withOpacity(0.25),
+                        ),
                       ),
-                    ),
-
-                    SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(8, 12, 16, 0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.chevron_left,
-                                    color: Colors.white,
-                                    size: 28,
-                                  ),
-                                  onPressed: () => widget.onBack?.call(),
-                                ),
-
-                                Expanded(
-                                  child: Container(
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF1E1E1E),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: TextField(
-                                      controller: _searchController,
-                                      style: const TextStyle(
-                                        color: AppColors.textPrimary,
-                                        fontSize: 14,
-                                      ),
-                                      decoration: const InputDecoration(
-                                        hintText: 'Search your likes',
-                                        hintStyle: TextStyle(
-                                          color: AppColors.textSecondary,
-                                          fontSize: 14,
-                                        ),
-                                        prefixIcon: Icon(
-                                          Icons.search,
-                                          color: AppColors.textSecondary,
-                                          size: 20,
-                                        ),
-                                        border: InputBorder.none,
-                                        contentPadding: EdgeInsets.symmetric(
-                                          vertical: 10,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                const SizedBox(width: 10),
-
-                                GestureDetector(
-                                  onTap: _showSortBottomSheet,
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.surface,
-                                      borderRadius: BorderRadius.circular(
-                                        AppDimensions.borderRadiusPill,
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.sort,
-                                      color: AppColors.primary,
-                                      size: 22,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 20),
-
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                left: AppDimensions.spaceSmall,
-                              ),
-                              child: Text(
-                                'Your likes (${_filteredTracks.length})',
-                                style: const TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 20),
-
-                            Padding(
-                              padding: const EdgeInsets.only(right: 4),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
+                      SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 12, 16, 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 children: [
                                   IconButton(
-                                    icon: Icon(
-                                      Icons.shuffle,
-                                      color: _isShuffled
-                                          ? AppColors.primary
-                                          : AppColors.textPrimary,
-                                      size: 24,
-                                    ),
-                                    onPressed: () => setState(
-                                      () => _isShuffled = !_isShuffled,
+                                    icon: const Icon(Icons.chevron_left,
+                                        color: Colors.white, size: 28),
+                                    onPressed: () => widget.onBack?.call(),
+                                  ),
+                                  Expanded(
+                                    child: Container(
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1E1E1E),
+                                        borderRadius:
+                                            BorderRadius.circular(20),
+                                      ),
+                                      child: TextField(
+                                        controller: _searchController,
+                                        style: const TextStyle(
+                                            color: AppColors.textPrimary,
+                                            fontSize: 14),
+                                        decoration: const InputDecoration(
+                                          hintText: 'Search your likes',
+                                          hintStyle: TextStyle(
+                                              color: AppColors.textSecondary,
+                                              fontSize: 14),
+                                          prefixIcon: Icon(Icons.search,
+                                              color: AppColors.textSecondary,
+                                              size: 20),
+                                          border: InputBorder.none,
+                                          contentPadding: EdgeInsets.symmetric(
+                                              vertical: 10),
+                                        ),
+                                      ),
                                     ),
                                   ),
-
-                                  const SizedBox(width: 8),
-
+                                  const SizedBox(width: 10),
                                   GestureDetector(
-                                    onTap: () {
-                                      // TODO: Start player with _filteredTracks
-                                    },
+                                    onTap: _showSortBottomSheet,
                                     child: Container(
-                                      width: 52,
-                                      height: 52,
-                                      decoration: const BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surface,
+                                        borderRadius: BorderRadius.circular(
+                                            AppDimensions.borderRadiusPill),
                                       ),
-                                      child: const Icon(
-                                        Icons.play_arrow,
-                                        color: Colors.black,
-                                        size: 30,
-                                      ),
+                                      child: const Icon(Icons.sort,
+                                          color: AppColors.primary, size: 22),
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-
-                            const SizedBox(height: 8),
-                          ],
+                              const SizedBox(height: 20),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    left: AppDimensions.spaceSmall),
+                                child: Text(
+                                  'Your likes (${displayed.length})',
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Padding(
+                                padding: const EdgeInsets.only(right: 4),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.shuffle,
+                                        color: _isShuffled
+                                            ? AppColors.primary
+                                            : AppColors.textPrimary,
+                                        size: 24,
+                                      ),
+                                      onPressed: () => setState(
+                                          () => _isShuffled = !_isShuffled),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    GestureDetector(
+                                      onTap: () {
+                                        // TODO: start player
+                                      },
+                                      child: Container(
+                                        width: 52,
+                                        height: 52,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.play_arrow,
+                                            color: Colors.black, size: 30),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
 
-              // ── Tracks ─────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: ProfileTrackListSection(
-                  title: '',
-                  tracks: _filteredTracks,
-                  onTrackTap: (_) {
-                    // TODO: Start player
-                  },
-                  onMoreTap: (track) => showTrackContextMenu(context, track),
+                // ── Track list ──────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: displayed.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.only(top: 60),
+                          child: Center(
+                            child: Text('No liked tracks yet.',
+                                style: TextStyle(color: Colors.white70)),
+                          ),
+                        )
+                      : ProfileTrackListSection(
+                          title: '',
+                          tracks: displayed,
+                          onTrackTap: (_) {},
+                          onMoreTap: (track) =>
+                              showTrackContextMenu(context, track),
+                        ),
                 ),
-              ),
 
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 100),
-              ),
-            ],
-          );
-        },
-      ),
+                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -417,11 +366,7 @@ class _SortOption extends StatelessWidget {
         ),
       ),
       trailing: selected
-          ? const Icon(
-              Icons.check,
-              color: AppColors.primary,
-              size: 20,
-            )
+          ? const Icon(Icons.check, color: AppColors.primary, size: 20)
           : null,
       onTap: onTap,
     );
