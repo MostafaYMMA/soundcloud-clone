@@ -234,8 +234,8 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(
-          horizontal: AppDimensions.spaceMedium,
-          vertical: AppDimensions.spaceExtraSmall,
+            horizontal: AppDimensions.spaceMedium,
+            vertical: AppDimensions.spaceExtraSmall,
           ),
           child: Row(
             children: [
@@ -358,7 +358,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
         ? (widget.track.isLiked == true ? serverCount : serverCount + 1)
         : (widget.track.isLiked == true ? serverCount - 1 : serverCount);
 
-    
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -408,7 +407,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
             color: AppColors.textSecondary, size: 22),
       ],
     );
-    
   }
 
   Widget _buildPlayOverlay(bool isPlaying) {
