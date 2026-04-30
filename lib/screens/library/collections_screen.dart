@@ -672,7 +672,7 @@ class _CollectionImage extends StatelessWidget {
         width: width,
         height: height,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
+        errorBuilder: (_, _, _) => Container(
           width: width,
           height: height,
           color: AppColors.surfaceLight,

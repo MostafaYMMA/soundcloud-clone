@@ -2,7 +2,6 @@ import '../../models/album.dart';
 import '../../models/playlist.dart';
 import 'collections_screen.dart';
 
-/// Maps domain models → [CollectionDetailsData] for [CollectionDetailsScreen].
 class CollectionDetailsMapper {
   CollectionDetailsMapper._();
 
@@ -12,10 +11,20 @@ class CollectionDetailsMapper {
       title: album.title,
       artworkPath: album.artworkUrl,
       ownerName: album.artist,
-      ownerAvatarPath: album.artworkUrl, // use artwork as fallback avatar
-      yearText: album.releaseYear.toString(),
-      likesText: album.likeCount.toString(),
-      tracks: [], // populate when track data is available
+      ownerAvatarPath: album.artworkUrl,
+      yearText: album.releaseYear > 0 ? album.releaseYear.toString() : '',
+      likesText: '${album.likeCount} likes',
+      tracks: album.tracks
+          .map(
+            (t) => CollectionTrack(
+              id: t.id,
+              title: t.title,
+              artist: t.artist,
+              artworkPath: t.artworkUrl,
+              durationSeconds: t.durationSeconds,
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -26,9 +35,19 @@ class CollectionDetailsMapper {
       artworkPath: playlist.coverUrl,
       ownerName: playlist.owner,
       ownerAvatarPath: playlist.coverUrl,
-      yearText: '${playlist.trackCount} tracks', // ← was playlist.duration
-      likesText: playlist.owner, // ← was playlist.trackCount
-      tracks: [],
+      yearText: '${playlist.trackCount} tracks',
+      likesText: playlist.owner,
+      tracks: playlist.tracks
+          .map(
+            (t) => CollectionTrack(
+              id: t.id,
+              title: t.title,
+              artist: t.artist,
+              artworkPath: t.artworkUrl,
+              durationSeconds: t.durationSeconds,
+            ),
+          )
+          .toList(),
     );
   }
 }
