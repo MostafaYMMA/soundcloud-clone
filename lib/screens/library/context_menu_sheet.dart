@@ -10,12 +10,20 @@ import '../../providers/track_provider.dart';
 
 // ── Entry point helpers ──────────────────────────────────────────────────────
 
-void showTrackContextMenu(BuildContext context, Track track) {
+void showTrackContextMenu(
+  BuildContext context,
+   Track track,
+   {
+  VoidCallback? onGoToProfile,
+}) {
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
-    builder: (_) => _ContextMenuSheet.track(track: track),
+    builder: (_) => _ContextMenuSheet.track(
+      track: track,
+      onGoToProfile: onGoToProfile,
+    ),
   );
 }
 
@@ -33,9 +41,14 @@ void showCollectionContextMenu(BuildContext context) {
 // Changed to ConsumerStatefulWidget so we can read Riverpod providers
 class _ContextMenuSheet extends ConsumerStatefulWidget {
   final Track? track;
+  final VoidCallback? onGoToProfile;
 
-  const _ContextMenuSheet.track({required Track this.track});
-  const _ContextMenuSheet.collection() : track = null;
+  const _ContextMenuSheet.track({
+    required Track this.track,
+    this.onGoToProfile,});
+  const _ContextMenuSheet.collection()
+   : track = null,
+     onGoToProfile = null;
 
   bool get isTrack => track != null;
 
@@ -156,7 +169,11 @@ class _ContextMenuSheetState extends ConsumerState<_ContextMenuSheet> {
                     _MenuItem(
                       icon: Icons.person_outline,
                       label: 'Go to profile',
-                      onTap: () {},
+                      onTap: () {
+                        if(widget.onGoToProfile != null) {
+                          widget.onGoToProfile!();
+                        } 
+                      },
                     ),
                     _MenuItem(
                       icon: Icons.chat_bubble_outline,
