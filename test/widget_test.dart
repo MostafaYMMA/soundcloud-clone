@@ -4,11 +4,7 @@ import 'package:my_project/main.dart';
 
 void main() {
   testWidgets('app launches', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: SoundCloudApp(),
-      ),
-    );
+    await tester.pumpWidget(const ProviderScope(child: SoundCloudApp()));
 
     await tester.pump();
 
