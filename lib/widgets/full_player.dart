@@ -54,7 +54,9 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    final waveformAsync = ref.watch(trackWaveformProvider(widget.track.trackId));
+    final waveformAsync = ref.watch(
+      trackWaveformProvider(widget.track.trackId),
+    );
     // ── Follow state ─────────────────────────────────────────────────────────
     final artistUsername = widget.track.artist?.username;
     final artistUserId = widget.track.artist?.userId;
@@ -121,7 +123,12 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildTopSection(context),
+                              _buildTopSection(
+                                context,
+                                isFollowing: isFollowing,
+                                isFollowLoading: isFollowLoading,
+                                followKey: followKey,
+                                ),
                               Expanded(child: _buildArtworkArea()),
                               waveformAsync.when(
                                 data: (waveform) {
@@ -174,11 +181,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
         gradient: RadialGradient(
           center: Alignment(-0.3, -0.3),
           radius: 1.3,
-          colors: [
-            Color(0xFF8B1A1A),
-            Color(0xFF3A0808),
-            Color(0xFF0D0303),
-          ],
+          colors: [Color(0xFF8B1A1A), Color(0xFF3A0808), Color(0xFF0D0303)],
         ),
       ),
     );
@@ -216,390 +219,401 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
     );
   }
 
-  Widget _buildTopSection(BuildContext context) {
-  Widget _buildTopSection(
-    BuildContext context, {
-    required bool isFollowing,
-    required bool isFollowLoading,
-    required FollowKey? followKey,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.all(AppDimensions.spaceMedium),
-      child: Row(
+ 
+    Widget _buildTopSection(
+      BuildContext context, {
+      required bool isFollowing,
+      required bool isFollowLoading,
+      required FollowKey? followKey,
+    }) {
+      return Padding(
+        padding: const EdgeInsets.all(AppDimensions.spaceMedium),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(widget.track.title, style: AppTextStyles.heading2),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.track.artist?.displayName ?? 'Unknown Artist',
+                    style: AppTextStyles.artistName,
+                  ),
+                  const SizedBox(height: AppDimensions.spaceSmall),
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.graphic_eq,
+                        color: AppColors.textMuted,
+                        size: 14,
+                      ),
+                      SizedBox(width: 4),
+                      Text('Behind this track', style: AppTextStyles.caption),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                  color: AppColors.textSecondary,
+                  onPressed: () => Navigator.pop(context),
+                ),
+
+                // ── Follow / Unfollow button ──────────────────────────────────
+                IconButton(
+                  icon: isFollowLoading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      : Icon(
+                          isFollowing
+                              ? Icons.person_remove_outlined
+                              : Icons.person_add_alt_1_outlined,
+                          color: isFollowing
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
+                  tooltip: isFollowing ? 'Unfollow' : 'Follow',
+                  onPressed: (isFollowLoading || followKey == null)
+                      ? null
+                      : () => ref
+                            .read(followProvider(followKey).notifier)
+                            .toggle(),
+                ),
+
+                IconButton(
+                  icon: const Icon(Icons.grid_view_rounded),
+                  color: AppColors.textSecondary,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget _buildWaveformLoading({
+      required int elapsed,
+      required int totalSeconds,
+    }) {
+      return Column(
+        children: [
+          const SizedBox(
+            height: 130,
+            width: double.infinity,
+            child: Center(
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          ),
+          _buildTimeRow(
+            elapsed: elapsed,
+            totalSeconds: totalSeconds,
+            progress: 0,
+            totalDuration: Duration(seconds: totalSeconds),
+          ),
+        ],
+      );
+    }
+
+    Widget _buildWaveform({
+      required List<double> waveform,
+      required int elapsed,
+      required int totalSeconds,
+      required double progress,
+      required Duration totalDuration,
+    }) {
+      final displayWaveform = waveform.isEmpty ? _fallbackWaveform : waveform;
+
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(widget.track.title, style: AppTextStyles.heading2),
-                const SizedBox(height: 4),
-                Text(
-                  widget.track.artist?.displayName ?? 'Unknown Artist',
-                  style: AppTextStyles.artistName,
-                ),
-                const SizedBox(height: AppDimensions.spaceSmall),
-                const Row(
-                  children: [
-                    Icon(
-                      Icons.graphic_eq,
-                      color: AppColors.textMuted,
-                      size: 14,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return GestureDetector(
+                onHorizontalDragUpdate: (details) {
+                  _seekFromDx(
+                    details.localPosition.dx,
+                    constraints.maxWidth,
+                    totalDuration,
+                  );
+                },
+                onTapDown: (details) {
+                  _seekFromDx(
+                    details.localPosition.dx,
+                    constraints.maxWidth,
+                    totalDuration,
+                  );
+                },
+                child: SizedBox(
+                  height: 130,
+                  width: double.infinity,
+                  child: CustomPaint(
+                    painter: WaveformPainter(
+                      waveform: displayWaveform,
+                      progress: progress,
                     ),
-                    SizedBox(width: 4),
-                    Text('Behind this track', style: AppTextStyles.caption),
-                  ],
+                  ),
+                ),
+              );
+            },
+          ),
+          _buildTimeRow(
+            elapsed: elapsed,
+            totalSeconds: totalSeconds,
+            progress: progress,
+            totalDuration: totalDuration,
+          ),
+        ],
+      );
+    }
+
+    Widget _buildTimeRow({
+      required int elapsed,
+      required int totalSeconds,
+      required double progress,
+      required Duration totalDuration,
+    }) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.spaceMedium,
+          vertical: AppDimensions.spaceExtraSmall,
+        ),
+        child: Row(
+          children: [
+            Text(
+              formatTime(elapsed),
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: AppDimensions.spaceSmall),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final knobLeft = (progress * (constraints.maxWidth - 12))
+                      .clamp(0.0, constraints.maxWidth - 12);
+
+                  return GestureDetector(
+                    onTapDown: (details) {
+                      _seekFromDx(
+                        details.localPosition.dx,
+                        constraints.maxWidth,
+                        totalDuration,
+                      );
+                    },
+                    onHorizontalDragUpdate: (details) {
+                      _seekFromDx(
+                        details.localPosition.dx,
+                        constraints.maxWidth,
+                        totalDuration,
+                      );
+                    },
+                    child: SizedBox(
+                      height: 20,
+                      child: Stack(
+                        alignment: Alignment.centerLeft,
+                        children: [
+                          Container(
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: AppColors.waveformInactive,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          FractionallySizedBox(
+                            widthFactor: progress,
+                            child: Container(
+                              height: 3,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            left: knobLeft,
+                            child: Container(
+                              width: 12,
+                              height: 12,
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: AppDimensions.spaceSmall),
+            Text(formatTime(totalSeconds), style: AppTextStyles.caption),
+          ],
+        ),
+      );
+    }
+
+    Widget _buildCommentBar() {
+      return GestureDetector(
+        onTap: () {},
+        child: Container(
+          margin: const EdgeInsets.all(AppDimensions.spaceSmall),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDimensions.spaceMedium,
+            vertical: AppDimensions.spaceSmall,
+          ),
+          decoration: const ShapeDecoration(
+            color: AppColors.surface,
+            shape: StadiumBorder(
+              side: BorderSide(color: AppColors.textMuted, width: 0.5),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Comment...',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ),
+              const Text('🔥', style: TextStyle(fontSize: 18)),
+              const SizedBox(width: AppDimensions.spaceSmall),
+              const Text('👏', style: TextStyle(fontSize: 18)),
+              const SizedBox(width: AppDimensions.spaceSmall),
+              const Text('🥹', style: TextStyle(fontSize: 18)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    Widget _buildBottomBar() {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          GestureDetector(
+            onTap: () {
+              setState(() => isLiked = !isLiked);
+            },
+            child: Row(
+              children: [
+                Icon(
+                  isLiked ? Icons.favorite : Icons.favorite_border,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${widget.track.likeCount ?? 0}',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.primary,
+                  ),
                 ),
               ],
             ),
           ),
-          Column(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                color: AppColors.textSecondary,
-                onPressed: () => Navigator.pop(context),
-              ),
-
-              // ── Follow / Unfollow button ──────────────────────────────────
-              IconButton(
-                icon: isFollowLoading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.textSecondary,
-                        ),
-                      )
-                    : Icon(
-                        isFollowing
-                            ? Icons.person_remove_outlined
-                            : Icons.person_add_alt_1_outlined,
-                        color: isFollowing
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
-                      ),
-                tooltip: isFollowing ? 'Unfollow' : 'Follow',
-                onPressed: (isFollowLoading || followKey == null)
-                    ? null
-                    : () =>
-                          ref.read(followProvider(followKey).notifier).toggle(),
-              ),
-
-              IconButton(
-                icon: const Icon(Icons.grid_view_rounded),
-                color: AppColors.textSecondary,
-                onPressed: () {},
-              ),
-            ],
+          const Icon(
+            Icons.chat_bubble_outline,
+            color: AppColors.textSecondary,
+            size: 22,
+          ),
+          const Icon(Icons.ios_share, color: AppColors.textSecondary, size: 22),
+          const Icon(
+            Icons.queue_music,
+            color: AppColors.textSecondary,
+            size: 22,
+          ),
+          const Icon(
+            Icons.more_horiz,
+            color: AppColors.textSecondary,
+            size: 22,
           ),
         ],
-      ),
-    );
-  }
+      );
+    }
 
-  Widget _buildWaveformLoading({
-    required int elapsed,
-    required int totalSeconds,
-  }) {
-    return Column(
-      children: [
-        const SizedBox(
-          height: 130,
-          width: double.infinity,
+    Widget _buildPlayOverlay(bool isPlaying) {
+      return Positioned.fill(
+        child: Container(
+          color: Colors.black45,
           child: Center(
-            child: SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
-        ),
-        _buildTimeRow(
-          elapsed: elapsed,
-          totalSeconds: totalSeconds,
-          progress: 0,
-          totalDuration: Duration(seconds: totalSeconds),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWaveform({
-    required List<double> waveform,
-    required int elapsed,
-    required int totalSeconds,
-    required double progress,
-    required Duration totalDuration,
-  }) {
-    final displayWaveform = waveform.isEmpty ? _fallbackWaveform : waveform;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            return GestureDetector(
-              onHorizontalDragUpdate: (details) {
-                _seekFromDx(
-                  details.localPosition.dx,
-                  constraints.maxWidth,
-                  totalDuration,
-                );
-              },
-              onTapDown: (details) {
-                _seekFromDx(
-                  details.localPosition.dx,
-                  constraints.maxWidth,
-                  totalDuration,
-                );
-              },
-              child: SizedBox(
-                height: 130,
-                width: double.infinity,
-                child: CustomPaint(
-                  painter: WaveformPainter(
-                    waveform: displayWaveform,
-                    progress: progress,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-        _buildTimeRow(
-          elapsed: elapsed,
-          totalSeconds: totalSeconds,
-          progress: progress,
-          totalDuration: totalDuration,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimeRow({
-    required int elapsed,
-    required int totalSeconds,
-    required double progress,
-    required Duration totalDuration,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.spaceMedium,
-        vertical: AppDimensions.spaceExtraSmall,
-      ),
-      child: Row(
-        children: [
-          Text(
-            formatTime(elapsed),
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(width: AppDimensions.spaceSmall),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final knobLeft = (progress * (constraints.maxWidth - 12))
-                    .clamp(0.0, constraints.maxWidth - 12);
-
-                return GestureDetector(
-                  onTapDown: (details) {
-                    _seekFromDx(
-                      details.localPosition.dx,
-                      constraints.maxWidth,
-                      totalDuration,
-                    );
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    widget.onPlayPause();
+                    setState(() => showControls = false);
                   },
-                  onHorizontalDragUpdate: (details) {
-                    _seekFromDx(
-                      details.localPosition.dx,
-                      constraints.maxWidth,
-                      totalDuration,
-                    );
-                  },
-                  child: SizedBox(
-                    height: 20,
-                    child: Stack(
-                      alignment: Alignment.centerLeft,
-                      children: [
-                        Container(
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: AppColors.waveformInactive,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        FractionallySizedBox(
-                          widthFactor: progress,
-                          child: Container(
-                            height: 3,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          left: knobLeft,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ],
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: const BoxDecoration(
+                      color: AppColors.textPrimary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      color: AppColors.background,
+                      size: 30,
                     ),
                   ),
-                );
-              },
+                ),
+                const SizedBox(width: AppDimensions.spaceLarge),
+                GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface.withOpacity(0.85),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.textMuted),
+                    ),
+                    child: const Icon(
+                      Icons.skip_next_rounded,
+                      color: AppColors.textPrimary,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: AppDimensions.spaceSmall),
-          Text(formatTime(totalSeconds), style: AppTextStyles.caption),
-        ],
-      ),
-    );
+        ),
+      );
+    }
   }
 
-  Widget _buildCommentBar() {
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        margin: const EdgeInsets.all(AppDimensions.spaceSmall),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppDimensions.spaceMedium,
-          vertical: AppDimensions.spaceSmall,
-        ),
-        decoration: const ShapeDecoration(
-          color: AppColors.surface,
-          shape: StadiumBorder(
-            side: BorderSide(color: AppColors.textMuted, width: 0.5),
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Comment...',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textMuted,
-                ),
-              ),
-            ),
-            const Text('🔥', style: TextStyle(fontSize: 18)),
-            const SizedBox(width: AppDimensions.spaceSmall),
-            const Text('👏', style: TextStyle(fontSize: 18)),
-            const SizedBox(width: AppDimensions.spaceSmall),
-            const Text('🥹', style: TextStyle(fontSize: 18)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomBar() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        GestureDetector(
-          onTap: () {
-            setState(() => isLiked = !isLiked);
-          },
-          child: Row(
-            children: [
-              Icon(
-                isLiked ? Icons.favorite : Icons.favorite_border,
-                color: AppColors.primary,
-                size: 22,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${widget.track.likeCount ?? 0}',
-                style: AppTextStyles.caption.copyWith(color: AppColors.primary),
-              ),
-            ],
-          ),
-        ),
-        const Icon(
-          Icons.chat_bubble_outline,
-          color: AppColors.textSecondary,
-          size: 22,
-        ),
-        const Icon(Icons.ios_share, color: AppColors.textSecondary, size: 22),
-        const Icon(Icons.queue_music, color: AppColors.textSecondary, size: 22),
-        const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 22),
-      ],
-    );
-  }
-
-  Widget _buildPlayOverlay(bool isPlaying) {
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black45,
-        child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  widget.onPlayPause();
-                  setState(() => showControls = false);
-                },
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: const BoxDecoration(
-                    color: AppColors.textPrimary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    color: AppColors.background,
-                    size: 30,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceLarge),
-              GestureDetector(
-                onTap: () {},
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface.withOpacity(0.85),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.textMuted),
-                  ),
-                  child: const Icon(
-                    Icons.skip_next_rounded,
-                    color: AppColors.textPrimary,
-                    size: 24,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class WaveformPainter extends CustomPainter {
   final List<double> waveform;
   final double progress;
 
-  WaveformPainter({
-    required this.waveform,
-    required this.progress,
-  });
+  WaveformPainter({required this.waveform, required this.progress});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -651,7 +665,6 @@ class WaveformPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(WaveformPainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.waveform != waveform;
+    return oldDelegate.progress != progress || oldDelegate.waveform != waveform;
   }
 }
