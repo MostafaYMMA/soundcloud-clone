@@ -13,6 +13,8 @@ import 'package:my_project/screens/search/search_screen.dart';
 import 'package:my_project/screens/upgrade/upgrade_screen.dart';
 import 'package:my_project/widgets/full_player.dart';
 import 'package:my_project/widgets/mini_player.dart';
+import 'package:my_project/screens/auth/welcome_screen.dart';
+import 'package:my_project/providers/auth_providers.dart';
 import './providers/track_provider.dart';
 
 class RootScreen extends ConsumerStatefulWidget {
@@ -84,37 +86,28 @@ class _RootScreenState extends ConsumerState<RootScreen> {
     super.dispose();
   }
 
-  /// ✅ FIXED: now uses Riverpod correctly
   Future<void> _handlePlay(Track track) async {
     try {
-      // 1. Fetch stream info from backend
       final streamData = await ref
           .read(tracksServiceProvider)
           .getTrackStream(trackId: track.trackId);
 
-      debugPrint("Stream data: $streamData");
-
       final rawUrl = streamData['stream_url'];
 
       if (rawUrl == null || rawUrl.toString().isEmpty) {
-        debugPrint("Invalid stream URL");
+        debugPrint('Invalid stream URL');
         return;
       }
 
-      // 2. Convert relative URL → absolute URL
       final url = rawUrl.toString().startsWith('http')
           ? rawUrl.toString()
           : 'https://streamline-swp.duckdns.org$rawUrl';
 
-      debugPrint("Final audio URL: $url");
-
-      // 3. Pause if same track is playing
       if (_currentTrack.trackId == track.trackId && _isPlaying) {
         await _player.pause();
         return;
       }
 
-      // 4. Load new track if needed
       if (_currentTrack.trackId != track.trackId || !_hasLoaded) {
         setState(() {
           _hasLoaded = true;
@@ -122,19 +115,19 @@ class _RootScreenState extends ConsumerState<RootScreen> {
           _currentPosition = Duration.zero;
           _totalDuration = Duration(seconds: track.durationSeconds ?? 0);
         });
+
         try {
           await _player.setUrl(url);
         } catch (e) {
-          debugPrint("just_audio load error: $e");
+          debugPrint('just_audio load error: $e');
           return;
         }
       }
 
-      // 5. Play
       await _player.play();
     } catch (e, stack) {
-      debugPrint("Audio load failed: $e");
-      debugPrint("Stack trace: $stack");
+      debugPrint('Audio load failed: $e');
+      debugPrint('Stack trace: $stack');
     }
   }
 
@@ -156,6 +149,7 @@ class _RootScreenState extends ConsumerState<RootScreen> {
     await _player.seek(clamped);
 
     if (!mounted) return;
+
     setState(() => _currentPosition = clamped);
   }
 
@@ -187,6 +181,11 @@ class _RootScreenState extends ConsumerState<RootScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+
+    if (!authState.isLoggedIn) {
+      return const WelcomeScreen();
+    }
     return Scaffold(
       body: _subScreens[_selectedIndex] ?? _buildScreens()[_selectedIndex],
       bottomNavigationBar: Column(
@@ -200,7 +199,10 @@ class _RootScreenState extends ConsumerState<RootScreen> {
           ),
           BottomNavBar(
             onTabSelected: (index) {
-              setState(() => _selectedIndex = index);
+              setState(() {
+                _selectedIndex = index;
+                _subScreens.remove(index);
+              });
             },
           ),
         ],
