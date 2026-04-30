@@ -1,38 +1,15 @@
-import 'package:dio/dio.dart';
 import 'dart:io';
-import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/auth_providers.dart';
-import '../../services/user_profile_services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:my_project/models/user.dart';
 
-const String _apiOrigin = 'https://streamline-swp.duckdns.org';
-const String _apiBaseUrl = '$_apiOrigin/api/';
-
-String _resolveApiUrl(String path) {
-  final normalized = path.trim();
-
-  if (normalized.isEmpty) {
-    return '';
-  }
-
-  if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
-    return normalized;
-  }
-
-  final trimmed = normalized.startsWith('/')
-      ? normalized.substring(1)
-      : normalized;
-
-  if (trimmed.startsWith('api/')) {
-    return '$_apiOrigin/$trimmed';
-  }
-
-  return '$_apiBaseUrl$trimmed';
-}
+import '../../providers/auth_providers.dart';
+import '../../services/user_profile_services.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -75,6 +52,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _saveProfile() async {
     final authState = ref.read(authProvider);
+    final authNotifier = ref.read(authProvider.notifier);
     final token = authState.tokens?.accessToken;
     final currentUser = authState.user;
 
@@ -115,7 +93,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         bio: updatedUser.bio ?? currentUser?.bio,
       );
 
-      _updateAuthUser(mergedUser);
+      authNotifier.updateCurrentUser(mergedUser);
 
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -125,16 +103,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to save profile: $e')));
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+      });
     }
   }
 
   Future<void> _pickAndUploadAvatar() async {
     final authState = ref.read(authProvider);
+    final authNotifier = ref.read(authProvider.notifier);
     final token = authState.tokens?.accessToken;
     final currentUser = authState.user;
 
@@ -150,11 +128,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         source: ImageSource.gallery,
       );
 
-      if (pickedFile == null) return;
+      if (pickedFile == null || !mounted) return;
 
       final originalFile = File(pickedFile.path);
       final compressedFile = await _compressImage(originalFile);
 
+      if (!mounted) return;
       setState(() {
         _selectedAvatarFile = compressedFile;
       });
@@ -167,7 +146,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       );
 
       if (newAvatarUrl != null && currentUser != null) {
-        final fullAvatarUrl = _resolveApiUrl(newAvatarUrl);
+        final fullAvatarUrl = newAvatarUrl.startsWith('http')
+            ? newAvatarUrl
+            : 'https://streamline-swp.duckdns.org/api/$newAvatarUrl';
 
         final updatedUser = User(
           id: currentUser.id,
@@ -181,11 +162,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           bio: currentUser.bio,
         );
 
-        _updateAuthUser(updatedUser);
+        authNotifier.updateCurrentUser(updatedUser);
       }
 
       if (!mounted) return;
-
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Profile picture updated')));
@@ -193,7 +173,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       print('AVATAR UPLOAD ERROR: $e');
 
       if (!mounted) return;
-
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to upload avatar: $e')));
@@ -203,7 +182,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Future<File> _compressImage(File file) async {
     final bytes = await file.readAsBytes();
 
-    final Uint8List? compressedBytes =
+    final Uint8List compressedBytes =
         await FlutterImageCompress.compressWithList(
           bytes,
           minWidth: 1080,
@@ -212,26 +191,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           format: CompressFormat.jpeg,
         );
 
-    if (compressedBytes == null) {
-      return file;
-    }
-
     final tempPath = '${file.path}_compressed.jpg';
     final compressedFile = File(tempPath);
     await compressedFile.writeAsBytes(compressedBytes);
 
     return compressedFile;
-  }
-
-  void _updateAuthUser(User user) {
-    final currentState = ref.read(authProvider);
-    ref.read(authProvider.notifier).state = AuthState(
-      tokens: currentState.tokens,
-      user: user,
-      isLoading: false,
-      error: null,
-      successMessage: currentState.successMessage,
-    );
   }
 
   Widget _buildEditableRow({
@@ -397,10 +361,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   bottom: -36,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      print('AVATAR AREA TAPPED');
-                      _pickAndUploadAvatar();
-                    },
+                    onTap: _pickAndUploadAvatar,
                     child: SizedBox(
                       width: 96,
                       height: 96,
@@ -414,7 +375,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               backgroundImage: _selectedAvatarFile != null
                                   ? FileImage(_selectedAvatarFile!)
                                   : (avatarUrl != null && avatarUrl.isNotEmpty)
-                                  ? NetworkImage(avatarUrl) as ImageProvider
+                                  ? NetworkImage(avatarUrl)
                                   : null,
                               child:
                                   (_selectedAvatarFile == null &&

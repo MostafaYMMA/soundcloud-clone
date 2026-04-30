@@ -56,9 +56,11 @@ class LibraryScreen extends ConsumerWidget {
                 const SizedBox(width: AppDimensions.spaceSmall),
                 GestureDetector(
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const ProfileScreen(),
+                    // Use onNavigate so mini player stays visible
+                    onNavigate(
+                      ProfileScreen(
+                        onTrackTap: onTrackTap,
+                        onNavigate: onNavigate,
                       ),
                     );
                   },
