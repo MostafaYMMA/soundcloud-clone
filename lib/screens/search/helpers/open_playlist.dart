@@ -4,7 +4,6 @@ import 'package:my_project/models/playlist.dart';
 import 'package:my_project/providers/playlist_provider.dart';
 import 'package:my_project/screens/library/collections_screen.dart';
 
-
 Future<void> openPlaylist({
   required BuildContext context,
   required WidgetRef ref,
@@ -31,13 +30,15 @@ Future<void> openPlaylist({
           yearText: '2026',
           likesText: '0',
           tracks: detailed.tracks
-              .map((t) => CollectionTrack(
-                    id: t.id,
-                    title: t.title,
-                    artist: t.artist,
-                    artworkPath: t.artworkUrl,
-                    isAvailable: true,
-                  ))
+              .map(
+                (t) => CollectionTrack(
+                  id: t.id,
+                  title: t.title,
+                  artist: t.artist,
+                  artworkPath: t.artworkUrl,
+                  isAvailable: true,
+                ),
+              )
               .toList(),
         ),
       ),

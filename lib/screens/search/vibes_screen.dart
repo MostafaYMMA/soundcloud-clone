@@ -13,7 +13,7 @@ import 'package:my_project/screens/search/helpers/open_playlist.dart';
 class VibeScreen extends ConsumerWidget {
   final String vibe;
 
-  const VibeScreen({super.key, required this.vibe,});
+  const VibeScreen({super.key, required this.vibe});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -101,9 +101,7 @@ class VibeScreen extends ConsumerWidget {
 
                               return TrackTile(
                                 track: track,
-                                onTap: () {
-                                  
-                                },
+                                onTap: () {},
                                 onMoreTap: () {
                                   showTrackContextMenu(context, track);
                                 },
@@ -168,14 +166,16 @@ class VibeScreen extends ConsumerWidget {
 
                           return InkWell(
                             onTap: () {
-                               openPlaylist(
+                              openPlaylist(
                                 context: context,
                                 ref: ref,
                                 playlist: p,
-                                );
+                              );
                             },
                             child: Padding(
-                              padding: const EdgeInsets.all(AppDimensions.spaceExtraSmall),
+                              padding: const EdgeInsets.all(
+                                AppDimensions.spaceExtraSmall,
+                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
