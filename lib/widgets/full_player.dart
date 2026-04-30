@@ -9,7 +9,11 @@ import 'package:my_project/constants/app_colors.dart';
 import 'package:my_project/constants/app_dimensions.dart';
 import 'package:my_project/constants/app_text_styles.dart';
 import 'package:my_project/models/track.dart';
-import 'package:my_project/providers/followers_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/auth_providers.dart';
+import '../../providers/track_provider.dart';
+import '../../providers/liked_tracks_provider.dart';
+import '../../providers/followers_provider.dart';
 
 class FullPlayer extends ConsumerStatefulWidget {
   const FullPlayer({
@@ -30,12 +34,29 @@ class FullPlayer extends ConsumerStatefulWidget {
 }
 
 class _FullPlayerState extends ConsumerState<FullPlayer> {
-  bool isLiked = false;
+  bool showControls = false;
+  bool _initializedControls = false;
 
   final List<double> waveform = List.generate(
     70,
     (index) => 0.2 + ((index % 7) * 0.08),
   );
+
+  @override
+  void initState() {
+    super.initState();
+    // Seed this track's liked state into likedTracksProvider if we know it.
+    // This ensures the heart is correct even before LikedTracksScreen loads.
+    if (widget.track.isLiked == true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final notifier = ref.read(likedTracksProvider.notifier);
+        final current = ref.read(likedTracksProvider);
+        if (!current.contains(widget.track.trackId)) {
+          notifier.setAll({...current, widget.track.trackId});
+        }
+      });
+    }
+  }
 
   String formatTime(int totalSeconds) {
     final minutes = totalSeconds ~/ 60;
@@ -45,10 +66,8 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
 
   void _seekFromDx(double dx, double width, Duration totalDuration) {
     if (width <= 0 || totalDuration.inMilliseconds <= 0) return;
-
     final newProgress = (dx / width).clamp(0.0, 1.0);
     final targetMs = (newProgress * totalDuration.inMilliseconds).round();
-
     widget.onSeek(Duration(milliseconds: targetMs));
   }
 
@@ -86,13 +105,11 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
               initialData: widget.player.position,
               builder: (context, positionSnapshot) {
                 final currentPosition = positionSnapshot.data ?? Duration.zero;
-
                 final totalMs = totalDuration.inMilliseconds;
                 final currentMs = currentPosition.inMilliseconds.clamp(
                   0,
                   totalMs > 0 ? totalMs : 1,
                 );
-
                 final progress = totalMs > 0 ? currentMs / totalMs : 0.0;
                 final elapsed = currentPosition.inSeconds;
                 final totalSeconds = totalDuration.inSeconds > 0
@@ -107,7 +124,9 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                   // Buttons/waveform are descendants and win the gesture arena,
                   // so they are unaffected.
                   body: GestureDetector(
-                    onTap: isPlaying ? widget.onPlayPause : null,
+                    onTap: showControls
+                        ? null
+                        : () => setState(() => showControls = true),
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
@@ -175,6 +194,25 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildBackground(String? coverUrl) {
+    if (coverUrl == null || coverUrl.isEmpty) {
+      return Container(color: Colors.black);
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: NetworkImage(coverUrl),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(color: Colors.black.withOpacity(0.3)),
+      ),
     );
   }
 
@@ -272,20 +310,16 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
         LayoutBuilder(
           builder: (context, constraints) {
             return GestureDetector(
-              onHorizontalDragUpdate: (details) {
-                _seekFromDx(
-                  details.localPosition.dx,
-                  constraints.maxWidth,
-                  totalDuration,
-                );
-              },
-              onTapDown: (details) {
-                _seekFromDx(
-                  details.localPosition.dx,
-                  constraints.maxWidth,
-                  totalDuration,
-                );
-              },
+              onHorizontalDragUpdate: (details) => _seekFromDx(
+                details.localPosition.dx,
+                constraints.maxWidth,
+                totalDuration,
+              ),
+              onTapDown: (details) => _seekFromDx(
+                details.localPosition.dx,
+                constraints.maxWidth,
+                totalDuration,
+              ),
               child: SizedBox(
                 height: 80,
                 width: double.infinity,
@@ -319,22 +353,17 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                   builder: (context, constraints) {
                     final knobLeft = (progress * (constraints.maxWidth - 12))
                         .clamp(0.0, constraints.maxWidth - 12);
-
                     return GestureDetector(
-                      onTapDown: (details) {
-                        _seekFromDx(
-                          details.localPosition.dx,
-                          constraints.maxWidth,
-                          totalDuration,
-                        );
-                      },
-                      onHorizontalDragUpdate: (details) {
-                        _seekFromDx(
-                          details.localPosition.dx,
-                          constraints.maxWidth,
-                          totalDuration,
-                        );
-                      },
+                      onTapDown: (details) => _seekFromDx(
+                        details.localPosition.dx,
+                        constraints.maxWidth,
+                        totalDuration,
+                      ),
+                      onHorizontalDragUpdate: (details) => _seekFromDx(
+                        details.localPosition.dx,
+                        constraints.maxWidth,
+                        totalDuration,
+                      ),
                       child: SizedBox(
                         height: 20,
                         child: Stack(
@@ -421,12 +450,37 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
   }
 
   Widget _buildBottomBar() {
+    final username = ref.watch(authProvider).user?.userName ?? '';
+
+    // Single source of truth for liked state
+    final likedIds = ref.watch(likedTracksProvider);
+    final isLiked = likedIds.contains(widget.track.trackId);
+
+    // Show the server like count, adjusted for optimistic toggle
+    final serverCount = widget.track.likeCount ?? 0;
+    final displayCount = isLiked
+        ? (widget.track.isLiked == true ? serverCount : serverCount + 1)
+        : (widget.track.isLiked == true ? serverCount - 1 : serverCount);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         GestureDetector(
-          onTap: () {
-            setState(() => isLiked = !isLiked);
+          onTap: () async {
+            final notifier = ref.read(likedTracksProvider.notifier);
+            final wasLiked = isLiked;
+
+            // Optimistic update
+            notifier.toggleLocal(widget.track.trackId);
+
+            try {
+              await ref
+                  .read(toggleTrackLikeProvider(widget.track.trackId).notifier)
+                  .toggle(currentlyLiked: wasLiked, username: username);
+            } catch (_) {
+              // Rollback on failure
+              notifier.toggleLocal(widget.track.trackId);
+            }
           },
           child: Row(
             children: [
@@ -437,7 +491,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
               ),
               const SizedBox(width: 4),
               Text(
-                '${widget.track.likeCount}',
+                '$displayCount',
                 style: AppTextStyles.caption.copyWith(color: AppColors.primary),
               ),
             ],
@@ -455,27 +509,54 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
     );
   }
 
-  Widget _buildBackground(String? coverUrl) {
-    if (coverUrl == null || coverUrl.isEmpty) {
-      return Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(-0.3, -0.3),
-            radius: 1.3,
-            colors: [Color(0xFF8B1A1A), Color(0xFF3A0808), Color(0xFF0D0303)],
+  Widget _buildPlayOverlay(bool isPlaying) {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black45,
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  widget.onPlayPause();
+                  setState(() => showControls = false);
+                },
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(
+                    color: AppColors.textPrimary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    color: AppColors.background,
+                    size: 30,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppDimensions.spaceLarge),
+              GestureDetector(
+                onTap: () {},
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.surface.withOpacity(0.85),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.textMuted),
+                  ),
+                  child: const Icon(
+                    Icons.skip_next_rounded,
+                    color: AppColors.textPrimary,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-      );
-    }
-    return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-      child: Image.network(
-        coverUrl,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (context, error, stackTrace) =>
-            Container(color: Colors.black),
       ),
     );
   }
@@ -490,7 +571,6 @@ class WaveformPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (waveform.isEmpty) return;
-
     final count = waveform.length;
     final barWidth = size.width / count;
     final gap = barWidth * 0.3;
@@ -523,7 +603,6 @@ class WaveformPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(WaveformPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.waveform != waveform;
-  }
+  bool shouldRepaint(WaveformPainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.waveform != waveform;
 }
