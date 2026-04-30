@@ -166,7 +166,6 @@ class _BlockState {
 
   const _BlockState({required this.isBlocked, this.isLoading = false});
 
-
   _BlockState copyWith({bool? isBlocked, bool? isLoading}) => _BlockState(
     isBlocked: isBlocked ?? this.isBlocked,
     isLoading: isLoading ?? this.isLoading,

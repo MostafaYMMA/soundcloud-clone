@@ -30,7 +30,9 @@ class _TrueFriendsScreenState extends ConsumerState<TrueFriendsScreen> {
   void initState() {
     super.initState();
     _searchController.addListener(() {
-      setState(() => _searchQuery = _searchController.text.toLowerCase().trim());
+      setState(
+        () => _searchQuery = _searchController.text.toLowerCase().trim(),
+      );
     });
   }
 
@@ -64,7 +66,9 @@ class _TrueFriendsScreenState extends ConsumerState<TrueFriendsScreen> {
     });
 
     try {
-      await ref.read(followersServiceProvider).unfollowUser(username: identifier);
+      await ref
+          .read(followersServiceProvider)
+          .unfollowUser(username: identifier);
       ref.invalidate(myFollowingProvider);
     } catch (e) {
       debugPrint('[TrueFriendsScreen] Unfollow failed: $e');
@@ -140,7 +144,9 @@ class _TrueFriendsScreenState extends ConsumerState<TrueFriendsScreen> {
               height: 40,
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppDimensions.borderRadiusPill),
+                borderRadius: BorderRadius.circular(
+                  AppDimensions.borderRadiusPill,
+                ),
               ),
               child: Row(
                 children: [
@@ -214,37 +220,37 @@ class _TrueFriendsScreenState extends ConsumerState<TrueFriendsScreen> {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : hasError
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.wifi_off,
-                              color: AppColors.textMuted,
-                              size: 48,
-                            ),
-                            const SizedBox(height: AppDimensions.spaceSmall),
-                            Text(
-                              'Failed to load. Please try again.',
-                              style: AppTextStyles.caption.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: AppDimensions.spaceMedium),
-                            TextButton(
-                              onPressed: () {
-                                ref.invalidate(myFollowersProvider);
-                                ref.invalidate(myFollowingProvider);
-                              },
-                              child: const Text('Retry'),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.wifi_off,
+                          color: AppColors.textMuted,
+                          size: 48,
                         ),
-                      )
-                    : _buildList(
-                        followers: followersAsync.value!.followers,
-                        following: followingAsync.value!.following,
-                      ),
+                        const SizedBox(height: AppDimensions.spaceSmall),
+                        Text(
+                          'Failed to load. Please try again.',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: AppDimensions.spaceMedium),
+                        TextButton(
+                          onPressed: () {
+                            ref.invalidate(myFollowersProvider);
+                            ref.invalidate(myFollowingProvider);
+                          },
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _buildList(
+                    followers: followersAsync.value!.followers,
+                    following: followingAsync.value!.following,
+                  ),
           ),
         ],
       ),
@@ -261,8 +267,8 @@ class _TrueFriendsScreenState extends ConsumerState<TrueFriendsScreen> {
     final displayed = _showAllFollowers
         ? followers
         : followers
-            .where((f) => _localFollowingIds!.contains(f.userId))
-            .toList();
+              .where((f) => _localFollowingIds!.contains(f.userId))
+              .toList();
 
     final filtered = _applySearch(displayed);
 
@@ -274,8 +280,8 @@ class _TrueFriendsScreenState extends ConsumerState<TrueFriendsScreen> {
             _searchQuery.isNotEmpty
                 ? 'No results for "$_searchQuery".'
                 : _showAllFollowers
-                    ? 'You have no followers yet.'
-                    : 'No one follows you back yet.',
+                ? 'You have no followers yet.'
+                : 'No one follows you back yet.',
             style: AppTextStyles.caption.copyWith(color: AppColors.textMuted),
             textAlign: TextAlign.center,
           ),
