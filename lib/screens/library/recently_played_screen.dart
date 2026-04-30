@@ -47,8 +47,7 @@ class RecentlyPlayedScreen extends ConsumerWidget {
                 itemBuilder: (context, index) => TrackTile(
                   track: tracks[index],
                   onTap: () {},
-                  onMoreTap: () =>
-                      showTrackContextMenu(context, tracks[index]),
+                  onMoreTap: () => showTrackContextMenu(context, tracks[index]),
                 ),
               ),
       ),

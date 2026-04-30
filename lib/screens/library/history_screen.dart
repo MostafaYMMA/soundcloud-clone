@@ -90,7 +90,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             padding: const EdgeInsets.only(right: AppDimensions.spaceMedium),
             child: IconButton(
               icon: const Icon(Icons.delete_outline),
-              onPressed: (tracks == null || tracks.isEmpty) ? null : _confirmClear,
+              onPressed: (tracks == null || tracks.isEmpty)
+                  ? null
+                  : _confirmClear,
             ),
           ),
         ],
