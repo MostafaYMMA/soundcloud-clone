@@ -14,13 +14,17 @@ class CollectionDetailsMapper {
       ownerAvatarPath: album.artworkUrl,
       yearText: album.releaseYear > 0 ? album.releaseYear.toString() : '',
       likesText: '${album.likeCount} likes',
-      tracks: album.tracks.map((t) => CollectionTrack(
-        id: t.id,
-        title: t.title,
-        artist: t.artist,
-        artworkPath: t.artworkUrl,
-        durationSeconds: t.durationSeconds,
-      )).toList(),
+      tracks: album.tracks
+          .map(
+            (t) => CollectionTrack(
+              id: t.id,
+              title: t.title,
+              artist: t.artist,
+              artworkPath: t.artworkUrl,
+              durationSeconds: t.durationSeconds,
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -33,13 +37,17 @@ class CollectionDetailsMapper {
       ownerAvatarPath: playlist.coverUrl,
       yearText: '${playlist.trackCount} tracks',
       likesText: playlist.owner,
-      tracks: playlist.tracks.map((t) => CollectionTrack(
-        id: t.id,
-        title: t.title,
-        artist: t.artist,
-        artworkPath: t.artworkUrl,
-        durationSeconds: t.durationSeconds,
-      )).toList(),
+      tracks: playlist.tracks
+          .map(
+            (t) => CollectionTrack(
+              id: t.id,
+              title: t.title,
+              artist: t.artist,
+              artworkPath: t.artworkUrl,
+              durationSeconds: t.durationSeconds,
+            ),
+          )
+          .toList(),
     );
   }
 }

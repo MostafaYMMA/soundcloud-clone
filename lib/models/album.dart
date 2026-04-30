@@ -73,15 +73,16 @@ class Album {
     final tracksRaw = json['tracks'];
     final tracks = tracksRaw is List
         ? tracksRaw
-            .whereType<Map<String, dynamic>>()
-            .map(AlbumTrack.fromJson)
-            .toList()
+              .whereType<Map<String, dynamic>>()
+              .map(AlbumTrack.fromJson)
+              .toList()
         : <AlbumTrack>[];
 
     return Album(
       id: json['album_id']?.toString() ?? json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? 'Untitled Album',
-      artist: json['artist']?.toString() ??
+      artist:
+          json['artist']?.toString() ??
           json['display_name']?.toString() ??
           json['owner']?.toString() ??
           'Unknown Artist',
