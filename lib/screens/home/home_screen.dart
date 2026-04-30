@@ -48,8 +48,9 @@ extension FeedTrackItemToTrack on FeedTrackItem {
 
 class HomeScreen extends ConsumerStatefulWidget {
   final void Function(Track)? onTrackTap;
+  final void Function(List<Track>, int)? onQueuePlay;
 
-  const HomeScreen({super.key, this.onTrackTap});
+  const HomeScreen({super.key, this.onTrackTap, this.onQueuePlay});
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -160,7 +161,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         .take(6)
                         .map((item) => item.toTrack())
                         .toList(),
-                    onTrackTap: widget.onTrackTap,
+                    onQueuePlay: widget.onQueuePlay,
                   );
                 },
               ),

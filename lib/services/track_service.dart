@@ -1,5 +1,3 @@
-// services/tracks_service.dart
-
 import 'package:dio/dio.dart';
 import '../models/track.dart';
 
@@ -210,5 +208,16 @@ class TracksService {
     return tracks
         .map((e) => Track.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+  // ── POST /likes/tracks/{track_id} ───────────────────────────────────────────
+
+  Future<void> likeTrack({required String trackId}) async {
+    await _dio.post('$_base/likes/tracks/$trackId');
+  }
+
+  // ── DELETE /likes/tracks/{track_id} ─────────────────────────────────────────
+
+  Future<void> unlikeTrack({required String trackId}) async {
+    await _dio.delete('$_base/likes/tracks/$trackId');
   }
 }
