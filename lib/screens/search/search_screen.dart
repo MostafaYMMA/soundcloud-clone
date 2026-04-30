@@ -1,9 +1,8 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_project/constants/app_colors.dart';
-import 'package:my_project/constants/app_dimensions.dart';
-import 'package:my_project/constants/app_text_styles.dart';
 import 'package:my_project/models/playlist.dart';
 import 'package:my_project/models/track.dart';
 import 'package:my_project/providers/playlist_provider.dart';
@@ -23,17 +22,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
   Timer? _debounce;
   String _query = '';
+  final Set<String> _locallyLikedPlaylistIds = {};
 
-  // 🔧 Fix backend URLs
   String fixImageUrl(String? url) {
     if (url == null || url.isEmpty) return '';
-
     if (url.startsWith('http')) return url;
-
-    if (url.startsWith('/')) {
-      return 'https://streamline-swp.duckdns.org$url';
-    }
-
+    if (url.startsWith('/')) return 'https://streamline-swp.duckdns.org$url';
     return url;
   }
 
@@ -50,6 +44,52 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     });
   }
 
+  Future<void> _likePlaylist(Playlist playlist) async {
+    if (_locallyLikedPlaylistIds.contains(playlist.id)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Playlist is already in your library.')),
+      );
+      return;
+    }
+
+    await ref.read(playlistProvider.notifier).likePlaylist(playlist.id);
+
+    if (!mounted) return;
+
+    final state = ref.read(playlistProvider);
+
+    if (state.error != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(state.error!)));
+      return;
+    }
+
+    setState(() {
+      _locallyLikedPlaylistIds.add(playlist.id);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${playlist.name} added to your playlists.')),
+    );
+
+    ref.read(playlistProvider.notifier).clearMessages();
+  }
+
+  bool _isPlaylistLiked(Playlist playlist, PlaylistState state) {
+    return _locallyLikedPlaylistIds.contains(playlist.id) ||
+        state.likedPlaylists.any((p) => p.id == playlist.id);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(playlistProvider.notifier).fetchLikedPlaylists();
+    });
+  }
+
   @override
   void dispose() {
     _debounce?.cancel();
@@ -61,7 +101,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final playlistState = ref.watch(playlistProvider);
     final trackState = ref.watch(searchTracksProvider(_query));
-
     final isSearching = _query.isNotEmpty;
 
     return Scaffold(
@@ -71,7 +110,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           children: [
             SearchBar1(controller: _controller, onChanged: _onSearchChanged),
             const SizedBox(height: 10),
-
             Expanded(
               child: isSearching
                   ? _buildResults(playlistState, trackState)
@@ -99,6 +137,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final playlists = playlistState.searchResults;
     final tracks = trackState.value ?? [];
 
+    if (playlistState.error != null && playlists.isEmpty && tracks.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Text(
+            playlistState.error!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white70),
+          ),
+        ),
+      );
+    }
+
     if (playlists.isEmpty && tracks.isEmpty) {
       return const Center(
         child: Text(
@@ -110,89 +161,87 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     return ListView(
       children: [
-        // ───── TRACKS ─────
         if (tracks.isNotEmpty) ...[
           const Padding(
             padding: EdgeInsets.all(12),
             child: Text(
-              "Tracks",
+              'Tracks',
               style: TextStyle(color: Colors.white, fontSize: 18),
             ),
           ),
-
           ...tracks.map((t) {
             final artistName = t.artist?.displayName ?? 'Unknown Artist';
             final image = fixImageUrl(t.coverImageUrl);
 
             return ListTile(
-              leading: SizedBox(
-                width: 50,
-                height: 50,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: image.isNotEmpty
-                      ? Image.network(
-                          image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const ColoredBox(
-                            color: Colors.black26,
-                            child: Icon(Icons.music_note, color: Colors.white),
-                          ),
-                        )
-                      : const ColoredBox(
-                          color: Colors.black26,
-                          child: Icon(Icons.music_note, color: Colors.white),
-                        ),
-                ),
+              leading: _SquareImage(
+                imageUrl: image,
+                fallbackIcon: Icons.music_note,
               ),
-              title: Text(t.title, style: const TextStyle(color: Colors.white)),
+              title: Text(
+                t.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white),
+              ),
               subtitle: Text(
                 artistName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.white70),
               ),
             );
           }),
         ],
-
-        // ───── PLAYLISTS ─────
         if (playlists.isNotEmpty) ...[
           const Padding(
             padding: EdgeInsets.all(12),
             child: Text(
-              "Playlists",
+              'Playlists',
               style: TextStyle(color: Colors.white, fontSize: 18),
             ),
           ),
-
-          ...playlists.map((p) {
-            final image = fixImageUrl(p.coverUrl);
+          ...playlists.map((playlist) {
+            final image = fixImageUrl(playlist.coverUrl);
+            final isLiked = _isPlaylistLiked(playlist, playlistState);
 
             return ListTile(
-              onTap: () => _openPlaylist(p),
-              leading: SizedBox(
-                width: 50,
-                height: 50,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: image.isNotEmpty
-                      ? Image.network(
-                          image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const ColoredBox(
-                            color: Colors.black26,
-                            child: Icon(Icons.queue_music, color: Colors.white),
-                          ),
-                        )
-                      : const ColoredBox(
-                          color: Colors.black26,
-                          child: Icon(Icons.queue_music, color: Colors.white),
-                        ),
-                ),
+              onTap: () => _openPlaylist(playlist),
+              leading: _SquareImage(
+                imageUrl: image,
+                fallbackIcon: Icons.queue_music,
               ),
-              title: Text(p.name, style: const TextStyle(color: Colors.white)),
+              title: Text(
+                playlist.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white),
+              ),
               subtitle: Text(
-                p.description,
+                playlist.description.isEmpty
+                    ? 'Playlist'
+                    : playlist.description,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.white70),
+              ),
+              trailing: IconButton(
+                tooltip: isLiked ? 'Already in library' : 'Add to library',
+                icon: playlistState.isLiking
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        isLiked ? Icons.favorite : Icons.favorite_border,
+                        color: isLiked
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                      ),
+                onPressed: playlistState.isLiking || isLiked
+                    ? null
+                    : () => _likePlaylist(playlist),
               ),
             );
           }),
@@ -208,7 +257,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     if (!mounted) return;
 
-    if (detailed == null) return;
+    if (detailed == null) {
+      final error =
+          ref.read(playlistProvider).error ?? 'Could not open playlist.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
 
     Navigator.push(
       context,
@@ -221,8 +277,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             artworkPath: detailed.coverUrl,
             ownerName: detailed.owner,
             ownerAvatarPath: '',
-            yearText: '2026',
-            likesText: '0',
+            yearText: '${detailed.trackCount} tracks',
+            likesText: detailed.owner,
             tracks: detailed.tracks
                 .map(
                   (track) => CollectionTrack(
@@ -230,6 +286,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     title: track.title,
                     artist: track.artist,
                     artworkPath: track.artworkUrl,
+                    durationSeconds: track.durationSeconds,
                     isAvailable: true,
                   ),
                 )
@@ -237,6 +294,48 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SquareImage extends StatelessWidget {
+  final String imageUrl;
+  final IconData fallbackIcon;
+
+  const _SquareImage({
+    required this.imageUrl,
+    required this.fallbackIcon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 50,
+      height: 50,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: imageUrl.isNotEmpty
+            ? Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _FallbackIcon(icon: fallbackIcon),
+              )
+            : _FallbackIcon(icon: fallbackIcon),
+      ),
+    );
+  }
+}
+
+class _FallbackIcon extends StatelessWidget {
+  final IconData icon;
+
+  const _FallbackIcon({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Colors.black26,
+      child: Icon(icon, color: Colors.white),
     );
   }
 }
