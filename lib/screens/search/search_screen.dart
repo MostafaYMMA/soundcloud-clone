@@ -136,21 +136,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => const ColoredBox(
                             color: Colors.black26,
-                            child: Icon(Icons.music_note,
-                                color: Colors.white),
+                            child: Icon(Icons.music_note, color: Colors.white),
                           ),
                         )
                       : const ColoredBox(
                           color: Colors.black26,
-                          child:
-                              Icon(Icons.music_note, color: Colors.white),
+                          child: Icon(Icons.music_note, color: Colors.white),
                         ),
                 ),
               ),
-              title: Text(
-                t.title,
-                style: const TextStyle(color: Colors.white),
-              ),
+              title: Text(t.title, style: const TextStyle(color: Colors.white)),
               subtitle: Text(
                 artistName,
                 style: const TextStyle(color: Colors.white70),
@@ -185,21 +180,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => const ColoredBox(
                             color: Colors.black26,
-                            child: Icon(Icons.queue_music,
-                                color: Colors.white),
+                            child: Icon(Icons.queue_music, color: Colors.white),
                           ),
                         )
                       : const ColoredBox(
                           color: Colors.black26,
-                          child:
-                              Icon(Icons.queue_music, color: Colors.white),
+                          child: Icon(Icons.queue_music, color: Colors.white),
                         ),
                 ),
               ),
-              title: Text(
-                p.name,
-                style: const TextStyle(color: Colors.white),
-              ),
+              title: Text(p.name, style: const TextStyle(color: Colors.white)),
               subtitle: Text(
                 p.description,
                 style: const TextStyle(color: Colors.white70),
