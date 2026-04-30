@@ -12,18 +12,15 @@ import '../../providers/track_provider.dart';
 
 void showTrackContextMenu(
   BuildContext context,
-   Track track,
-   {
+  Track track, {
   VoidCallback? onGoToProfile,
 }) {
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
-    builder: (_) => _ContextMenuSheet.track(
-      track: track,
-      onGoToProfile: onGoToProfile,
-    ),
+    builder: (_) =>
+        _ContextMenuSheet.track(track: track, onGoToProfile: onGoToProfile),
   );
 }
 
@@ -45,10 +42,9 @@ class _ContextMenuSheet extends ConsumerStatefulWidget {
 
   const _ContextMenuSheet.track({
     required Track this.track,
-    this.onGoToProfile,});
-  const _ContextMenuSheet.collection()
-   : track = null,
-     onGoToProfile = null;
+    this.onGoToProfile,
+  });
+  const _ContextMenuSheet.collection() : track = null, onGoToProfile = null;
 
   bool get isTrack => track != null;
 
@@ -170,9 +166,9 @@ class _ContextMenuSheetState extends ConsumerState<_ContextMenuSheet> {
                       icon: Icons.person_outline,
                       label: 'Go to profile',
                       onTap: () {
-                        if(widget.onGoToProfile != null) {
+                        if (widget.onGoToProfile != null) {
                           widget.onGoToProfile!();
-                        } 
+                        }
                       },
                     ),
                     _MenuItem(
