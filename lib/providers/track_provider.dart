@@ -19,16 +19,16 @@ final tracksServiceProvider = Provider<TracksService>((ref) {
           options.headers['Authorization'] = 'Bearer $token';
         }
 
-        print('➡️ ${options.method} ${options.uri}');
+        print('${options.method} ${options.uri}');
         handler.next(options);
       },
       onResponse: (response, handler) {
-        print('✅ DIO ${response.statusCode}: ${response.requestOptions.uri}');
+        print('DIO ${response.statusCode}: ${response.requestOptions.uri}');
         handler.next(response);
       },
       onError: (e, handler) {
-        print('❌ DIO ERROR ${e.response?.statusCode}: ${e.requestOptions.uri}');
-        print('❌ DIO DATA: ${e.response?.data}');
+        print('DIO ERROR ${e.response?.statusCode}: ${e.requestOptions.uri}');
+        print('DIO DATA: ${e.response?.data}');
         handler.next(e);
       },
     ),
@@ -53,10 +53,10 @@ final trackWaveformProvider = FutureProvider.family<List<double>, String>((
   String trackId,
 ) async {
   try {
-    print('🎵 Fetching waveform for: $trackId');
+    print('Fetching waveform for: $trackId');
 
     if (trackId.trim().isEmpty) {
-      print('⚠️ EMPTY TRACK ID');
+      print('EMPTY TRACK ID');
       return [];
     }
 
@@ -68,13 +68,13 @@ final trackWaveformProvider = FutureProvider.family<List<double>, String>((
           .read(tracksServiceProvider)
           .getTrackWaveform(trackId: trackId);
 
-      print('✅ WAVEFORM RESPONSE: $data');
+      print('WAVEFORM RESPONSE: $data');
 
       if (data['peaks'] is List) {
         peaks = data['peaks'];
       }
     } catch (e) {
-      print('⚠️ waveform endpoint failed, trying playback...');
+      print('waveform endpoint failed, trying playback...');
     }
 
     // ── 2. FALLBACK TO PLAYBACK ──
@@ -84,7 +84,7 @@ final trackWaveformProvider = FutureProvider.family<List<double>, String>((
             .read(tracksServiceProvider)
             .getTrackPlayback(trackId: trackId);
 
-        print('✅ PLAYBACK RESPONSE: $playback');
+        print('PLAYBACK RESPONSE: $playback');
 
         if (playback['waveform'] is List) {
           peaks = playback['waveform'];
@@ -95,13 +95,13 @@ final trackWaveformProvider = FutureProvider.family<List<double>, String>((
           peaks = playback['data']['peaks'];
         }
       } catch (e) {
-        print('❌ playback fallback also failed');
+        print('playback fallback also failed');
       }
     }
 
     // ── 3. FINAL CHECK ──
     if (peaks.isEmpty) {
-      print('❌ NO WAVEFORM DATA FOUND');
+      print('NO WAVEFORM DATA FOUND');
       return [];
     }
 
@@ -111,7 +111,7 @@ final trackWaveformProvider = FutureProvider.family<List<double>, String>((
         .toList();
 
     if (values.isEmpty) {
-      print('⚠️ INVALID PEAKS');
+      print('INVALID PEAKS');
       return [];
     }
 
@@ -126,11 +126,11 @@ final trackWaveformProvider = FutureProvider.family<List<double>, String>((
       return value.clamp(0.08, 1.0);
     }).toList();
 
-    print('🔥 FINAL WAVEFORM BARS: ${normalized.length}');
+    print('FINAL WAVEFORM BARS: ${normalized.length}');
 
     return normalized;
   } catch (e) {
-    print('❌ WAVEFORM ERROR: $e');
+    print('WAVEFORM ERROR: $e');
     return [];
   }
 });
