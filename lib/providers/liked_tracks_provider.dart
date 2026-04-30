@@ -3,8 +3,8 @@ import '../models/track.dart';
 
 final likedTracksProvider =
     StateNotifierProvider<LikedTracksNotifier, Set<String>>(
-  (ref) => LikedTracksNotifier(),
-);
+      (ref) => LikedTracksNotifier(),
+    );
 
 class LikedTracksNotifier extends StateNotifier<Set<String>> {
   LikedTracksNotifier() : super({});
