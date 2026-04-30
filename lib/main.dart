@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'constants/app_theme.dart';
-import 'screens/auth/welcome_screen.dart';
-import 'screens/auth/signup_screen.dart';
 import 'root.dart';
+import 'screens/auth/signup_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/forget_password_screen.dart';
-import 'screens/profile/profile_screen.dart';
-import 'screens/upgrade/upgrade_screen.dart';
-import 'screens/auth/change_password_screen.dart';
-import 'screens/library/collections_screen.dart';
-import 'screens/auth/verify_email_screen.dart';
 import 'screens/subscription/stripe_helper.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized(); // must be first
-  initStripe(); // then stripe
-  runApp(const ProviderScope(child: SoundCloudApp())); // only one runApp
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  initStripe();
+
+  runApp(const ProviderScope(child: SoundCloudApp()));
 }
 
 class SoundCloudApp extends StatelessWidget {
@@ -28,7 +24,7 @@ class SoundCloudApp extends StatelessWidget {
       title: 'SoundCloud',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const WelcomeScreen(),
+      home: const RootScreen(),
       routes: {
         '/signup': (context) => const SignupScreen(),
         '/login': (context) => const LoginScreen(),
