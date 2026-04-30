@@ -9,10 +9,11 @@ import 'package:my_project/constants/app_colors.dart';
 import 'package:my_project/constants/app_dimensions.dart';
 import 'package:my_project/constants/app_text_styles.dart';
 import 'package:my_project/models/track.dart';
+
 import '../../providers/auth_providers.dart';
-import '../../providers/track_provider.dart';
-import '../../providers/liked_tracks_provider.dart';
 import '../../providers/followers_provider.dart';
+import '../../providers/liked_tracks_provider.dart';
+import '../../providers/track_provider.dart';
 
 class FullPlayer extends ConsumerStatefulWidget {
   const FullPlayer({
@@ -37,11 +38,6 @@ class FullPlayer extends ConsumerStatefulWidget {
 class _FullPlayerState extends ConsumerState<FullPlayer> {
   late Track _currentTrack;
 
-  final List<double> waveform = List.generate(
-    70,
-    (index) => 0.2 + ((index % 7) * 0.08),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -52,7 +48,11 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
 
   void _onTrackChanged() {
     if (!mounted) return;
-    setState(() => _currentTrack = widget.trackNotifier.value);
+
+    setState(() {
+      _currentTrack = widget.trackNotifier.value;
+    });
+
     _seedLikedState(_currentTrack);
   }
 
@@ -60,8 +60,10 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
     if (track.isLiked == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
+
         final notifier = ref.read(likedTracksProvider.notifier);
         final current = ref.read(likedTracksProvider);
+
         if (!current.contains(track.trackId)) {
           notifier.setAll({...current, track.trackId});
         }
@@ -83,8 +85,10 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
 
   void _seekFromDx(double dx, double width, Duration totalDuration) {
     if (width <= 0 || totalDuration.inMilliseconds <= 0) return;
+
     final newProgress = (dx / width).clamp(0.0, 1.0);
     final targetMs = (newProgress * totalDuration.inMilliseconds).round();
+
     widget.onSeek(Duration(milliseconds: targetMs));
   }
 
@@ -95,9 +99,9 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
   @override
   Widget build(BuildContext context) {
     final waveformAsync = ref.watch(
-      trackWaveformProvider(widget.track.trackId),
+      trackWaveformProvider(_currentTrack.trackId),
     );
-    // ── Follow state ─────────────────────────────────────────────────────────
+
     final artistUsername = _currentTrack.artist?.username;
     final artistUserId = _currentTrack.artist?.userId;
 
@@ -129,11 +133,13 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
               initialData: widget.player.position,
               builder: (context, positionSnapshot) {
                 final currentPosition = positionSnapshot.data ?? Duration.zero;
+
                 final totalMs = totalDuration.inMilliseconds;
                 final currentMs = currentPosition.inMilliseconds.clamp(
                   0,
                   totalMs > 0 ? totalMs : 1,
                 );
+
                 final progress = totalMs > 0 ? currentMs / totalMs : 0.0;
                 final elapsed = currentPosition.inSeconds;
                 final totalSeconds = totalDuration.inSeconds > 0
@@ -144,25 +150,19 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
 
                 return Scaffold(
                   backgroundColor: Colors.black,
-                  // Tap anywhere → pause (when playing).
-                  // Buttons/waveform are descendants and win the gesture arena,
-                  // so they are unaffected.
                   body: GestureDetector(
                     onTap: widget.onPlayPause,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        // ── Background: blurred cover art ─────────────────
                         _buildBackground(coverUrl),
 
-                        // ── Dim overlay when paused ────────────────────────
                         if (!isPlaying)
                           const ColoredBox(
                             color: Color(0x66000000),
                             child: SizedBox.expand(),
                           ),
 
-                        // ── All UI (always visible) ────────────────────────
                         SafeArea(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,9 +207,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                           ),
                         ),
 
-                        // ── Center controls ────────────────────────────────
-                        // Play button only when paused; skip always visible.
-                        // When playing, tap the background itself to pause.
                         Center(
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -239,9 +236,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                                   width: 44,
                                   height: 44,
                                   decoration: BoxDecoration(
-                                    color: AppColors.surface.withValues(
-                                      alpha: 0.85,
-                                    ),
+                                    color: AppColors.surface.withOpacity(0.85),
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: AppColors.textMuted,
@@ -274,16 +269,52 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
       return Container(color: Colors.black);
     }
 
+    final fixedCoverUrl = coverUrl.startsWith('http')
+        ? coverUrl
+        : 'https://streamline-swp.duckdns.org$coverUrl';
+
     return Container(
       decoration: BoxDecoration(
         image: DecorationImage(
-          image: NetworkImage(coverUrl),
+          image: NetworkImage(fixedCoverUrl),
           fit: BoxFit.cover,
         ),
       ),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(color: Colors.black.withOpacity(0.3)),
+      ),
+    );
+  }
+
+  Widget _buildArtworkArea() {
+    final imageUrl = _currentTrack.coverImageUrl;
+
+    return Center(
+      child: Container(
+        width: 260,
+        height: 260,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          shape: BoxShape.circle,
+          image: imageUrl != null && imageUrl.isNotEmpty
+              ? DecorationImage(
+                  image: NetworkImage(
+                    imageUrl.startsWith('http')
+                        ? imageUrl
+                        : 'https://streamline-swp.duckdns.org$imageUrl',
+                  ),
+                  fit: BoxFit.cover,
+                )
+              : null,
+        ),
+        child: imageUrl == null || imageUrl.isEmpty
+            ? Icon(
+                Icons.music_note_rounded,
+                size: 70,
+                color: Colors.white.withOpacity(0.15),
+              )
+            : null,
       ),
     );
   }
@@ -331,8 +362,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                 color: AppColors.textSecondary,
                 onPressed: () => Navigator.pop(context),
               ),
-
-              // ── Follow / Unfollow button ──────────────────────────────────
               IconButton(
                 icon: isFollowLoading
                     ? const SizedBox(
@@ -354,10 +383,10 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                 tooltip: isFollowing ? 'Unfollow' : 'Follow',
                 onPressed: (isFollowLoading || followKey == null)
                     ? null
-                    : () =>
-                          ref.read(followProvider(followKey).notifier).toggle(),
+                    : () {
+                        ref.read(followProvider(followKey).notifier).toggle();
+                      },
               ),
-
               IconButton(
                 icon: const Icon(Icons.grid_view_rounded),
                 color: AppColors.textSecondary,
@@ -412,16 +441,20 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
         LayoutBuilder(
           builder: (context, constraints) {
             return GestureDetector(
-              onHorizontalDragUpdate: (details) => _seekFromDx(
-                details.localPosition.dx,
-                constraints.maxWidth,
-                totalDuration,
-              ),
-              onTapDown: (details) => _seekFromDx(
-                details.localPosition.dx,
-                constraints.maxWidth,
-                totalDuration,
-              ),
+              onHorizontalDragUpdate: (details) {
+                _seekFromDx(
+                  details.localPosition.dx,
+                  constraints.maxWidth,
+                  totalDuration,
+                );
+              },
+              onTapDown: (details) {
+                _seekFromDx(
+                  details.localPosition.dx,
+                  constraints.maxWidth,
+                  totalDuration,
+                );
+              },
               child: SizedBox(
                 height: 130,
                 width: double.infinity,
@@ -465,53 +498,49 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          child: Row(
-            children: [
-              Text(
-                formatTime(elapsed),
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceSmall),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final knobLeft = (progress * (constraints.maxWidth - 12))
-                        .clamp(0.0, constraints.maxWidth - 12);
-                    return GestureDetector(
-                      onTapDown: (details) => _seekFromDx(
-                        details.localPosition.dx,
-                        constraints.maxWidth,
-                        totalDuration,
-                      ),
-                      onHorizontalDragUpdate: (details) => _seekFromDx(
-                        details.localPosition.dx,
-                        constraints.maxWidth,
-                        totalDuration,
-                      ),
-                      child: SizedBox(
-                        height: 20,
-                        child: Stack(
-                          alignment: Alignment.centerLeft,
-                          children: [
-                            Container(
-                              height: 3,
-                              decoration: BoxDecoration(
-                                color: AppColors.waveformInactive,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            FractionallySizedBox(
-                              widthFactor: progress,
-                              child: Container(
-                                height: 3,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
+          const SizedBox(width: AppDimensions.spaceSmall),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final knobLeft = (progress * (constraints.maxWidth - 12)).clamp(
+                  0.0,
+                  constraints.maxWidth - 12,
+                );
+
+                return GestureDetector(
+                  onTapDown: (details) {
+                    _seekFromDx(
+                      details.localPosition.dx,
+                      constraints.maxWidth,
+                      totalDuration,
+                    );
+                  },
+                  onHorizontalDragUpdate: (details) {
+                    _seekFromDx(
+                      details.localPosition.dx,
+                      constraints.maxWidth,
+                      totalDuration,
+                    );
+                  },
+                  child: SizedBox(
+                    height: 20,
+                    child: Stack(
+                      alignment: Alignment.centerLeft,
+                      children: [
+                        Container(
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: AppColors.waveformInactive,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        FractionallySizedBox(
+                          widthFactor: progress,
+                          child: Container(
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(2),
                             ),
                           ),
                         ),
@@ -578,12 +607,9 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
 
   Widget _buildBottomBar() {
     final username = ref.watch(authProvider).user?.userName ?? '';
-
-    // Single source of truth for liked state
     final likedIds = ref.watch(likedTracksProvider);
     final isLiked = likedIds.contains(_currentTrack.trackId);
 
-    // Show the server like count, adjusted for optimistic toggle
     final serverCount = _currentTrack.likeCount ?? 0;
     final displayCount = isLiked
         ? (_currentTrack.isLiked == true ? serverCount : serverCount + 1)
@@ -597,7 +623,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
             final notifier = ref.read(likedTracksProvider.notifier);
             final wasLiked = isLiked;
 
-            // Optimistic update
             notifier.toggleLocal(_currentTrack.trackId);
 
             try {
@@ -605,7 +630,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                   .read(toggleTrackLikeProvider(_currentTrack.trackId).notifier)
                   .toggle(currentlyLiked: wasLiked, username: username);
             } catch (_) {
-              // Rollback on failure
               notifier.toggleLocal(_currentTrack.trackId);
             }
           },
@@ -646,6 +670,7 @@ class WaveformPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (waveform.isEmpty) return;
+
     final count = waveform.length;
     final barWidth = size.width / count;
     final gap = barWidth * 0.35;
@@ -691,6 +716,7 @@ class WaveformPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(WaveformPainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.waveform != waveform;
+  bool shouldRepaint(WaveformPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.waveform != waveform;
+  }
 }
