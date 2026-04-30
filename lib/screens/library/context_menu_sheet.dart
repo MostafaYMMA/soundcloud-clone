@@ -149,12 +149,6 @@ class _ContextMenuSheetState extends ConsumerState<_ContextMenuSheet> {
                         icon: Icons.playlist_add,
                         label: 'Add to playlist',
                         onTap: () {
-                           Navigator.pop(context);
-
-  final track = widget.track;
-  if (track == null) return;
-
-  _showPlaylistPicker(context, track);
                         },
                       ),
                     ],
@@ -455,83 +449,114 @@ void _showPlaylistPicker(BuildContext context, Track track) {
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
+    useSafeArea: true,
     builder: (ctx) {
       return Consumer(
         builder: (context, ref, _) {
           final playlists = ref.watch(playlistProvider).likedPlaylists;
 
-          return Container(
-            height: 400,
-            decoration: const BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              children: [
-                const SizedBox(height: 10),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey,
-                    borderRadius: BorderRadius.circular(2),
+          return DraggableScrollableSheet(
+            initialChildSize: 0.5,
+            minChildSize: 0.3,
+            maxChildSize: 0.85,
+            expand: false,
+            builder: (context, scrollController) {
+              return Container(
+                decoration: const BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(24),
                   ),
                 ),
-                const SizedBox(height: 20),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
 
-                const Text(
-                  "Add to playlist",
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
+                    // handle bar
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
 
-                const SizedBox(height: 10),
+                    const SizedBox(height: 16),
 
-                Expanded(
-                  child: playlists.isEmpty
-                      ? const Center(
-                          child: Text(
-                            "No playlists found",
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: playlists.length,
-                          itemBuilder: (context, index) {
-                            final p = playlists[index];
+                    const Text(
+                      "Add to playlist",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
 
-                            return ListTile(
-                              title: Text(
-                                p.name,
-                                style: const TextStyle(color: Colors.white),
+                    const SizedBox(height: 10),
+
+                    Expanded(
+                      child: playlists.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "No playlists found",
+                                style: TextStyle(color: Colors.white70),
                               ),
-                              subtitle: Text(
-                                p.description,
-                                style: const TextStyle(color: Colors.white70),
-                              ),
-                              onTap: () async {
-                                await ref
-                                    .read(playlistProvider.notifier)
-                                    .addTrack(
-                                      playlistId: p.id,
-                                      trackId: track.trackId,
-                                    );
+                            )
+                          : ListView.separated(
+                              controller: scrollController,
+                              itemCount: playlists.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(color: Colors.white10),
+                              itemBuilder: (context, index) {
+                                final p = playlists[index];
 
-                                if (!context.mounted) return;
-
-                                Navigator.pop(context);
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("Added to playlist"),
+                                return ListTile(
+                                  leading: const Icon(
+                                    Icons.queue_music,
+                                    color: Colors.white,
                                   ),
+                                  title: Text(
+                                    p.name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    p.description ?? '',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  onTap: () async {
+                                    final messenger =
+                                        ScaffoldMessenger.of(context);
+
+                                    Navigator.pop(context); // close sheet FIRST
+
+                                    await ref
+                                        .read(playlistProvider.notifier)
+                                        .addTrack(
+                                          playlistId: p.id,
+                                          trackId: track.trackId,
+                                        );
+
+                                    messenger.showSnackBar(
+                                      const SnackBar(
+                                        content: Text("Added to playlist"),
+                                      ),
+                                    );
+                                  },
                                 );
                               },
-                            );
-                          },
-                        ),
+                            ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           );
         },
       );
