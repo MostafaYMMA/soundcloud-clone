@@ -56,14 +56,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       // and haven't been marked already in this session
       if (!message.isRead &&
           message.senderId != currentUserId &&
-          message.id != null &&
           !_markedAsRead.contains(message.id)) {
-        _markedAsRead.add(message.id!);
+        _markedAsRead.add(message.id);
         print('Marking message as read: ${message.id}');
 
         ref
             .read(messagesProvider(widget.conversationId).notifier)
-            .markAsRead(message.id!);
+            .markAsRead(message.id);
       }
     }
   }
