@@ -9,11 +9,14 @@ import 'package:my_project/models/track.dart';
 import 'package:my_project/providers/playlist_provider.dart';
 import 'package:my_project/providers/music_providers.dart';
 import 'package:my_project/screens/library/collections_screen.dart';
+import 'package:my_project/screens/library/context_menu_sheet.dart';
 import 'package:my_project/screens/search/search_bar.dart';
 import 'package:my_project/screens/search/vibes_section.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
-  const SearchScreen({super.key});
+  final void Function(Track)? onTrackTap;
+
+  const SearchScreen({super.key, this.onTrackTap});
 
   @override
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
@@ -24,16 +27,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Timer? _debounce;
   String _query = '';
 
-  // 🔧 Fix backend URLs
   String fixImageUrl(String? url) {
     if (url == null || url.isEmpty) return '';
-
     if (url.startsWith('http')) return url;
-
     if (url.startsWith('/')) {
       return 'https://streamline-swp.duckdns.org$url';
     }
-
     return url;
   }
 
@@ -110,93 +109,90 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     return ListView(
       children: [
-        // ───── TRACKS ─────
-        if (tracks.isNotEmpty) ...[
-          const Padding(
-            padding: EdgeInsets.all(12),
-            child: Text(
-              "Tracks",
-              style: TextStyle(color: Colors.white, fontSize: 18),
-            ),
-          ),
+        // ───── TRACKS (no title) ─────
+        ...tracks.map((t) {
+          final artistName = t.artist?.displayName ?? 'Unknown Artist';
+          final image = fixImageUrl(t.coverImageUrl);
 
-          ...tracks.map((t) {
-            final artistName = t.artist?.displayName ?? 'Unknown Artist';
-            final image = fixImageUrl(t.coverImageUrl);
+          return ListTile(
+            onTap: () {
+              widget.onTrackTap?.call(t);
+            },
 
-            return ListTile(
-              leading: SizedBox(
-                width: 50,
-                height: 50,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: image.isNotEmpty
-                      ? Image.network(
-                          image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const ColoredBox(
-                            color: Colors.black26,
-                            child: Icon(Icons.music_note, color: Colors.white),
-                          ),
-                        )
-                      : const ColoredBox(
+            leading: SizedBox(
+              width: 50,
+              height: 50,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: image.isNotEmpty
+                    ? Image.network(
+                        image,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const ColoredBox(
                           color: Colors.black26,
-                          child: Icon(Icons.music_note, color: Colors.white),
+                          child:
+                              Icon(Icons.music_note, color: Colors.white),
                         ),
-                ),
+                      )
+                    : const ColoredBox(
+                        color: Colors.black26,
+                        child:
+                            Icon(Icons.music_note, color: Colors.white),
+                      ),
               ),
-              title: Text(t.title, style: const TextStyle(color: Colors.white)),
-              subtitle: Text(
-                artistName,
-                style: const TextStyle(color: Colors.white70),
-              ),
-            );
-          }),
-        ],
-
-        // ───── PLAYLISTS ─────
-        if (playlists.isNotEmpty) ...[
-          const Padding(
-            padding: EdgeInsets.all(12),
-            child: Text(
-              "Playlists",
-              style: TextStyle(color: Colors.white, fontSize: 18),
             ),
-          ),
+            title:
+                Text(t.title, style: const TextStyle(color: Colors.white)),
+            subtitle: Text(
+              artistName,
+              style: const TextStyle(color: Colors.white70),
+            ),
 
-          ...playlists.map((p) {
-            final image = fixImageUrl(p.coverUrl);
+            trailing: IconButton(
+              icon: const Icon(Icons.more_vert, color: Colors.white),
+              onPressed: () {
+                showTrackContextMenu(context, t);
+              },
+            ),
+          );
+        }),
 
-            return ListTile(
-              onTap: () => _openPlaylist(p),
-              leading: SizedBox(
-                width: 50,
-                height: 50,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: image.isNotEmpty
-                      ? Image.network(
-                          image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const ColoredBox(
-                            color: Colors.black26,
-                            child: Icon(Icons.queue_music, color: Colors.white),
-                          ),
-                        )
-                      : const ColoredBox(
+        // ───── PLAYLISTS (no title) ─────
+        ...playlists.map((p) {
+          final image = fixImageUrl(p.coverUrl);
+
+          return ListTile(
+            onTap: () => _openPlaylist(p),
+            leading: SizedBox(
+              width: 50,
+              height: 50,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: image.isNotEmpty
+                    ? Image.network(
+                        image,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const ColoredBox(
                           color: Colors.black26,
-                          child: Icon(Icons.queue_music, color: Colors.white),
+                          child: Icon(Icons.queue_music,
+                              color: Colors.white),
                         ),
-                ),
+                      )
+                    : const ColoredBox(
+                        color: Colors.black26,
+                        child: Icon(Icons.queue_music,
+                            color: Colors.white),
+                      ),
               ),
-              title: Text(p.name, style: const TextStyle(color: Colors.white)),
-              subtitle: Text(
-                p.description,
-                style: const TextStyle(color: Colors.white70),
-              ),
-            );
-          }),
-        ],
+            ),
+            title:
+                Text(p.name, style: const TextStyle(color: Colors.white)),
+            subtitle: Text(
+              p.description,
+              style: const TextStyle(color: Colors.white70),
+            ),
+          );
+        }),
       ],
     );
   }
@@ -207,7 +203,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         .getPlaylistDetails(playlist.id);
 
     if (!mounted) return;
-
     if (detailed == null) return;
 
     Navigator.push(
