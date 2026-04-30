@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:my_project/constants/app_colors.dart';
 import 'package:my_project/constants/app_dimensions.dart';
 import 'package:my_project/constants/app_text_styles.dart';
 import 'package:my_project/models/track.dart';
+import 'package:my_project/providers/track_provider.dart';
 
-class FullPlayer extends StatefulWidget {
+class FullPlayer extends ConsumerStatefulWidget {
   const FullPlayer({
     super.key,
     required this.track,
@@ -20,18 +22,13 @@ class FullPlayer extends StatefulWidget {
   final ValueChanged<Duration> onSeek;
 
   @override
-  State<FullPlayer> createState() => _FullPlayerState();
+  ConsumerState<FullPlayer> createState() => _FullPlayerState();
 }
 
-class _FullPlayerState extends State<FullPlayer> {
+class _FullPlayerState extends ConsumerState<FullPlayer> {
   bool showControls = false;
   bool isLiked = false;
   bool _initializedControls = false;
-
-  final List<double> waveform = List.generate(
-    70,
-    (index) => 0.2 + ((index % 7) * 0.08),
-  );
 
   String formatTime(int totalSeconds) {
     final minutes = totalSeconds ~/ 60;
@@ -48,8 +45,14 @@ class _FullPlayerState extends State<FullPlayer> {
     widget.onSeek(Duration(milliseconds: targetMs));
   }
 
+  List<double> get _fallbackWaveform {
+    return List.generate(90, (index) => 0.2 + ((index % 7) * 0.08));
+  }
+
   @override
   Widget build(BuildContext context) {
+    final waveformAsync = ref.watch(trackWaveformProvider(widget.track.trackId));
+
     return StreamBuilder<PlayerState>(
       stream: widget.player.playerStateStream,
       builder: (context, playerStateSnapshot) {
@@ -96,30 +99,38 @@ class _FullPlayerState extends State<FullPlayer> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Container(
-                          decoration: const BoxDecoration(
-                            gradient: RadialGradient(
-                              center: Alignment(-0.3, -0.3),
-                              radius: 1.3,
-                              colors: [
-                                Color(0xFF8B1A1A),
-                                Color(0xFF3A0808),
-                                Color(0xFF0D0303),
-                              ],
-                            ),
-                          ),
-                        ),
+                        _buildBackground(),
                         SafeArea(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _buildTopSection(context),
-                              const Spacer(),
-                              _buildWaveform(
-                                elapsed: elapsed,
-                                totalSeconds: totalSeconds,
-                                progress: progress,
-                                totalDuration: totalDuration,
+                              Expanded(child: _buildArtworkArea()),
+                              waveformAsync.when(
+                                data: (waveform) {
+                                  return _buildWaveform(
+                                    waveform: waveform,
+                                    elapsed: elapsed,
+                                    totalSeconds: totalSeconds,
+                                    progress: progress,
+                                    totalDuration: totalDuration,
+                                  );
+                                },
+                                loading: () {
+                                  return _buildWaveformLoading(
+                                    elapsed: elapsed,
+                                    totalSeconds: totalSeconds,
+                                  );
+                                },
+                                error: (_, __) {
+                                  return _buildWaveform(
+                                    waveform: _fallbackWaveform,
+                                    elapsed: elapsed,
+                                    totalSeconds: totalSeconds,
+                                    progress: progress,
+                                    totalDuration: totalDuration,
+                                  );
+                                },
                               ),
                               _buildCommentBar(),
                               _buildBottomBar(),
@@ -137,6 +148,54 @@ class _FullPlayerState extends State<FullPlayer> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildBackground() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment(-0.3, -0.3),
+          radius: 1.3,
+          colors: [
+            Color(0xFF8B1A1A),
+            Color(0xFF3A0808),
+            Color(0xFF0D0303),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildArtworkArea() {
+    final imageUrl = widget.track.coverImageUrl;
+
+    return Center(
+      child: Container(
+        width: 260,
+        height: 260,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          shape: BoxShape.circle,
+          image: imageUrl != null && imageUrl.isNotEmpty
+              ? DecorationImage(
+                  image: NetworkImage(
+                    imageUrl.startsWith('http')
+                        ? imageUrl
+                        : 'https://streamline-swp.duckdns.org$imageUrl',
+                  ),
+                  fit: BoxFit.cover,
+                )
+              : null,
+        ),
+        child: imageUrl == null || imageUrl.isEmpty
+            ? Icon(
+                Icons.music_note_rounded,
+                size: 70,
+                color: Colors.white.withOpacity(0.15),
+              )
+            : null,
+      ),
     );
   }
 
@@ -176,9 +235,7 @@ class _FullPlayerState extends State<FullPlayer> {
               IconButton(
                 icon: const Icon(Icons.keyboard_arrow_down_rounded),
                 color: AppColors.textSecondary,
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+                onPressed: () => Navigator.pop(context),
               ),
               IconButton(
                 icon: const Icon(Icons.person_add_alt_1_outlined),
@@ -197,12 +254,42 @@ class _FullPlayerState extends State<FullPlayer> {
     );
   }
 
+  Widget _buildWaveformLoading({
+    required int elapsed,
+    required int totalSeconds,
+  }) {
+    return Column(
+      children: [
+        const SizedBox(
+          height: 130,
+          width: double.infinity,
+          child: Center(
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+        _buildTimeRow(
+          elapsed: elapsed,
+          totalSeconds: totalSeconds,
+          progress: 0,
+          totalDuration: Duration(seconds: totalSeconds),
+        ),
+      ],
+    );
+  }
+
   Widget _buildWaveform({
+    required List<double> waveform,
     required int elapsed,
     required int totalSeconds,
     required double progress,
     required Duration totalDuration,
   }) {
+    final displayWaveform = waveform.isEmpty ? _fallbackWaveform : waveform;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -224,11 +311,11 @@ class _FullPlayerState extends State<FullPlayer> {
                 );
               },
               child: SizedBox(
-                height: 80,
+                height: 130,
                 width: double.infinity,
                 child: CustomPaint(
                   painter: WaveformPainter(
-                    waveform: waveform,
+                    waveform: displayWaveform,
                     progress: progress,
                   ),
                 ),
@@ -236,88 +323,102 @@ class _FullPlayerState extends State<FullPlayer> {
             );
           },
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.spaceMedium,
-            vertical: AppDimensions.spaceExtraSmall,
-          ),
-          child: Row(
-            children: [
-              Text(
-                formatTime(elapsed),
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceSmall),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final knobLeft = (progress * (constraints.maxWidth - 12))
-                        .clamp(0.0, constraints.maxWidth - 12);
-
-                    return GestureDetector(
-                      onTapDown: (details) {
-                        _seekFromDx(
-                          details.localPosition.dx,
-                          constraints.maxWidth,
-                          totalDuration,
-                        );
-                      },
-                      onHorizontalDragUpdate: (details) {
-                        _seekFromDx(
-                          details.localPosition.dx,
-                          constraints.maxWidth,
-                          totalDuration,
-                        );
-                      },
-                      child: SizedBox(
-                        height: 20,
-                        child: Stack(
-                          alignment: Alignment.centerLeft,
-                          children: [
-                            Container(
-                              height: 3,
-                              decoration: BoxDecoration(
-                                color: AppColors.waveformInactive,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            FractionallySizedBox(
-                              widthFactor: progress,
-                              child: Container(
-                                height: 3,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              left: knobLeft,
-                              child: Container(
-                                width: 12,
-                                height: 12,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceSmall),
-              Text(formatTime(totalSeconds), style: AppTextStyles.caption),
-            ],
-          ),
+        _buildTimeRow(
+          elapsed: elapsed,
+          totalSeconds: totalSeconds,
+          progress: progress,
+          totalDuration: totalDuration,
         ),
       ],
+    );
+  }
+
+  Widget _buildTimeRow({
+    required int elapsed,
+    required int totalSeconds,
+    required double progress,
+    required Duration totalDuration,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.spaceMedium,
+        vertical: AppDimensions.spaceExtraSmall,
+      ),
+      child: Row(
+        children: [
+          Text(
+            formatTime(elapsed),
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: AppDimensions.spaceSmall),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final knobLeft = (progress * (constraints.maxWidth - 12))
+                    .clamp(0.0, constraints.maxWidth - 12);
+
+                return GestureDetector(
+                  onTapDown: (details) {
+                    _seekFromDx(
+                      details.localPosition.dx,
+                      constraints.maxWidth,
+                      totalDuration,
+                    );
+                  },
+                  onHorizontalDragUpdate: (details) {
+                    _seekFromDx(
+                      details.localPosition.dx,
+                      constraints.maxWidth,
+                      totalDuration,
+                    );
+                  },
+                  child: SizedBox(
+                    height: 20,
+                    child: Stack(
+                      alignment: Alignment.centerLeft,
+                      children: [
+                        Container(
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: AppColors.waveformInactive,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        FractionallySizedBox(
+                          widthFactor: progress,
+                          child: Container(
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: knobLeft,
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: AppDimensions.spaceSmall),
+          Text(formatTime(totalSeconds), style: AppTextStyles.caption),
+        ],
+      ),
     );
   }
 
@@ -374,7 +475,7 @@ class _FullPlayerState extends State<FullPlayer> {
               ),
               const SizedBox(width: 4),
               Text(
-                '${widget.track.likeCount}',
+                '${widget.track.likeCount ?? 0}',
                 style: AppTextStyles.caption.copyWith(color: AppColors.primary),
               ),
             ],
@@ -450,7 +551,10 @@ class WaveformPainter extends CustomPainter {
   final List<double> waveform;
   final double progress;
 
-  WaveformPainter({required this.waveform, required this.progress});
+  WaveformPainter({
+    required this.waveform,
+    required this.progress,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -458,14 +562,14 @@ class WaveformPainter extends CustomPainter {
 
     final count = waveform.length;
     final barWidth = size.width / count;
-    final gap = barWidth * 0.3;
-    final midY = size.height * 0.6;
+    final gap = barWidth * 0.35;
+    final midY = size.height * 0.55;
     final progressX = size.width * progress;
 
     for (int i = 0; i < count; i++) {
       final x = i * barWidth + gap / 2;
       final w = barWidth - gap;
-      final h = waveform[i] * midY;
+      final h = waveform[i].clamp(0.08, 1.0) * midY;
       final played = x < progressX;
 
       canvas.drawRRect(
@@ -474,7 +578,20 @@ class WaveformPainter extends CustomPainter {
           const Radius.circular(2),
         ),
         Paint()
-          ..color = played ? AppColors.textPrimary : AppColors.waveformInactive,
+          ..color = played
+              ? AppColors.waveformActive
+              : AppColors.waveformInactive,
+      );
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, midY + 2, w, h * 0.55),
+          const Radius.circular(2),
+        ),
+        Paint()
+          ..color = played
+              ? AppColors.waveformActive.withOpacity(0.75)
+              : AppColors.waveformInactive.withOpacity(0.75),
       );
     }
 
@@ -489,6 +606,7 @@ class WaveformPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(WaveformPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.waveform != waveform;
+    return oldDelegate.progress != progress ||
+        oldDelegate.waveform != waveform;
   }
 }
