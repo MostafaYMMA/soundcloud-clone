@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/subscription_service.dart';
-import '../../providers/auth_providers.dart';
+import '../services/subscription_service.dart';
+import '../providers/auth_providers.dart';
 
 // ── State ────────────────────────────────────────────────────────────────────
 
@@ -21,12 +21,20 @@ class SubscriptionState {
 
   bool get isPremium => status?.isPremium ?? false;
 
-  bool isCurrentPlanFor(String billingType) {
+  /// Returns true only when BOTH the billing cycle AND the plan tier match.
+  /// This ensures Artist Pro Yearly and Artist Yearly never both highlight.
+  bool isCurrentPlanFor(String billingType, {bool isPro = false}) {
     if (!isPremium) return false;
-    if (billingType.toLowerCase() == 'monthly')
-      return status?.isMonthly ?? false;
-    if (billingType.toLowerCase() == 'yearly') return status?.isYearly ?? false;
-    return false;
+
+    final cycleMatches = billingType.toLowerCase() == 'monthly'
+        ? (status?.isMonthly ?? false)
+        : (status?.isYearly ?? false);
+
+    final tierMatches = isPro
+        ? (status?.isPro ?? false)
+        : !(status?.isPro ?? false);
+
+    return cycleMatches && tierMatches;
   }
 
   SubscriptionState copyWith({
@@ -50,13 +58,12 @@ class SubscriptionState {
 
 class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
   SubscriptionNotifier(this._ref) : super(const SubscriptionState()) {
-    // Reset and re-fetch whenever the auth token changes (login/logout)
     _ref.listen(authProvider, (previous, next) {
       final prevToken = previous?.tokens?.accessToken;
       final nextToken = next.tokens?.accessToken;
       if (prevToken != nextToken) {
-        state = const SubscriptionState(); // clear old state immediately
-        if (nextToken != null) fetchStatus(); // fetch for new account
+        state = const SubscriptionState();
+        if (nextToken != null) fetchStatus();
       }
     });
   }
@@ -70,6 +77,7 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
   Future<void> fetchStatus() async {
     final token = _token;
     if (token == null) return;
+
     state = state.copyWith(isLoading: true);
     try {
       final status = await _service.getMySubscription(accessToken: token);
@@ -79,23 +87,28 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
     }
   }
 
-  /// Upgrade to Premium.
-  /// [isYearly] determines which endpoint to hit.
+  /// Upgrade to a plan.
+  /// [isPro]    true  → Artist Pro  ($19.99/mo or $149.99/yr)
+  /// [isPro]    false → Artist      ($9.99/mo  or $99.99/yr)
+  /// [isYearly] true  → yearly billing, false → monthly
   Future<bool> upgrade({
     required String paymentToken,
     required bool isYearly,
+    required bool isPro,
   }) async {
     final token = _token;
     if (token == null) {
       state = state.copyWith(error: 'Not logged in.');
       return false;
     }
+
     state = state.copyWith(isUpgrading: true);
     try {
       final message = await _service.upgrade(
         accessToken: token,
         paymentToken: paymentToken,
         isYearly: isYearly,
+        isPro: isPro,
       );
       await fetchStatus();
       state = state.copyWith(isUpgrading: false, successMessage: message);
@@ -117,5 +130,5 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
 
 final subscriptionProvider =
     StateNotifierProvider<SubscriptionNotifier, SubscriptionState>(
-      (ref) => SubscriptionNotifier(ref),
-    );
+  (ref) => SubscriptionNotifier(ref),
+);

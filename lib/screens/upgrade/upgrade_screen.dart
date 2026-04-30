@@ -143,7 +143,11 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
 
     final success = await widget.ref
         .read(subscriptionProvider.notifier)
-        .upgrade(paymentToken: token, isYearly: widget.plan.isYearly);
+        .upgrade(
+          paymentToken: token,
+          isYearly: widget.plan.isYearly,
+          isPro: widget.plan.isPro, // ← routes to correct endpoint
+        );
 
     if (!mounted) return;
     if (success) {
@@ -320,10 +324,10 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
     final subState = ref.read(subscriptionProvider);
 
     if (subState.isPremium) {
-      final currentPlanIndex = _plans.lastIndexWhere(
-        (p) => subState.isCurrentPlanFor(p.billingType),
+      final isThisCurrentPlan = subState.isCurrentPlanFor(
+        plan.billingType,
+        isPro: plan.isPro,
       );
-      final isThisCurrentPlan = currentPlanIndex == _plans.indexOf(plan);
 
       if (isThisCurrentPlan) {
         _showManageDialog();
@@ -393,7 +397,8 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Got it', style: TextStyle(color: Colors.orange)),
+            child:
+                const Text('Got it', style: TextStyle(color: Colors.orange)),
           ),
         ],
       ),
@@ -401,9 +406,9 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
   }
 
   void _openRestrictionsScreen(UpgradePlan plan) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => RestrictionsScreen(plan: plan)));
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => RestrictionsScreen(plan: plan)),
+    );
   }
 
   @override
@@ -448,7 +453,8 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF4CD38A).withOpacity(0.2),
+                            color:
+                                const Color(0xFF4CD38A).withOpacity(0.2),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: const Color(0xFF4CD38A),
@@ -465,7 +471,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                "You're on Premium · ${subState.status?.billingCycle ?? ''}",
+                                "You're on ${subState.status?.plan ?? 'Premium'} · ${subState.status?.billingCycle ?? ''}",
                                 style: const TextStyle(
                                   color: Color(0xFF4CD38A),
                                   fontSize: 13,
@@ -495,12 +501,13 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                       child: AnimatedBuilder(
                         animation: _pageController,
                         builder: (context, child) {
-                          // Find the single current plan index — last match wins
-                          // (Artist over Artist Pro for same billing cycle)
+                          // Use indexWhere — with tier+cycle check there's exactly one match
                           final int currentPlanIndex = subState.isPremium
-                              ? _plans.lastIndexWhere(
-                                  (p) =>
-                                      subState.isCurrentPlanFor(p.billingType),
+                              ? _plans.indexWhere(
+                                  (p) => subState.isCurrentPlanFor(
+                                    p.billingType,
+                                    isPro: p.isPro,
+                                  ),
                                 )
                               : -1;
 
@@ -513,17 +520,16 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                               double pageValue = _currentPage.toDouble();
                               if (_pageController.hasClients) {
                                 try {
-                                  pageValue =
-                                      _pageController.page ??
+                                  pageValue = _pageController.page ??
                                       _currentPage.toDouble();
                                 } catch (_) {}
                               }
-                              final double distance = (pageValue - index)
-                                  .abs()
-                                  .clamp(0.0, 1.0);
+                              final double distance =
+                                  (pageValue - index).abs().clamp(0.0, 1.0);
                               final double scale = 1 - (distance * 0.08);
                               final double verticalPadding = distance * 8;
-                              final double opacity = 1 - (distance * 0.16);
+                              final double opacity =
+                                  1 - (distance * 0.16);
 
                               return AnimatedContainer(
                                 duration: const Duration(milliseconds: 180),
@@ -540,7 +546,8 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                                     opacity: opacity,
                                     child: UpgradePlanCard(
                                       plan: _plans[index],
-                                      isCurrentPlan: currentPlanIndex == index,
+                                      isCurrentPlan:
+                                          currentPlanIndex == index,
                                       isUpgrading: subState.isUpgrading,
                                       onSubscribePressed: () =>
                                           _onSubscribePressed(_plans[index]),
@@ -628,7 +635,8 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                       child: Container(
                         width: screenWidth < 380 ? 230 : 250,
                         height: screenWidth < 380 ? 230 : 250,
-                        decoration: const BoxDecoration(shape: BoxShape.circle),
+                        decoration:
+                            const BoxDecoration(shape: BoxShape.circle),
                         child: ClipOval(
                           child: Transform.scale(
                             scale: 1.2,
@@ -887,9 +895,9 @@ class RestrictionsScreen extends StatelessWidget {
     final uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Could not open link')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open link')),
+        );
       }
     }
   }
@@ -1120,7 +1128,7 @@ class _UpgradeFaqTileState extends State<UpgradeFaqTile> {
 
 class UpgradePlan {
   final String title;
-  final String billingType; // "Monthly" or "Yearly"
+  final String billingType;
   final String price;
   final Color topColor;
   final Color bottomColor;
