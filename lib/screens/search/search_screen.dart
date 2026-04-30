@@ -156,7 +156,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           final image = fixImageUrl(p.coverUrl);
 
           return ListTile(
-            onTap: () => _openPlaylist(p),
+            onTap: () => openPlaylist(p),
             leading: SizedBox(
               width: 50,
               height: 50,
@@ -188,7 +188,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Future<void> _openPlaylist(Playlist playlist) async {
+  Future<void> openPlaylist(Playlist playlist) async {
     final detailed = await ref
         .read(playlistProvider.notifier)
         .getPlaylistDetails(playlist.id);
