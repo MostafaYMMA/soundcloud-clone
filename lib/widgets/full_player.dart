@@ -1,5 +1,7 @@
 // widgets/full_player.dart
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
@@ -28,9 +30,7 @@ class FullPlayer extends ConsumerStatefulWidget {
 }
 
 class _FullPlayerState extends ConsumerState<FullPlayer> {
-  bool showControls = false;
   bool isLiked = false;
-  bool _initializedControls = false;
 
   final List<double> waveform = List.generate(
     70,
@@ -74,11 +74,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
       builder: (context, playerStateSnapshot) {
         final isPlaying = playerStateSnapshot.data?.playing ?? false;
 
-        if (!_initializedControls) {
-          showControls = !isPlaying;
-          _initializedControls = true;
-        }
-
         return StreamBuilder<Duration?>(
           stream: widget.player.durationStream,
           builder: (context, durationSnapshot) {
@@ -104,30 +99,29 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                     ? totalDuration.inSeconds
                     : widget.track.durationSeconds ?? 0;
 
+                final coverUrl = widget.track.coverImageUrl;
+
                 return Scaffold(
                   backgroundColor: Colors.black,
+                  // Tap anywhere → pause (when playing).
+                  // Buttons/waveform are descendants and win the gesture arena,
+                  // so they are unaffected.
                   body: GestureDetector(
-                    onTap: showControls
-                        ? null
-                        : () {
-                            setState(() => showControls = true);
-                          },
+                    onTap: isPlaying ? widget.onPlayPause : null,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Container(
-                          decoration: const BoxDecoration(
-                            gradient: RadialGradient(
-                              center: Alignment(-0.3, -0.3),
-                              radius: 1.3,
-                              colors: [
-                                Color(0xFF8B1A1A),
-                                Color(0xFF3A0808),
-                                Color(0xFF0D0303),
-                              ],
-                            ),
+                        // ── Background: blurred cover art ─────────────────
+                        _buildBackground(coverUrl),
+
+                        // ── Dim overlay when paused ────────────────────────
+                        if (!isPlaying)
+                          const ColoredBox(
+                            color: Color(0x66000000),
+                            child: SizedBox.expand(),
                           ),
-                        ),
+
+                        // ── All UI (always visible) ────────────────────────
                         SafeArea(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,7 +145,27 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                             ],
                           ),
                         ),
-                        if (showControls) _buildPlayOverlay(isPlaying),
+
+                        // ── Center play button (paused only) ──────────────
+                        if (!isPlaying)
+                          Center(
+                            child: GestureDetector(
+                              onTap: widget.onPlayPause,
+                              child: Container(
+                                width: 64,
+                                height: 64,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.textPrimary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.play_arrow_rounded,
+                                  color: AppColors.background,
+                                  size: 36,
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -441,54 +455,31 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
     );
   }
 
-  Widget _buildPlayOverlay(bool isPlaying) {
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black45,
-        child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  widget.onPlayPause();
-                  setState(() => showControls = false);
-                },
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: const BoxDecoration(
-                    color: AppColors.textPrimary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    color: AppColors.background,
-                    size: 30,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceLarge),
-              GestureDetector(
-                onTap: () {},
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface.withOpacity(0.85),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.textMuted),
-                  ),
-                  child: const Icon(
-                    Icons.skip_next_rounded,
-                    color: AppColors.textPrimary,
-                    size: 24,
-                  ),
-                ),
-              ),
+  Widget _buildBackground(String? coverUrl) {
+    if (coverUrl == null || coverUrl.isEmpty) {
+      return Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(-0.3, -0.3),
+            radius: 1.3,
+            colors: [
+              Color(0xFF8B1A1A),
+              Color(0xFF3A0808),
+              Color(0xFF0D0303),
             ],
           ),
+        ),
+      );
+    }
+    return ImageFiltered(
+      imageFilter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+      child: Image.network(
+        coverUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (context, error, stackTrace) => Container(
+          color: Colors.black,
         ),
       ),
     );

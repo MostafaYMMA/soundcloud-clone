@@ -4,6 +4,7 @@ import 'package:my_project/models/track.dart';
 
 import '../../constants/app_dimensions.dart';
 import '../../models/feed_response.dart';
+import '../../providers/album_provider.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/feed_provider.dart';
 import '../../providers/notifications_provider.dart';
@@ -57,11 +58,20 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isLoggingOut = false;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(albumProvider.notifier).fetchLikedAlbums();
+    });
+  }
+
   Future<void> _onRefresh() async {
     await Future.wait([
       ref.read(followingFeedProvider.notifier).refresh(),
       ref.read(discoverFeedProvider.notifier).refresh(),
       ref.read(cachedDiscoverFeedProvider.notifier).refresh(),
+      ref.read(albumProvider.notifier).fetchLikedAlbums(),
     ]);
   }
 
@@ -93,12 +103,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         title: const Text('Home'),
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: _isLoggingOut
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.logout),
+          onPressed: _isLoggingOut ? null : _logout,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.cloud_upload_outlined),
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => Activity()),
+              MaterialPageRoute(builder: (_) => const Activity()),
             ),
           ),
           Badge(
@@ -108,19 +128,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               icon: const Icon(Icons.notifications_outlined),
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => Activity()),
+                MaterialPageRoute(builder: (_) => const Activity()),
               ),
             ),
-          ),
-          IconButton(
-            icon: _isLoggingOut
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.logout),
-            onPressed: _isLoggingOut ? null : _logout,
           ),
         ],
       ),
@@ -213,9 +223,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
               ),
               const SizedBox(height: AppDimensions.spaceLarge),
-              const AlbumsForYouSection(
-                sectionTitle: 'Albums for You',
-                albums: [],
+              Builder(
+                builder: (_) {
+                  final albums = ref.watch(albumProvider).likedAlbums;
+                  if (albums.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return AlbumsForYouSection(
+                    sectionTitle: 'Albums for You',
+                    albums: albums,
+                  );
+                },
               ),
               const SizedBox(height: AppDimensions.spaceLarge),
               cachedFeed.when(
