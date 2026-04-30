@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
 import '../../models/track.dart';
+import '../../providers/auth_providers.dart';
+import '../../providers/liked_tracks_provider.dart';
+import '../../providers/track_provider.dart';
 
 // ── Entry point helpers ──────────────────────────────────────────────────────
 
@@ -15,7 +19,6 @@ void showTrackContextMenu(BuildContext context, Track track) {
   );
 }
 
-/// Used for albums and playlists — no track header, no queue actions.
 void showCollectionContextMenu(BuildContext context) {
   showModalBottomSheet(
     context: context,
@@ -27,7 +30,8 @@ void showCollectionContextMenu(BuildContext context) {
 
 // ── Sheet ────────────────────────────────────────────────────────────────────
 
-class _ContextMenuSheet extends StatefulWidget {
+// Changed to ConsumerStatefulWidget so we can read Riverpod providers
+class _ContextMenuSheet extends ConsumerStatefulWidget {
   final Track? track;
 
   const _ContextMenuSheet.track({required Track this.track});
@@ -36,14 +40,47 @@ class _ContextMenuSheet extends StatefulWidget {
   bool get isTrack => track != null;
 
   @override
-  State<_ContextMenuSheet> createState() => _ContextMenuSheetState();
+  ConsumerState<_ContextMenuSheet> createState() => _ContextMenuSheetState();
 }
 
-class _ContextMenuSheetState extends State<_ContextMenuSheet> {
-  bool _liked = false;
+class _ContextMenuSheetState extends ConsumerState<_ContextMenuSheet> {
+  bool _isLiking = false;
+
+  Future<void> _toggleLike() async {
+    if (widget.track == null || _isLiking) return;
+
+    final trackId = widget.track!.trackId;
+    final username = ref.read(authProvider).user?.userName ?? '';
+    final notifier = ref.read(likedTracksProvider.notifier);
+    final wasLiked = ref.read(likedTracksProvider).contains(trackId);
+
+    setState(() => _isLiking = true);
+
+    // Optimistic update
+    notifier.toggleLocal(trackId);
+
+    try {
+      await ref
+          .read(toggleTrackLikeProvider(trackId).notifier)
+          .toggle(currentlyLiked: wasLiked, username: username);
+    } catch (_) {
+      // Rollback on failure
+      notifier.toggleLocal(trackId);
+    } finally {
+      if (mounted) setState(() => _isLiking = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Watch so the icon updates instantly when toggled
+    final likedIds = widget.isTrack
+        ? ref.watch(likedTracksProvider)
+        : const <String>{};
+    final isLiked = widget.isTrack
+        ? likedIds.contains(widget.track!.trackId)
+        : false;
+
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
@@ -86,11 +123,14 @@ class _ContextMenuSheetState extends State<_ContextMenuSheet> {
 
                     // ── Like ─────────────────────────────────────
                     _MenuItem(
-                      icon: _liked ? Icons.favorite : Icons.favorite_border,
-                      iconColor: _liked ? AppColors.primary : null,
-                      label: _liked ? 'Liked' : 'Like',
-                      labelColor: _liked ? AppColors.primary : null,
-                      onTap: () => setState(() => _liked = !_liked),
+                      icon: isLiked ? Icons.favorite : Icons.favorite_border,
+                      iconColor: isLiked ? AppColors.primary : null,
+                      label: isLiked ? 'Liked' : 'Like',
+                      labelColor: isLiked ? AppColors.primary : null,
+                      // Don't close the sheet on like — let user see
+                      // the state change, they can dismiss manually
+                      closeOnTap: false,
+                      onTap: _toggleLike,
                     ),
 
                     if (widget.isTrack) ...[
@@ -185,7 +225,6 @@ class _TrackHeader extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                // Vinyl disc
                 Positioned(
                   right: -8,
                   top: 8,
@@ -209,7 +248,6 @@ class _TrackHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Artwork
                 ClipRRect(
                   borderRadius: BorderRadius.circular(
                     AppDimensions.borderRadiusSmall,
@@ -358,6 +396,8 @@ class _MenuItem extends StatelessWidget {
   final VoidCallback onTap;
   final Color? iconColor;
   final Color? labelColor;
+  // Whether tapping this item should close the sheet (default true)
+  final bool closeOnTap;
 
   const _MenuItem({
     required this.icon,
@@ -365,6 +405,7 @@ class _MenuItem extends StatelessWidget {
     required this.onTap,
     this.iconColor,
     this.labelColor,
+    this.closeOnTap = true,
   });
 
   @override
@@ -379,7 +420,7 @@ class _MenuItem extends StatelessWidget {
         ),
       ),
       onTap: () {
-        Navigator.pop(context);
+        if (closeOnTap) Navigator.pop(context);
         onTap();
       },
     );

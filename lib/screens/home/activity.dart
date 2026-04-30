@@ -8,7 +8,6 @@ import 'package:my_project/screens/home/chat_screen.dart';
 import '../../providers/notifications_provider.dart';
 import '../../providers/messages_provider.dart';
 import '../../models/notification.dart';
-import '../../providers/music_providers.dart';
 import '../../providers/auth_providers.dart';
 
 class Activity extends ConsumerStatefulWidget {

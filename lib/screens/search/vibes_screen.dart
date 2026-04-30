@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_project/constants/app_colors.dart';
 import 'package:my_project/constants/app_dimensions.dart';
 import 'package:my_project/constants/app_text_styles.dart';
-import 'package:my_project/models/track.dart';
 import 'package:my_project/providers/music_providers.dart';
 import 'package:my_project/screens/library/context_menu_sheet.dart';
 import 'package:my_project/screens/library/widgets/track_tile.dart';
