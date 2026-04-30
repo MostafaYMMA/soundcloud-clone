@@ -12,7 +12,7 @@ class UserTile extends StatefulWidget {
   final bool isFollowLoading;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onTap;
-  final VoidCallback? onFollowTap; // ← new: called when follow/unfollow tapped
+  final VoidCallback? onFollowTap;
 
   const UserTile({
     super.key,
@@ -200,7 +200,7 @@ class _UserTileState extends State<UserTile> {
 
             const SizedBox(width: AppDimensions.spaceSmall),
 
-            // ── Follow / Following toggle ─────────────────────────────
+            // ── Follow / Unfollow toggle ──────────────────────────────
             GestureDetector(
               onTap: widget.isFollowLoading ? null : widget.onFollowTap,
               child: Container(
@@ -209,10 +209,16 @@ class _UserTileState extends State<UserTile> {
                   vertical: AppDimensions.spaceSmall,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  // Outlined style when following, filled when not
+                  color: widget.isFollowing
+                      ? Colors.transparent
+                      : AppColors.surface,
                   borderRadius: BorderRadius.circular(
                     AppDimensions.borderRadiusPill,
                   ),
+                  border: widget.isFollowing
+                      ? Border.all(color: AppColors.textMuted, width: 1)
+                      : null,
                 ),
                 child: widget.isFollowLoading
                     ? const SizedBox(
@@ -224,8 +230,13 @@ class _UserTileState extends State<UserTile> {
                         ),
                       )
                     : Text(
-                        widget.isFollowing ? 'Following' : 'Follow',
-                        style: AppTextStyles.trackTitle.copyWith(fontSize: 13),
+                        widget.isFollowing ? 'Unfollow' : 'Follow',
+                        style: AppTextStyles.trackTitle.copyWith(
+                          fontSize: 13,
+                          color: widget.isFollowing
+                              ? AppColors.textSecondary
+                              : AppColors.textPrimary,
+                        ),
                       ),
               ),
             ),

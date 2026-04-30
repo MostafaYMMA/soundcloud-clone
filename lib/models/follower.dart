@@ -24,7 +24,7 @@ class Follower {
   factory Follower.fromJson(Map<String, dynamic> json) {
     return Follower(
       userId: json['user_id']?.toString() ?? '',
-      username: json['username']?.toString(),
+      username: (json['username'] ?? json['user_name'])?.toString(),
       displayName: json['display_name']?.toString(),
       avatarUrl:
           json['profile_picture']?.toString() ?? json['avatar_url']?.toString(),
@@ -67,6 +67,11 @@ class Follower {
       followedAt: followedAt ?? this.followedAt,
     );
   }
+
+  /// The identifier to use in API path params like /users/{username}/follow.
+  /// Falls back to userId because the following-list response omits username.
+  String get apiIdentifier =>
+      (username != null && username!.isNotEmpty) ? username! : userId;
 
   @override
   bool operator ==(Object other) =>

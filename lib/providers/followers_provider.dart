@@ -1,10 +1,10 @@
 // providers/followers_provider.dart
 
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/follower.dart';
 import '../services/followers_service.dart';
 import 'auth_providers.dart';
+import 'package:dio/dio.dart';
 
 // ─── Follow key ───────────────────────────────────────────────────────────────
 
@@ -31,13 +31,13 @@ final followersServiceProvider = Provider<FollowersService>((ref) {
 // ─── GET /users/me/followers ──────────────────────────────────────────────────
 
 final myFollowersProvider = FutureProvider<FollowerListResponse>((ref) async {
-  return ref.read(followersServiceProvider).getMyFollowers();
+  return ref.watch(followersServiceProvider).getMyFollowers();
 });
 
 // ─── GET /users/me/following ──────────────────────────────────────────────────
 
 final myFollowingProvider = FutureProvider<FollowingListResponse>((ref) async {
-  return ref.read(followersServiceProvider).getMyFollowing();
+  return ref.watch(followersServiceProvider).getMyFollowing();
 });
 
 // ─── GET /users/{username}/followers ─────────────────────────────────────────
@@ -45,7 +45,7 @@ final myFollowingProvider = FutureProvider<FollowingListResponse>((ref) async {
 final userFollowersProvider =
     FutureProvider.family<FollowerListResponse, String>((ref, username) async {
       return ref
-          .read(followersServiceProvider)
+          .watch(followersServiceProvider)
           .getUserFollowers(username: username);
     });
 
@@ -54,7 +54,7 @@ final userFollowersProvider =
 final userFollowingProvider =
     FutureProvider.family<FollowingListResponse, String>((ref, username) async {
       return ref
-          .read(followersServiceProvider)
+          .watch(followersServiceProvider)
           .getUserFollowing(username: username);
     });
 
@@ -88,7 +88,6 @@ class FollowNotifier extends StateNotifier<_FollowState> {
         await _service.followUser(username: _username);
       }
       state = state.copyWith(isLoading: false);
-      // Invalidate so FollowingScreen re-fetches the updated list
       _ref.invalidate(myFollowingProvider);
     } catch (_) {
       state = state.copyWith(isFollowing: prev, isLoading: false);
@@ -108,11 +107,8 @@ class _FollowState {
   );
 }
 
-// Keyed by userId — one instance per artist shared across the whole app.
-// Username is carried along for the API call.
-// ref.watch (not read) ensures the notifier rebuilds when myFollowingProvider
-// loads or refreshes, so the correct isFollowing state is reflected on every
-// track by the same artist across the whole app.
+// Keyed by userId — one instance per user shared across the whole app.
+// Username is carried in the key for the API call.
 final followProvider =
     StateNotifierProvider.family<FollowNotifier, _FollowState, FollowKey>((
       ref,
@@ -134,20 +130,22 @@ final followProvider =
 
 // ─── POST/DELETE /users/{username}/block ──────────────────────────────────────
 
-class BlockNotifier extends StateNotifier<_FollowState> {
+class BlockNotifier extends StateNotifier<_BlockState> {
   final FollowersService _service;
   final String _username;
 
   BlockNotifier({required FollowersService service, required String username})
     : _service = service,
       _username = username,
-      super(const _FollowState(isFollowing: false));
+      super(const _BlockState(isBlocked: false));
 
   Future<void> toggle() async {
-    if (state.isLoading) return;
+    if (state.isLoading) {
+      return;
+    }
 
-    final prev = state.isFollowing;
-    state = state.copyWith(isFollowing: !prev, isLoading: true);
+    final prev = state.isBlocked;
+    state = state.copyWith(isBlocked: !prev, isLoading: true);
 
     try {
       if (prev) {
@@ -157,26 +155,28 @@ class BlockNotifier extends StateNotifier<_FollowState> {
       }
       state = state.copyWith(isLoading: false);
     } catch (_) {
-      state = state.copyWith(isFollowing: prev, isLoading: false);
+      state = state.copyWith(isBlocked: prev, isLoading: false);
     }
   }
 }
 
+class _BlockState {
+  final bool isBlocked;
+  final bool isLoading;
+
+  const _BlockState({required this.isBlocked, this.isLoading = false});
+
+
+  _BlockState copyWith({bool? isBlocked, bool? isLoading}) => _BlockState(
+    isBlocked: isBlocked ?? this.isBlocked,
+    isLoading: isLoading ?? this.isLoading,
+  );
+}
+
 final blockProvider =
-    StateNotifierProvider.family<BlockNotifier, _FollowState, String>(
+    StateNotifierProvider.family<BlockNotifier, _BlockState, String>(
       (ref, username) => BlockNotifier(
         service: ref.read(followersServiceProvider),
         username: username,
       ),
     );
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-String _dioError(DioException e) {
-  final status = e.response?.statusCode;
-  if (status == 401) return 'You are not logged in.';
-  if (status == 403) return 'You do not have permission to do this.';
-  if (status == 404) return 'User not found.';
-  if (status == 422) return 'Invalid request. Please try again.';
-  return 'Something went wrong. Please try again.';
-}

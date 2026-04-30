@@ -20,6 +20,12 @@ class _FollowingScreenState extends ConsumerState<FollowingScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  // Local copy of the following list for optimistic updates
+  List<Follower>? _localList;
+
+  // Tracks which userIds are currently being unfollowed (loading state)
+  final Set<String> _loadingIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -43,6 +49,44 @@ class _FollowingScreenState extends ConsumerState<FollowingScreen> {
       final user = (f.username ?? f.userId).toLowerCase();
       return name.contains(_searchQuery) || user.contains(_searchQuery);
     }).toList();
+  }
+
+  Future<void> _unfollow(Follower follower) async {
+    final userId = follower.userId;
+    final identifier = follower.apiIdentifier;
+
+    if (identifier.isEmpty) {
+      debugPrint('[FollowingScreen] Cannot unfollow: no identifier available');
+      return;
+    }
+
+    debugPrint(
+      '[FollowingScreen] Unfollowing userId=$userId identifier=$identifier',
+    );
+
+    if (_loadingIds.contains(userId)) return;
+
+    // ── Optimistic removal: remove tile immediately ──────────────────
+    setState(() {
+      _loadingIds.add(userId);
+      _localList?.removeWhere((f) => f.userId == userId);
+    });
+
+    try {
+      await ref
+          .read(followersServiceProvider)
+          .unfollowUser(username: identifier);
+      // Sync backend list in background — tile is already gone from UI
+      ref.invalidate(myFollowingProvider);
+    } catch (e) {
+      debugPrint('[FollowingScreen] Unfollow failed: $e');
+      // Restore the tile on failure
+      setState(() {
+        _localList?.add(follower);
+      });
+    } finally {
+      if (mounted) setState(() => _loadingIds.remove(userId));
+    }
   }
 
   @override
@@ -142,7 +186,11 @@ class _FollowingScreenState extends ConsumerState<FollowingScreen> {
               ),
 
               data: (response) {
-                final filtered = _applySearch(response.following);
+                // Seed the local list once from the API response,
+                // then let optimistic updates take over
+                _localList ??= List<Follower>.from(response.following);
+
+                final filtered = _applySearch(_localList!);
 
                 return CustomScrollView(
                   slivers: [
@@ -245,19 +293,9 @@ class _FollowingScreenState extends ConsumerState<FollowingScreen> {
                       SliverList(
                         delegate: SliverChildBuilderDelegate((context, index) {
                           final follower = filtered[index];
-
-                          // Build the key — username may be null from this endpoint
-                          // so we fall back to an empty string (button will be disabled)
-                          final followKey = follower.username != null
-                              ? (
-                                  userId: follower.userId,
-                                  username: follower.username!,
-                                )
-                              : null;
-
-                          final followState = followKey != null
-                              ? ref.watch(followProvider(followKey))
-                              : null;
+                          final isLoading = _loadingIds.contains(
+                            follower.userId,
+                          );
 
                           return UserTile(
                             avatarUrl: follower.avatarUrl,
@@ -267,13 +305,9 @@ class _FollowingScreenState extends ConsumerState<FollowingScreen> {
                                 follower.userId,
                             location: null,
                             followers: null,
-                            isFollowing: followState?.isFollowing ?? false,
-                            isFollowLoading: followState?.isLoading ?? false,
-                            onFollowTap: followKey == null
-                                ? null
-                                : () => ref
-                                      .read(followProvider(followKey).notifier)
-                                      .toggle(),
+                            isFollowing: true,
+                            isFollowLoading: isLoading,
+                            onFollowTap: () => _unfollow(follower),
                             onTap: () {},
                           );
                         }, childCount: filtered.length),
