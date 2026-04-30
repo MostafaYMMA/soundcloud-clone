@@ -29,7 +29,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   AuthNotifier(this._authService, this._userService) : super(const AuthState());
 
-  // register now requires username
+  void updateCurrentUser(User user) {
+    state = AuthState(
+      tokens: state.tokens,
+      user: user,
+      isLoading: false,
+      error: null,
+      successMessage: state.successMessage,
+    );
+  }
+
   Future<void> register({
     required String email,
     required String username,
@@ -76,7 +85,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  // identifier can be email or username - matches API's LoginRequest
   Future<void> login(String identifier, String password) async {
     state = const AuthState(isLoading: true);
     try {
@@ -113,6 +121,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> refreshTokens() async {
     final current = state.tokens;
     if (current == null) return;
+
     try {
       final newTokens = await _authService.refreshTokens(current.refreshToken);
       state = AuthState(tokens: newTokens, user: state.user);
@@ -121,7 +130,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  // logout now passes both accessToken and refreshToken
   Future<void> logout() async {
     final tokens = state.tokens;
     if (tokens != null) {
@@ -130,9 +138,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
         );
-      } catch (_) {
-        // ignore backend logout failure and clear local state
-      }
+      } catch (_) {}
     }
     state = const AuthState();
   }

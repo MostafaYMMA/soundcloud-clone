@@ -55,9 +55,11 @@ class LibraryScreen extends StatelessWidget {
                 const SizedBox(width: AppDimensions.spaceSmall),
                 GestureDetector(
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const ProfileScreen(),
+                    // Use onNavigate so mini player stays visible
+                    onNavigate(
+                      ProfileScreen(
+                        onTrackTap: onTrackTap,
+                        onNavigate: onNavigate,
                       ),
                     );
                   },
@@ -127,7 +129,8 @@ class LibraryScreen extends StatelessWidget {
           SliverToBoxAdapter(
             child: _SectionHeader(
               title: 'Recently Played',
-              onSeeAll: () => onNavigate(RecentlyPlayedScreen(onBack: onBack)),
+              onSeeAll: () =>
+                  onNavigate(RecentlyPlayedScreen(onBack: onBack)),
             ),
           ),
           SliverToBoxAdapter(
@@ -168,7 +171,8 @@ class LibraryScreen extends StatelessWidget {
               (context, index) => TrackTile(
                 track: history[index],
                 onTap: () => onTrackTap(history[index]),
-                onMoreTap: () => showTrackContextMenu(context, history[index]),
+                onMoreTap: () =>
+                    showTrackContextMenu(context, history[index]),
               ),
               childCount: history.length,
             ),
