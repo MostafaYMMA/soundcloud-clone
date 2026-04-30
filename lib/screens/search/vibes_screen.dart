@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_project/constants/app_colors.dart';
 import 'package:my_project/constants/app_dimensions.dart';
 import 'package:my_project/constants/app_text_styles.dart';
-import 'package:my_project/mock_data/mock_tracks.dart';
+import 'package:my_project/models/track.dart';
+import 'package:my_project/providers/music_providers.dart';
+import 'package:my_project/screens/library/context_menu_sheet.dart';
 import 'package:my_project/screens/library/widgets/track_tile.dart';
 
 class VibeScreen extends StatelessWidget {
@@ -12,12 +15,6 @@ class VibeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final trendingTracks = [
-      ...MockTracks.likedTracks,
-      MockTracks.hotTrack,
-      ...MockTracks.recommendedTracks,
-    ];
-
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -45,7 +42,9 @@ class VibeScreen extends StatelessWidget {
                 ],
               ),
             ),
+
             const SizedBox(height: AppDimensions.spaceExtraLarge),
+
             const TabBar(
               labelColor: AppColors.textPrimary,
               labelStyle: AppTextStyles.button,
@@ -60,167 +59,78 @@ class VibeScreen extends StatelessWidget {
                 Tab(text: "Albums"),
               ],
             ),
+
             const SizedBox(height: AppDimensions.spaceMedium),
+
             Expanded(
               child: TabBarView(
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppDimensions.spaceLarge,
-                        ),
-                        child: Text('Trending', style: AppTextStyles.heading1),
-                      ),
-                      const SizedBox(height: AppDimensions.spaceSmall),
-                      Expanded(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppDimensions.spaceSmall,
+                  // ───────── TRENDING (BACKEND + MENU) ─────────
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final asyncTracks = ref.watch(searchTracksProvider("a"));
+
+                      return asyncTracks.when(
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (e, _) => Center(
+                          child: Text(
+                            "Error: $e",
+                            style: const TextStyle(color: Colors.white70),
                           ),
-                          itemCount: trendingTracks.length,
-                          itemBuilder: (context, index) {
-                            final track = trendingTracks[index];
-                            return TrackTile(
-                              track: track,
-                              onTap: () {},
-                              onMoreTap: () {},
+                        ),
+                        data: (tracks) {
+                          if (tracks.isEmpty) {
+                            return const Center(
+                              child: Text(
+                                "No trending tracks",
+                                style: TextStyle(color: Colors.white70),
+                              ),
                             );
-                          },
-                        ),
-                      ),
-                    ],
+                          }
+
+                          return ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppDimensions.spaceSmall,
+                            ),
+                            itemCount: tracks.length,
+                            itemBuilder: (context, index) {
+                              final track = tracks[index];
+
+                              return TrackTile(
+                                track: track,
+                                onTap: () {},
+                                onMoreTap: () {
+                                  showTrackContextMenu(context, track);
+                                },
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
                   ),
 
-                  /// PLAYLISTS TAB (FIXED NULL SAFETY)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppDimensions.spaceLarge,
-                        ),
-                        child: Text('Playlists', style: AppTextStyles.heading1),
-                      ),
-                      const SizedBox(height: AppDimensions.spaceSmall),
-                      Expanded(
-                        child: GridView.builder(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppDimensions.spaceLarge,
-                          ),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisSpacing: 12,
-                                crossAxisSpacing: 12,
-                                childAspectRatio: 0.95,
-                              ),
-                          itemCount: trendingTracks.length,
-                          itemBuilder: (context, index) {
-                            final track = trendingTracks[index];
-                            return _GridTile(track: track);
-                          },
-                        ),
-                      ),
-                    ],
+                  // ───────── PLAYLISTS (UNCHANGED FOR NOW) ─────────
+                  const Center(
+                    child: Text(
+                      "Playlists tab",
+                      style: TextStyle(color: Colors.white70),
+                    ),
                   ),
 
-                  /// ALBUMS TAB (FIXED NULL SAFETY)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppDimensions.spaceLarge,
-                        ),
-                        child: Text('Albums', style: AppTextStyles.heading1),
-                      ),
-                      const SizedBox(height: AppDimensions.spaceSmall),
-                      Expanded(
-                        child: GridView.builder(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppDimensions.spaceLarge,
-                          ),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisSpacing: 12,
-                                crossAxisSpacing: 12,
-                                childAspectRatio: 0.95,
-                              ),
-                          itemCount: trendingTracks.length,
-                          itemBuilder: (context, index) {
-                            final track = trendingTracks[index];
-                            return _GridTile(track: track);
-                          },
-                        ),
-                      ),
-                    ],
+                  // ───────── ALBUMS (UNCHANGED FOR NOW) ─────────
+                  const Center(
+                    child: Text(
+                      "Albums tab",
+                      style: TextStyle(color: Colors.white70),
+                    ),
                   ),
                 ],
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// FIXED GRID TILE (prevents null crash)
-class _GridTile extends StatelessWidget {
-  final dynamic track;
-
-  const _GridTile({required this.track});
-
-  @override
-  Widget build(BuildContext context) {
-    final String artworkUrl = track.artworkUrl ?? '';
-    final String title = track.title ?? 'Unknown';
-    final String artist = track.artist ?? 'Unknown';
-
-    return GestureDetector(
-      onTap: () {},
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(
-              AppDimensions.borderRadiusSharp,
-            ),
-            child: track.artworkUrl.isNotEmpty
-                ? Image.network(
-                    artworkUrl,
-                    width: double.infinity,
-                    height: 140,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 140,
-                      color: AppColors.waveformInactive,
-                      child: const Icon(Icons.queue_music),
-                    ),
-                  )
-                : Container(
-                    height: 140,
-                    color: AppColors.waveformInactive,
-                    child: const Icon(Icons.queue_music),
-                  ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            title,
-            style: AppTextStyles.artistName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            artist,
-            style: AppTextStyles.caption,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
       ),
     );
   }
