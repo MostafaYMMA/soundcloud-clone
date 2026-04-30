@@ -1,11 +1,15 @@
+// widgets/full_player.dart
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:my_project/constants/app_colors.dart';
 import 'package:my_project/constants/app_dimensions.dart';
 import 'package:my_project/constants/app_text_styles.dart';
 import 'package:my_project/models/track.dart';
+import 'package:my_project/providers/followers_provider.dart';
 
-class FullPlayer extends StatefulWidget {
+class FullPlayer extends ConsumerStatefulWidget {
   const FullPlayer({
     super.key,
     required this.track,
@@ -20,10 +24,10 @@ class FullPlayer extends StatefulWidget {
   final ValueChanged<Duration> onSeek;
 
   @override
-  State<FullPlayer> createState() => _FullPlayerState();
+  ConsumerState<FullPlayer> createState() => _FullPlayerState();
 }
 
-class _FullPlayerState extends State<FullPlayer> {
+class _FullPlayerState extends ConsumerState<FullPlayer> {
   bool showControls = false;
   bool isLiked = false;
   bool _initializedControls = false;
@@ -50,6 +54,21 @@ class _FullPlayerState extends State<FullPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    // ── Follow state ─────────────────────────────────────────────────────────
+    final artistUsername = widget.track.artist?.username;
+    final artistUserId = widget.track.artist?.userId;
+
+    final followKey = (artistUsername != null && artistUserId != null)
+        ? (userId: artistUserId, username: artistUsername)
+        : null;
+
+    final followState = followKey != null
+        ? ref.watch(followProvider(followKey))
+        : null;
+
+    final isFollowing = followState?.isFollowing ?? false;
+    final isFollowLoading = followState?.isLoading ?? false;
+
     return StreamBuilder<PlayerState>(
       stream: widget.player.playerStateStream,
       builder: (context, playerStateSnapshot) {
@@ -113,7 +132,12 @@ class _FullPlayerState extends State<FullPlayer> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildTopSection(context),
+                              _buildTopSection(
+                                context,
+                                isFollowing: isFollowing,
+                                isFollowLoading: isFollowLoading,
+                                followKey: followKey,
+                              ),
                               const Spacer(),
                               _buildWaveform(
                                 elapsed: elapsed,
@@ -140,7 +164,12 @@ class _FullPlayerState extends State<FullPlayer> {
     );
   }
 
-  Widget _buildTopSection(BuildContext context) {
+  Widget _buildTopSection(
+    BuildContext context, {
+    required bool isFollowing,
+    required bool isFollowLoading,
+    required FollowKey? followKey,
+  }) {
     return Padding(
       padding: const EdgeInsets.all(AppDimensions.spaceMedium),
       child: Row(
@@ -176,15 +205,35 @@ class _FullPlayerState extends State<FullPlayer> {
               IconButton(
                 icon: const Icon(Icons.keyboard_arrow_down_rounded),
                 color: AppColors.textSecondary,
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+                onPressed: () => Navigator.pop(context),
               ),
+
+              // ── Follow / Unfollow button ──────────────────────────────────
               IconButton(
-                icon: const Icon(Icons.person_add_alt_1_outlined),
-                color: AppColors.textSecondary,
-                onPressed: () {},
+                icon: isFollowLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.textSecondary,
+                        ),
+                      )
+                    : Icon(
+                        isFollowing
+                            ? Icons.person_remove_outlined
+                            : Icons.person_add_alt_1_outlined,
+                        color: isFollowing
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                      ),
+                tooltip: isFollowing ? 'Unfollow' : 'Follow',
+                onPressed: (isFollowLoading || followKey == null)
+                    ? null
+                    : () =>
+                          ref.read(followProvider(followKey).notifier).toggle(),
               ),
+
               IconButton(
                 icon: const Icon(Icons.grid_view_rounded),
                 color: AppColors.textSecondary,
