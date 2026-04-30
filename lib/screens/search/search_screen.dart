@@ -22,13 +22,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
   Timer? _debounce;
   String _query = '';
-  final Set<String> _locallyLikedPlaylistIds = {};
+  String? _updatingPlaylistId;
 
   String fixImageUrl(String? url) {
     if (url == null || url.isEmpty) return '';
     if (url.startsWith('http')) return url;
     if (url.startsWith('/')) return 'https://streamline-swp.duckdns.org$url';
     return url;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(playlistProvider.notifier).fetchLikedPlaylists();
+    });
   }
 
   void _onSearchChanged(String value) {
@@ -44,50 +52,53 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     });
   }
 
-  Future<void> _likePlaylist(Playlist playlist) async {
-    if (_locallyLikedPlaylistIds.contains(playlist.id)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Playlist is already in your library.')),
-      );
-      return;
-    }
+  bool _isPlaylistLiked(Playlist playlist, PlaylistState state) {
+    return state.likedPlaylists.any((p) => p.id == playlist.id);
+  }
 
-    await ref.read(playlistProvider.notifier).likePlaylist(playlist.id);
+  Future<void> _togglePlaylistLike(Playlist playlist) async {
+    if (_updatingPlaylistId != null) return;
+
+    final playlistState = ref.read(playlistProvider);
+    final isLiked = _isPlaylistLiked(playlist, playlistState);
+
+    setState(() {
+      _updatingPlaylistId = playlist.id;
+    });
+
+    if (isLiked) {
+      await ref.read(playlistProvider.notifier).unlikePlaylist(playlist.id);
+    } else {
+      await ref.read(playlistProvider.notifier).likePlaylist(playlist.id);
+    }
 
     if (!mounted) return;
 
-    final state = ref.read(playlistProvider);
+    final updatedState = ref.read(playlistProvider);
 
-    if (state.error != null) {
+    setState(() {
+      _updatingPlaylistId = null;
+    });
+
+    if (updatedState.error != null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(state.error!)));
+      ).showSnackBar(SnackBar(content: Text(updatedState.error!)));
+      ref.read(playlistProvider.notifier).clearMessages();
       return;
     }
 
-    setState(() {
-      _locallyLikedPlaylistIds.add(playlist.id);
-    });
-
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${playlist.name} added to your playlists.')),
+      SnackBar(
+        content: Text(
+          isLiked
+              ? 'You removed this playlist from likes.'
+              : '${playlist.name} added to your playlists.',
+        ),
+      ),
     );
 
     ref.read(playlistProvider.notifier).clearMessages();
-  }
-
-  bool _isPlaylistLiked(Playlist playlist, PlaylistState state) {
-    return _locallyLikedPlaylistIds.contains(playlist.id) ||
-        state.likedPlaylists.any((p) => p.id == playlist.id);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(playlistProvider.notifier).fetchLikedPlaylists();
-    });
   }
 
   @override
@@ -169,9 +180,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               style: TextStyle(color: Colors.white, fontSize: 18),
             ),
           ),
-          ...tracks.map((t) {
-            final artistName = t.artist?.displayName ?? 'Unknown Artist';
-            final image = fixImageUrl(t.coverImageUrl);
+          ...tracks.map((track) {
+            final artistName = track.artist?.displayName ?? 'Unknown Artist';
+            final image = fixImageUrl(track.coverImageUrl);
 
             return ListTile(
               leading: _SquareImage(
@@ -179,7 +190,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 fallbackIcon: Icons.music_note,
               ),
               title: Text(
-                t.title,
+                track.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.white),
@@ -204,6 +215,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ...playlists.map((playlist) {
             final image = fixImageUrl(playlist.coverUrl);
             final isLiked = _isPlaylistLiked(playlist, playlistState);
+            final isUpdating = _updatingPlaylistId == playlist.id;
 
             return ListTile(
               onTap: () => _openPlaylist(playlist),
@@ -218,16 +230,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 style: const TextStyle(color: Colors.white),
               ),
               subtitle: Text(
-                playlist.description.isEmpty
-                    ? 'Playlist'
-                    : playlist.description,
+                playlist.description.isEmpty ? 'Playlist' : playlist.description,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.white70),
               ),
               trailing: IconButton(
-                tooltip: isLiked ? 'Already in library' : 'Add to library',
-                icon: playlistState.isLiking
+                tooltip: isLiked ? 'Remove from likes' : 'Add to likes',
+                icon: isUpdating
                     ? const SizedBox(
                         width: 22,
                         height: 22,
@@ -239,9 +249,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             ? AppColors.primary
                             : AppColors.textSecondary,
                       ),
-                onPressed: playlistState.isLiking || isLiked
+                onPressed: isUpdating
                     ? null
-                    : () => _likePlaylist(playlist),
+                    : () => _togglePlaylistLike(playlist),
               ),
             );
           }),
