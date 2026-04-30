@@ -50,10 +50,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (access == null || refresh == null) return;
 
-      final tokens = AuthTokens(
-        accessToken: access,
-        refreshToken: refresh,
-      );
+      final tokens = AuthTokens(accessToken: access, refreshToken: refresh);
 
       final user = await _userService.getMe(tokens.accessToken);
 
@@ -147,11 +144,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     final currentTokens = state.tokens;
 
-    state = AuthState(
-      tokens: state.tokens,
-      user: state.user,
-      isLoading: true,
-    );
+    state = AuthState(tokens: state.tokens, user: state.user, isLoading: true);
 
     if (currentTokens != null) {
       try {
