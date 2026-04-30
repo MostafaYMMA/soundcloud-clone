@@ -178,6 +178,65 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
     );
   }
 
+  Future<void> _removePlaylistFromLikes(Playlist playlist) async {
+    await ref.read(playlistProvider.notifier).unlikePlaylist(playlist.id);
+
+    if (!mounted) return;
+
+    final state = ref.read(playlistProvider);
+
+    if (state.error != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(state.error!)));
+      ref.read(playlistProvider.notifier).clearMessages();
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('You removed this playlist from likes.')),
+    );
+
+    ref.read(playlistProvider.notifier).clearMessages();
+  }
+
+  void _showPlaylistOptions(Playlist playlist) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppDimensions.borderRadiusMedium),
+        ),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: AppDimensions.spaceMedium,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.favorite, color: AppColors.primary),
+                  title: const Text(
+                    'Remove from liked playlists',
+                    style: TextStyle(color: AppColors.textPrimary),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _removePlaylistFromLikes(playlist);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _showCreatePlaylistSheet() {
     showModalBottomSheet(
       context: context,
@@ -431,7 +490,7 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
                   title: '',
                   playlists: playlists,
                   onPlaylistTap: _openPlaylistDetails,
-                  onMoreTap: (_) {},
+                  onMoreTap: _showPlaylistOptions,
                 ),
               ),
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
