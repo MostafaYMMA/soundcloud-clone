@@ -9,33 +9,33 @@ import '../../models/feed_response.dart';
 
 extension FeedTrackItemToTrack on FeedTrackItem {
   Track toTrack() => Track(
-        trackId: trackId,
-        title: title,
-        description: description,
-        genre: genre,
-        tags: tags,
-        releaseDate: releaseDate,
-        coverImageUrl: coverImageUrl,
-        streamUrl: streamUrl,
-        userId: artist.userId,
-        artist: TrackArtist(
-          userId: artist.userId,
-          username: artist.username,
-          displayName: artist.displayName,
-          profilePicture: artist.profilePicture,
-          followerCount: artist.followerCount,
-        ),
-        visibility: 'public',
-        processingStatus: 'ready',
-        playCount: playCount,
-        durationSeconds: durationSeconds,
-        likeCount: likeCount,
-        repostCount: repostCount,
-        commentCount: commentCount,
-        isLiked: isLiked,
-        isReposted: isReposted,
-        createdAt: createdAt,
-      );
+    trackId: trackId,
+    title: title,
+    description: description,
+    genre: genre,
+    tags: tags,
+    releaseDate: releaseDate,
+    coverImageUrl: coverImageUrl,
+    streamUrl: streamUrl,
+    userId: artist.userId,
+    artist: TrackArtist(
+      userId: artist.userId,
+      username: artist.username,
+      displayName: artist.displayName,
+      profilePicture: artist.profilePicture,
+      followerCount: artist.followerCount,
+    ),
+    visibility: 'public',
+    processingStatus: 'ready',
+    playCount: playCount,
+    durationSeconds: durationSeconds,
+    likeCount: likeCount,
+    repostCount: repostCount,
+    commentCount: commentCount,
+    isLiked: isLiked,
+    isReposted: isReposted,
+    createdAt: createdAt,
+  );
 }
 
 // ─── FEED SCREEN ─────────────────────────────────────────────────────────────
@@ -121,11 +121,13 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
               bottom: 140,
               child: Column(
                 children: [
-                  Icon(Icons.favorite_border,
-                      color: Colors.white, size: 32),
+                  Icon(Icons.favorite_border, color: Colors.white, size: 32),
                   const SizedBox(height: 18),
-                  Icon(Icons.chat_bubble_outline,
-                      color: Colors.white, size: 32),
+                  Icon(
+                    Icons.chat_bubble_outline,
+                    color: Colors.white,
+                    size: 32,
+                  ),
                   const SizedBox(height: 18),
                   Icon(Icons.share, color: Colors.white, size: 32),
                   const SizedBox(height: 18),
@@ -163,10 +165,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 60,
-              vertical: 8,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 8),
             child: TabBar(
               controller: _tabController,
 
@@ -185,26 +184,14 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
               tabs: const [
                 Tab(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 20,
-                    ),
-                    child: Text(
-                      "Discover",
-                      style: AppTextStyles.button,
-                    ),
+                    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                    child: Text("Discover", style: AppTextStyles.button),
                   ),
                 ),
                 Tab(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 20,
-                    ),
-                    child: Text(
-                      "Following",
-                      style: AppTextStyles.button,
-                    ),
+                    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                    child: Text("Following", style: AppTextStyles.button),
                   ),
                 ),
               ],
@@ -218,26 +205,20 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
         children: [
           // DISCOVER
           discover.when(
-            loading: () =>
-                const Center(child: CircularProgressIndicator()),
-            error: (_, __) =>
-                const Center(child: Text("Error loading feed")),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, __) => const Center(child: Text("Error loading feed")),
             data: (state) {
-              final tracks =
-                  state.items.map((e) => e.toTrack()).toList();
+              final tracks = state.items.map((e) => e.toTrack()).toList();
               return _buildFeed(tracks);
             },
           ),
 
           // FOLLOWING (ONLY CHANGE IS HERE)
           following.when(
-            loading: () =>
-                const Center(child: CircularProgressIndicator()),
-            error: (_, __) =>
-                const Center(child: Text("Error loading feed")),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, __) => const Center(child: Text("Error loading feed")),
             data: (state) {
-              final tracks =
-                  state.items.map((e) => e.toTrack()).toList();
+              final tracks = state.items.map((e) => e.toTrack()).toList();
 
               if (tracks.isEmpty) {
                 return const Center(
@@ -259,10 +240,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                         Text(
                           "Follow some artists or like tracks and try again",
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: Colors.white70, fontSize: 14),
                         ),
                       ],
                     ),
