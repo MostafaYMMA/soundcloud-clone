@@ -689,7 +689,9 @@ void main() {
 
         if (nextDifferentArtist.artist!.displayName != firstArtist) {
           final firstFinder = find.text(firstArtist).first;
-          final secondFinder = find.text(nextDifferentArtist.artist!.displayName);
+          final secondFinder = find.text(
+            nextDifferentArtist.artist!.displayName,
+          );
 
           expect(firstFinder, findsOneWidget);
           expect(secondFinder, findsOneWidget);
