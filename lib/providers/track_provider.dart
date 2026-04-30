@@ -414,8 +414,6 @@ final deleteTrackProvider =
       DeleteTrackNotifier.new,
     );
 
-
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 String _dioError(DioException e) {
@@ -426,6 +424,7 @@ String _dioError(DioException e) {
   if (status == 413) return 'File is too large.';
   return 'Something went wrong. Please try again.';
 }
+
 class ToggleTrackLikeNotifier extends FamilyAsyncNotifier<void, String> {
   @override
   Future<void> build(String arg) async {}

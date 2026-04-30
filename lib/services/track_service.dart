@@ -197,12 +197,12 @@ class TracksService {
   // ── POST /tracks/{track_id}/like ─────────────────────────────────────────────
 
   Future<void> likeTrack({required String trackId}) async {
-  await _dio.post('$_base/tracks/$trackId/like');
+    await _dio.post('$_base/tracks/$trackId/like');
   }
 
-// ── DELETE /tracks/{track_id}/like ───────────────────────────────────────────
+  // ── DELETE /tracks/{track_id}/like ───────────────────────────────────────────
 
   Future<void> unlikeTrack({required String trackId}) async {
-  await _dio.delete('$_base/tracks/$trackId/like');
-}
+    await _dio.delete('$_base/tracks/$trackId/like');
+  }
 }

@@ -87,10 +87,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
     try {
       await ref
           .read(toggleTrackLikeProvider(widget.track.trackId).notifier)
-          .toggle(
-            currentlyLiked: currentlyLiked,
-            username: username,
-          );
+          .toggle(currentlyLiked: currentlyLiked, username: username);
 
       // IMPORTANT:
       // nothing else needed if provider updates liked list correctly
@@ -129,23 +126,20 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                 Duration(seconds: widget.track.durationSeconds ?? 0);
 
             final progress = totalDuration.inMilliseconds > 0
-                ? currentPosition.inMilliseconds /
-                      totalDuration.inMilliseconds
+                ? currentPosition.inMilliseconds / totalDuration.inMilliseconds
                 : 0.0;
 
             final elapsed = currentPosition.inSeconds;
-            final totalSeconds =
-                totalDuration.inSeconds > 0
-                    ? totalDuration.inSeconds
-                    : widget.track.durationSeconds ?? 0;
+            final totalSeconds = totalDuration.inSeconds > 0
+                ? totalDuration.inSeconds
+                : widget.track.durationSeconds ?? 0;
 
             return Scaffold(
               backgroundColor: Colors.black,
               body: GestureDetector(
-                onTap:
-                    showControls
-                        ? null
-                        : () => setState(() => showControls = true),
+                onTap: showControls
+                    ? null
+                    : () => setState(() => showControls = true),
                 child: Stack(
                   children: [
                     Container(
@@ -176,10 +170,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
 
                           const Spacer(),
 
-                          _buildBottomBar(
-                            elapsed,
-                            totalSeconds,
-                          ),
+                          _buildBottomBar(elapsed, totalSeconds),
 
                           const SizedBox(height: 20),
                         ],
@@ -191,9 +182,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                         child: Center(
                           child: IconButton(
                             icon: Icon(
-                              isPlaying
-                                  ? Icons.pause
-                                  : Icons.play_arrow,
+                              isPlaying ? Icons.pause : Icons.play_arrow,
                               size: 60,
                               color: Colors.white,
                             ),
@@ -225,15 +214,11 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
           child: Row(
             children: [
               Icon(
-                isLiked
-                    ? Icons.favorite
-                    : Icons.favorite_border,
+                isLiked ? Icons.favorite : Icons.favorite_border,
                 color: Colors.red,
               ),
               const SizedBox(width: 4),
-              Text(
-                isLiked ? '${likeCount + 1}' : '$likeCount',
-              ),
+              Text(isLiked ? '${likeCount + 1}' : '$likeCount'),
             ],
           ),
         ),

@@ -69,10 +69,7 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
     });
   }
 
-  void _applySort(
-    LikedTracksSortOption option, {
-    bool refreshSearch = true,
-  }) {
+  void _applySort(LikedTracksSortOption option, {bool refreshSearch = true}) {
     _sortOption = option;
 
     switch (option) {
@@ -90,10 +87,9 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
 
       case LikedTracksSortOption.artist:
         _allTracks.sort(
-          (a, b) =>
-              (a.artist?.displayName ?? '').compareTo(
-                b.artist?.displayName ?? '',
-              ),
+          (a, b) => (a.artist?.displayName ?? '').compareTo(
+            b.artist?.displayName ?? '',
+          ),
         );
         break;
     }
@@ -382,9 +378,7 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
                 ),
               ),
 
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 100),
-              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           );
         },
@@ -417,11 +411,7 @@ class _SortOption extends StatelessWidget {
         ),
       ),
       trailing: selected
-          ? const Icon(
-              Icons.check,
-              color: AppColors.primary,
-              size: 20,
-            )
+          ? const Icon(Icons.check, color: AppColors.primary, size: 20)
           : null,
       onTap: onTap,
     );
