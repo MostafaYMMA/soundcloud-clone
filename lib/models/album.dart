@@ -1,3 +1,38 @@
+class AlbumTrack {
+  final String id;
+  final String title;
+  final String artist;
+  final String artworkUrl;
+  final int durationSeconds;
+
+  const AlbumTrack({
+    required this.id,
+    required this.title,
+    required this.artist,
+    required this.artworkUrl,
+    required this.durationSeconds,
+  });
+
+  static String _fixMediaUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/')) return 'https://streamline-swp.duckdns.org$url';
+    return url;
+  }
+
+  factory AlbumTrack.fromJson(Map<String, dynamic> json) {
+    return AlbumTrack(
+      id: json['track_id']?.toString() ?? '',
+      title: json['title']?.toString() ?? 'Untitled Track',
+      artist: json['artist']?.toString() ?? 'Unknown Artist',
+      artworkUrl: _fixMediaUrl(json['cover_image_url']?.toString()),
+      durationSeconds: json['duration_seconds'] is int
+          ? json['duration_seconds']
+          : int.tryParse(json['duration_seconds']?.toString() ?? '') ?? 0,
+    );
+  }
+}
+
 class Album {
   final String id;
   final String title;
@@ -7,6 +42,7 @@ class Album {
   final int releaseYear;
   final int likeCount;
   final List<String> trackIds;
+  final List<AlbumTrack> tracks; // ← added
 
   const Album({
     required this.id,
@@ -17,6 +53,7 @@ class Album {
     required this.releaseYear,
     required this.likeCount,
     this.trackIds = const [],
+    this.tracks = const [], // ← added
   });
 
   static String _fixMediaUrl(String? url) {
@@ -27,19 +64,24 @@ class Album {
   }
 
   factory Album.fromJson(Map<String, dynamic> json) {
-    // release_date may be a full date string "2024-01-15" or null
     int releaseYear = 0;
     final rawDate = json['release_date']?.toString();
     if (rawDate != null && rawDate.isNotEmpty) {
       releaseYear = int.tryParse(rawDate.split('-').first) ?? 0;
     }
 
+    final tracksRaw = json['tracks'];
+    final tracks = tracksRaw is List
+        ? tracksRaw
+            .whereType<Map<String, dynamic>>()
+            .map(AlbumTrack.fromJson)
+            .toList()
+        : <AlbumTrack>[];
+
     return Album(
       id: json['album_id']?.toString() ?? json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? 'Untitled Album',
-      // The API returns the uploader's info nested or flat — fall back chain
-      artist:
-          json['artist']?.toString() ??
+      artist: json['artist']?.toString() ??
           json['display_name']?.toString() ??
           json['owner']?.toString() ??
           'Unknown Artist',
@@ -57,6 +99,7 @@ class Album {
           : int.tryParse(json['like_count']?.toString() ?? '') ?? 0,
       trackIds:
           (json['track_ids'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      tracks: tracks, // ← added
     );
   }
 }
