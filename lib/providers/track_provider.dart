@@ -9,18 +9,31 @@ import 'auth_providers.dart';
 // ─── Service Provider ─────────────────────────────────────────────────────────
 
 final tracksServiceProvider = Provider<TracksService>((ref) {
-  final token = ref.watch(authProvider).tokens?.accessToken ?? '';
+  final token = ref.watch(authProvider).tokens?.accessToken;
   final dio = Dio();
+
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) {
-        if (token.isNotEmpty) {
+        if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
         }
+
+        print('${options.method} ${options.uri}');
         handler.next(options);
+      },
+      onResponse: (response, handler) {
+        print('DIO ${response.statusCode}: ${response.requestOptions.uri}');
+        handler.next(response);
+      },
+      onError: (e, handler) {
+        print('DIO ERROR ${e.response?.statusCode}: ${e.requestOptions.uri}');
+        print('DIO DATA: ${e.response?.data}');
+        handler.next(e);
       },
     ),
   );
+
   return TracksService(dio: dio);
 });
 
@@ -33,6 +46,94 @@ final trackProvider = FutureProvider.family<Track, String>((
   return ref.read(tracksServiceProvider).getTrack(trackId: trackId);
 });
 
+// ─── GET /tracks/{track_id}/waveform ──────────────────────────────────────────
+
+final trackWaveformProvider = FutureProvider.family<List<double>, String>((
+  ref,
+  String trackId,
+) async {
+  try {
+    print('Fetching waveform for: $trackId');
+
+    if (trackId.trim().isEmpty) {
+      print('EMPTY TRACK ID');
+      return [];
+    }
+
+    List peaks = [];
+
+    // ── 1. TRY WAVEFORM ENDPOINT ──
+    try {
+      final data = await ref
+          .read(tracksServiceProvider)
+          .getTrackWaveform(trackId: trackId);
+
+      print('WAVEFORM RESPONSE: $data');
+
+      if (data['peaks'] is List) {
+        peaks = data['peaks'];
+      }
+    } catch (e) {
+      print('waveform endpoint failed, trying playback...');
+    }
+
+    // ── 2. FALLBACK TO PLAYBACK ──
+    if (peaks.isEmpty) {
+      try {
+        final playback = await ref
+            .read(tracksServiceProvider)
+            .getTrackPlayback(trackId: trackId);
+
+        print('PLAYBACK RESPONSE: $playback');
+
+        if (playback['waveform'] is List) {
+          peaks = playback['waveform'];
+        } else if (playback['peaks'] is List) {
+          peaks = playback['peaks'];
+        } else if (playback['data'] is Map &&
+            playback['data']['peaks'] is List) {
+          peaks = playback['data']['peaks'];
+        }
+      } catch (e) {
+        print('playback fallback also failed');
+      }
+    }
+
+    // ── 3. FINAL CHECK ──
+    if (peaks.isEmpty) {
+      print('NO WAVEFORM DATA FOUND');
+      return [];
+    }
+
+    final values = peaks
+        .whereType<num>()
+        .map((e) => e.toDouble().abs())
+        .toList();
+
+    if (values.isEmpty) {
+      print('INVALID PEAKS');
+      return [];
+    }
+
+    final maxValue = values.reduce((a, b) => a > b ? a : b);
+
+    if (maxValue <= 0) {
+      return values.map((_) => 0.15).toList();
+    }
+
+    final normalized = values.map((v) {
+      final value = v / maxValue;
+      return value.clamp(0.08, 1.0);
+    }).toList();
+
+    print('FINAL WAVEFORM BARS: ${normalized.length}');
+
+    return normalized;
+  } catch (e) {
+    print('WAVEFORM ERROR: $e');
+    return [];
+  }
+});
 // ─── GET /search/tracks?keyword= ─────────────────────────────────────────────
 
 final searchTracksProvider = FutureProvider.family<List<Track>, String>((
@@ -100,7 +201,7 @@ class FeedState {
   }
 }
 
-// ─── GET /feed/following (paginated) ─────────────────────────────────────────
+// ─── GET /feed/following ──────────────────────────────────────────────────────
 
 class FollowingFeedNotifier extends StateNotifier<FeedState> {
   final TracksService _service;
@@ -121,6 +222,7 @@ class FollowingFeedNotifier extends StateNotifier<FeedState> {
     try {
       final data = await _service.getFollowingFeed(limit: 20);
       final rawItems = data['items'] as List? ?? [];
+
       state = FeedState(
         items: rawItems
             .map((e) => Track.fromJson(e as Map<String, dynamic>))
@@ -139,18 +241,18 @@ class FollowingFeedNotifier extends StateNotifier<FeedState> {
     if (!state.hasMore || state.isFetchingMore || state.nextCursor == null) {
       return;
     }
-
     state = state.copyWith(isFetchingMore: true);
-
     try {
       final data = await _service.getFollowingFeed(
         limit: 20,
         cursor: state.nextCursor,
       );
+
       final rawItems = data['items'] as List? ?? [];
       final newTracks = rawItems
           .map((e) => Track.fromJson(e as Map<String, dynamic>))
           .toList();
+
       state = state.copyWith(
         items: [...state.items, ...newTracks],
         nextCursor: data['next_cursor']?.toString(),
@@ -164,12 +266,13 @@ class FollowingFeedNotifier extends StateNotifier<FeedState> {
     }
   }
 
-  /// Optimistically toggle like on a track in the feed.
   void toggleLike(String trackId) {
     state = state.copyWith(
       items: state.items.map((t) {
         if (t.trackId != trackId) return t;
+
         final liked = !(t.isLiked ?? false);
+
         return t.copyWith(
           isLiked: liked,
           likeCount: (t.likeCount ?? 0) + (liked ? 1 : -1),
@@ -186,7 +289,7 @@ final followingFeedProvider =
       return FollowingFeedNotifier(ref.read(tracksServiceProvider));
     });
 
-// ─── GET /feed/discover (paginated) ──────────────────────────────────────────
+// ─── GET /feed/discover ───────────────────────────────────────────────────────
 
 class DiscoverFeedNotifier extends StateNotifier<FeedState> {
   final TracksService _service;
@@ -207,6 +310,7 @@ class DiscoverFeedNotifier extends StateNotifier<FeedState> {
     try {
       final data = await _service.getDiscoverFeed(limit: 20);
       final rawItems = data['items'] as List? ?? [];
+
       state = FeedState(
         items: rawItems
             .map((e) => Track.fromJson(e as Map<String, dynamic>))
@@ -225,18 +329,18 @@ class DiscoverFeedNotifier extends StateNotifier<FeedState> {
     if (!state.hasMore || state.isFetchingMore || state.nextCursor == null) {
       return;
     }
-
     state = state.copyWith(isFetchingMore: true);
-
     try {
       final data = await _service.getDiscoverFeed(
         limit: 20,
         cursor: state.nextCursor,
       );
+
       final rawItems = data['items'] as List? ?? [];
       final newTracks = rawItems
           .map((e) => Track.fromJson(e as Map<String, dynamic>))
           .toList();
+
       state = state.copyWith(
         items: [...state.items, ...newTracks],
         nextCursor: data['next_cursor']?.toString(),
@@ -254,7 +358,9 @@ class DiscoverFeedNotifier extends StateNotifier<FeedState> {
     state = state.copyWith(
       items: state.items.map((t) {
         if (t.trackId != trackId) return t;
+
         final liked = !(t.isLiked ?? false);
+
         return t.copyWith(
           isLiked: liked,
           likeCount: (t.likeCount ?? 0) + (liked ? 1 : -1),
@@ -271,7 +377,7 @@ final discoverFeedProvider =
       return DiscoverFeedNotifier(ref.read(tracksServiceProvider));
     });
 
-// ─── POST /tracks/{track_id}/plays ────────────────────────────────────────────
+// ─── POST /tracks/{track_id}/plays ───────────────────────────────────────────
 
 class RecordPlayNotifier extends FamilyAsyncNotifier<void, String> {
   @override
@@ -296,7 +402,7 @@ final recordPlayProvider =
       RecordPlayNotifier.new,
     );
 
-// ─── POST /tracks/ — Create track ────────────────────────────────────────────
+// ─── POST /tracks/ ────────────────────────────────────────────────────────────
 
 class CreateTrackNotifier extends AsyncNotifier<Track?> {
   @override
@@ -336,6 +442,7 @@ class CreateTrackNotifier extends AsyncNotifier<Track?> {
             visibility: visibility,
             coverImagePath: coverImagePath,
           );
+
       print('========== UPLOADED TRACK ==========');
       print('ID: ${track.trackId}');
       print('TITLE: ${track.title}');
@@ -365,7 +472,7 @@ final createTrackProvider = AsyncNotifierProvider<CreateTrackNotifier, Track?>(
   CreateTrackNotifier.new,
 );
 
-// ─── PUT /tracks/{track_id} — Update track ────────────────────────────────────
+// ─── PUT /tracks/{track_id} — Update track ───────────────────────────────────
 
 class UpdateTrackNotifier extends FamilyAsyncNotifier<Track?, String> {
   @override
@@ -398,9 +505,10 @@ class UpdateTrackNotifier extends FamilyAsyncNotifier<Track?, String> {
 
       state = AsyncData(track);
 
-      // refresh cached single track
       ref.invalidate(trackProvider(arg));
+      ref.invalidate(trackWaveformProvider(arg));
 
+      ref.invalidate(trackProvider(arg));
       return track;
     } on DioException catch (e) {
       final err = Exception(_dioError(e));
@@ -415,7 +523,7 @@ final updateTrackProvider =
       UpdateTrackNotifier.new,
     );
 
-// ─── DELETE /tracks/{track_id} ────────────────────────────────────────────────
+// ─── DELETE /tracks/{track_id} ───────────────────────────────────────────────
 
 class DeleteTrackNotifier extends FamilyAsyncNotifier<void, String> {
   @override
@@ -424,7 +532,10 @@ class DeleteTrackNotifier extends FamilyAsyncNotifier<void, String> {
   Future<void> delete() async {
     try {
       await ref.read(tracksServiceProvider).deleteTrack(trackId: arg);
-      // Remove from both feeds so the UI updates instantly.
+
+      ref.invalidate(trackProvider(arg));
+      ref.invalidate(trackWaveformProvider(arg));
+
       ref.read(followingFeedProvider.notifier).refresh();
       ref.read(discoverFeedProvider.notifier).refresh();
     } on DioException catch (e) {
@@ -442,9 +553,51 @@ final deleteTrackProvider =
 
 String _dioError(DioException e) {
   final status = e.response?.statusCode;
+
   if (status == 401) return 'You are not logged in.';
   if (status == 403) return 'You do not have permission to do this.';
   if (status == 404) return 'Track not found.';
   if (status == 413) return 'File is too large.';
+
   return 'Something went wrong. Please try again.';
 }
+
+// ─── POST+DELETE /likes/tracks/{track_id} ────────────────────────────────────
+
+class ToggleTrackLikeNotifier extends FamilyAsyncNotifier<void, String> {
+  @override
+  Future<void> build(String arg) async {}
+
+  Future<void> toggle({
+    required bool currentlyLiked,
+    required String username,
+  }) async {
+    final service = ref.read(tracksServiceProvider);
+
+    try {
+      if (currentlyLiked) {
+        await service.unlikeTrack(trackId: arg);
+      } else {
+        await service.likeTrack(trackId: arg);
+      }
+
+      // Update feeds optimistically
+      ref.read(followingFeedProvider.notifier).toggleLike(arg);
+      ref.read(discoverFeedProvider.notifier).toggleLike(arg);
+
+      // Refresh single track cache
+      ref.invalidate(trackProvider(arg));
+
+      // DO NOT invalidate userLikedTracksProvider here —
+      // it would trigger setAll() in LikedTracksScreen with stale
+      // server data, stomping the optimistic toggle in likedTracksProvider.
+    } on DioException catch (e) {
+      throw Exception(_dioError(e));
+    }
+  }
+}
+
+final toggleTrackLikeProvider =
+    AsyncNotifierProviderFamily<ToggleTrackLikeNotifier, void, String>(
+      ToggleTrackLikeNotifier.new,
+    );

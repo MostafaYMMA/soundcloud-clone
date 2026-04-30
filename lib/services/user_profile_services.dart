@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'dart:io';
 import '../models/user.dart';
 
 class UserService {

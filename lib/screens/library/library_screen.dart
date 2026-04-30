@@ -17,6 +17,7 @@ import 'uploads_screen.dart';
 import 'history_screen.dart';
 import 'recently_played_screen.dart';
 import 'context_menu_sheet.dart';
+import 'package:my_project/screens/settings/settings_screen.dart';
 
 class LibraryScreen extends ConsumerWidget {
   final void Function(Widget) onNavigate;
@@ -48,7 +49,9 @@ class LibraryScreen extends ConsumerWidget {
               children: [
                 IconButton(
                   icon: const Icon(Icons.settings_outlined),
-                  onPressed: () {},
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  ),
                 ),
                 const SizedBox(width: AppDimensions.spaceSmall),
                 GestureDetector(

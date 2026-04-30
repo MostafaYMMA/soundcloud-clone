@@ -9,33 +9,73 @@ import 'package:my_project/constants/app_colors.dart';
 import 'package:my_project/constants/app_dimensions.dart';
 import 'package:my_project/constants/app_text_styles.dart';
 import 'package:my_project/models/track.dart';
-import 'package:my_project/providers/followers_provider.dart';
+
+import '../../providers/auth_providers.dart';
+import '../../providers/followers_provider.dart';
+import '../../providers/liked_tracks_provider.dart';
+import '../../providers/track_provider.dart';
 
 class FullPlayer extends ConsumerStatefulWidget {
   const FullPlayer({
     super.key,
-    required this.track,
+    required this.trackNotifier,
     required this.player,
     required this.onPlayPause,
     required this.onSeek,
+    this.onSkipNext,
   });
 
-  final Track track;
+  final ValueNotifier<Track> trackNotifier;
   final AudioPlayer player;
   final VoidCallback onPlayPause;
   final ValueChanged<Duration> onSeek;
+  final VoidCallback? onSkipNext;
 
   @override
   ConsumerState<FullPlayer> createState() => _FullPlayerState();
 }
 
 class _FullPlayerState extends ConsumerState<FullPlayer> {
-  bool isLiked = false;
+  late Track _currentTrack;
 
-  final List<double> waveform = List.generate(
-    70,
-    (index) => 0.2 + ((index % 7) * 0.08),
-  );
+  @override
+  void initState() {
+    super.initState();
+    _currentTrack = widget.trackNotifier.value;
+    widget.trackNotifier.addListener(_onTrackChanged);
+    _seedLikedState(_currentTrack);
+  }
+
+  void _onTrackChanged() {
+    if (!mounted) return;
+
+    setState(() {
+      _currentTrack = widget.trackNotifier.value;
+    });
+
+    _seedLikedState(_currentTrack);
+  }
+
+  void _seedLikedState(Track track) {
+    if (track.isLiked == true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
+        final notifier = ref.read(likedTracksProvider.notifier);
+        final current = ref.read(likedTracksProvider);
+
+        if (!current.contains(track.trackId)) {
+          notifier.setAll({...current, track.trackId});
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.trackNotifier.removeListener(_onTrackChanged);
+    super.dispose();
+  }
 
   String formatTime(int totalSeconds) {
     final minutes = totalSeconds ~/ 60;
@@ -52,11 +92,18 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
     widget.onSeek(Duration(milliseconds: targetMs));
   }
 
+  List<double> get _fallbackWaveform {
+    return List.generate(90, (index) => 0.2 + ((index % 7) * 0.08));
+  }
+
   @override
   Widget build(BuildContext context) {
-    // ── Follow state ─────────────────────────────────────────────────────────
-    final artistUsername = widget.track.artist?.username;
-    final artistUserId = widget.track.artist?.userId;
+    final waveformAsync = ref.watch(
+      trackWaveformProvider(_currentTrack.trackId),
+    );
+
+    final artistUsername = _currentTrack.artist?.username;
+    final artistUserId = _currentTrack.artist?.userId;
 
     final followKey = (artistUsername != null && artistUserId != null)
         ? (userId: artistUserId, username: artistUsername)
@@ -79,7 +126,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
           builder: (context, durationSnapshot) {
             final totalDuration =
                 durationSnapshot.data ??
-                Duration(seconds: widget.track.durationSeconds ?? 0);
+                Duration(seconds: _currentTrack.durationSeconds ?? 0);
 
             return StreamBuilder<Duration>(
               stream: widget.player.positionStream,
@@ -97,31 +144,25 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                 final elapsed = currentPosition.inSeconds;
                 final totalSeconds = totalDuration.inSeconds > 0
                     ? totalDuration.inSeconds
-                    : widget.track.durationSeconds ?? 0;
+                    : _currentTrack.durationSeconds ?? 0;
 
-                final coverUrl = widget.track.coverImageUrl;
+                final coverUrl = _currentTrack.coverImageUrl;
 
                 return Scaffold(
                   backgroundColor: Colors.black,
-                  // Tap anywhere → pause (when playing).
-                  // Buttons/waveform are descendants and win the gesture arena,
-                  // so they are unaffected.
                   body: GestureDetector(
-                    onTap: isPlaying ? widget.onPlayPause : null,
+                    onTap: widget.onPlayPause,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        // ── Background: blurred cover art ─────────────────
                         _buildBackground(coverUrl),
 
-                        // ── Dim overlay when paused ────────────────────────
                         if (!isPlaying)
                           const ColoredBox(
                             color: Color(0x66000000),
                             child: SizedBox.expand(),
                           ),
 
-                        // ── All UI (always visible) ────────────────────────
                         SafeArea(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,12 +173,32 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                                 isFollowLoading: isFollowLoading,
                                 followKey: followKey,
                               ),
-                              const Spacer(),
-                              _buildWaveform(
-                                elapsed: elapsed,
-                                totalSeconds: totalSeconds,
-                                progress: progress,
-                                totalDuration: totalDuration,
+                              Expanded(child: _buildArtworkArea()),
+                              waveformAsync.when(
+                                data: (waveform) {
+                                  return _buildWaveform(
+                                    waveform: waveform,
+                                    elapsed: elapsed,
+                                    totalSeconds: totalSeconds,
+                                    progress: progress,
+                                    totalDuration: totalDuration,
+                                  );
+                                },
+                                loading: () {
+                                  return _buildWaveformLoading(
+                                    elapsed: elapsed,
+                                    totalSeconds: totalSeconds,
+                                  );
+                                },
+                                error: (_, __) {
+                                  return _buildWaveform(
+                                    waveform: _fallbackWaveform,
+                                    elapsed: elapsed,
+                                    totalSeconds: totalSeconds,
+                                    progress: progress,
+                                    totalDuration: totalDuration,
+                                  );
+                                },
                               ),
                               _buildCommentBar(),
                               _buildBottomBar(),
@@ -146,26 +207,51 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                           ),
                         ),
 
-                        // ── Center play button (paused only) ──────────────
-                        if (!isPlaying)
-                          Center(
-                            child: GestureDetector(
-                              onTap: widget.onPlayPause,
-                              child: Container(
-                                width: 64,
-                                height: 64,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.textPrimary,
-                                  shape: BoxShape.circle,
+                        Center(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (!isPlaying) ...[
+                                GestureDetector(
+                                  onTap: widget.onPlayPause,
+                                  child: Container(
+                                    width: 64,
+                                    height: 64,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.textPrimary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.play_arrow_rounded,
+                                      color: AppColors.background,
+                                      size: 36,
+                                    ),
+                                  ),
                                 ),
-                                child: const Icon(
-                                  Icons.play_arrow_rounded,
-                                  color: AppColors.background,
-                                  size: 36,
+                                const SizedBox(width: AppDimensions.spaceLarge),
+                              ],
+                              GestureDetector(
+                                onTap: widget.onSkipNext,
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface.withOpacity(0.85),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: AppColors.textMuted,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.skip_next_rounded,
+                                    color: AppColors.textPrimary,
+                                    size: 24,
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ),
+                        ),
                       ],
                     ),
                   ),
@@ -175,6 +261,61 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildBackground(String? coverUrl) {
+    if (coverUrl == null || coverUrl.isEmpty) {
+      return Container(color: Colors.black);
+    }
+
+    final fixedCoverUrl = coverUrl.startsWith('http')
+        ? coverUrl
+        : 'https://streamline-swp.duckdns.org$coverUrl';
+
+    return Container(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: NetworkImage(fixedCoverUrl),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(color: Colors.black.withOpacity(0.3)),
+      ),
+    );
+  }
+
+  Widget _buildArtworkArea() {
+    final imageUrl = _currentTrack.coverImageUrl;
+
+    return Center(
+      child: Container(
+        width: 260,
+        height: 260,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          shape: BoxShape.circle,
+          image: imageUrl != null && imageUrl.isNotEmpty
+              ? DecorationImage(
+                  image: NetworkImage(
+                    imageUrl.startsWith('http')
+                        ? imageUrl
+                        : 'https://streamline-swp.duckdns.org$imageUrl',
+                  ),
+                  fit: BoxFit.cover,
+                )
+              : null,
+        ),
+        child: imageUrl == null || imageUrl.isEmpty
+            ? Icon(
+                Icons.music_note_rounded,
+                size: 70,
+                color: Colors.white.withOpacity(0.15),
+              )
+            : null,
+      ),
     );
   }
 
@@ -193,10 +334,10 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.track.title, style: AppTextStyles.heading2),
+                Text(_currentTrack.title, style: AppTextStyles.heading2),
                 const SizedBox(height: 4),
                 Text(
-                  widget.track.artist?.displayName ?? 'Unknown Artist',
+                  _currentTrack.artist?.displayName ?? 'Unknown Artist',
                   style: AppTextStyles.artistName,
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
@@ -221,8 +362,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                 color: AppColors.textSecondary,
                 onPressed: () => Navigator.pop(context),
               ),
-
-              // ── Follow / Unfollow button ──────────────────────────────────
               IconButton(
                 icon: isFollowLoading
                     ? const SizedBox(
@@ -244,10 +383,10 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                 tooltip: isFollowing ? 'Unfollow' : 'Follow',
                 onPressed: (isFollowLoading || followKey == null)
                     ? null
-                    : () =>
-                          ref.read(followProvider(followKey).notifier).toggle(),
+                    : () {
+                        ref.read(followProvider(followKey).notifier).toggle();
+                      },
               ),
-
               IconButton(
                 icon: const Icon(Icons.grid_view_rounded),
                 color: AppColors.textSecondary,
@@ -260,12 +399,42 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
     );
   }
 
+  Widget _buildWaveformLoading({
+    required int elapsed,
+    required int totalSeconds,
+  }) {
+    return Column(
+      children: [
+        const SizedBox(
+          height: 130,
+          width: double.infinity,
+          child: Center(
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+        _buildTimeRow(
+          elapsed: elapsed,
+          totalSeconds: totalSeconds,
+          progress: 0,
+          totalDuration: Duration(seconds: totalSeconds),
+        ),
+      ],
+    );
+  }
+
   Widget _buildWaveform({
+    required List<double> waveform,
     required int elapsed,
     required int totalSeconds,
     required double progress,
     required Duration totalDuration,
   }) {
+    final displayWaveform = waveform.isEmpty ? _fallbackWaveform : waveform;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -287,11 +456,11 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                 );
               },
               child: SizedBox(
-                height: 80,
+                height: 130,
                 width: double.infinity,
                 child: CustomPaint(
                   painter: WaveformPainter(
-                    waveform: waveform,
+                    waveform: displayWaveform,
                     progress: progress,
                   ),
                 ),
@@ -299,88 +468,104 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
             );
           },
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.spaceMedium,
-            vertical: AppDimensions.spaceExtraSmall,
-          ),
-          child: Row(
-            children: [
-              Text(
-                formatTime(elapsed),
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceSmall),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final knobLeft = (progress * (constraints.maxWidth - 12))
-                        .clamp(0.0, constraints.maxWidth - 12);
-
-                    return GestureDetector(
-                      onTapDown: (details) {
-                        _seekFromDx(
-                          details.localPosition.dx,
-                          constraints.maxWidth,
-                          totalDuration,
-                        );
-                      },
-                      onHorizontalDragUpdate: (details) {
-                        _seekFromDx(
-                          details.localPosition.dx,
-                          constraints.maxWidth,
-                          totalDuration,
-                        );
-                      },
-                      child: SizedBox(
-                        height: 20,
-                        child: Stack(
-                          alignment: Alignment.centerLeft,
-                          children: [
-                            Container(
-                              height: 3,
-                              decoration: BoxDecoration(
-                                color: AppColors.waveformInactive,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            FractionallySizedBox(
-                              widthFactor: progress,
-                              child: Container(
-                                height: 3,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              left: knobLeft,
-                              child: Container(
-                                width: 12,
-                                height: 12,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceSmall),
-              Text(formatTime(totalSeconds), style: AppTextStyles.caption),
-            ],
-          ),
+        _buildTimeRow(
+          elapsed: elapsed,
+          totalSeconds: totalSeconds,
+          progress: progress,
+          totalDuration: totalDuration,
         ),
       ],
+    );
+  }
+
+  Widget _buildTimeRow({
+    required int elapsed,
+    required int totalSeconds,
+    required double progress,
+    required Duration totalDuration,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.spaceMedium,
+        vertical: AppDimensions.spaceExtraSmall,
+      ),
+      child: Row(
+        children: [
+          Text(
+            formatTime(elapsed),
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: AppDimensions.spaceSmall),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final knobLeft = (progress * (constraints.maxWidth - 12)).clamp(
+                  0.0,
+                  constraints.maxWidth - 12,
+                );
+
+                return GestureDetector(
+                  onTapDown: (details) {
+                    _seekFromDx(
+                      details.localPosition.dx,
+                      constraints.maxWidth,
+                      totalDuration,
+                    );
+                  },
+                  onHorizontalDragUpdate: (details) {
+                    _seekFromDx(
+                      details.localPosition.dx,
+                      constraints.maxWidth,
+                      totalDuration,
+                    );
+                  },
+                  child: SizedBox(
+                    height: 20,
+                    child: Stack(
+                      alignment: Alignment.centerLeft,
+                      children: [
+                        Container(
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: AppColors.waveformInactive,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        FractionallySizedBox(
+                          widthFactor: progress,
+                          child: Container(
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: knobLeft,
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: AppDimensions.spaceSmall),
+          Text(formatTime(totalSeconds), style: AppTextStyles.caption),
+        ],
+      ),
     );
   }
 
@@ -421,12 +606,32 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
   }
 
   Widget _buildBottomBar() {
+    final username = ref.watch(authProvider).user?.userName ?? '';
+    final likedIds = ref.watch(likedTracksProvider);
+    final isLiked = likedIds.contains(_currentTrack.trackId);
+
+    final serverCount = _currentTrack.likeCount ?? 0;
+    final displayCount = isLiked
+        ? (_currentTrack.isLiked == true ? serverCount : serverCount + 1)
+        : (_currentTrack.isLiked == true ? serverCount - 1 : serverCount);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         GestureDetector(
-          onTap: () {
-            setState(() => isLiked = !isLiked);
+          onTap: () async {
+            final notifier = ref.read(likedTracksProvider.notifier);
+            final wasLiked = isLiked;
+
+            notifier.toggleLocal(_currentTrack.trackId);
+
+            try {
+              await ref
+                  .read(toggleTrackLikeProvider(_currentTrack.trackId).notifier)
+                  .toggle(currentlyLiked: wasLiked, username: username);
+            } catch (_) {
+              notifier.toggleLocal(_currentTrack.trackId);
+            }
           },
           child: Row(
             children: [
@@ -437,7 +642,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
               ),
               const SizedBox(width: 4),
               Text(
-                '${widget.track.likeCount}',
+                '$displayCount',
                 style: AppTextStyles.caption.copyWith(color: AppColors.primary),
               ),
             ],
@@ -454,31 +659,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
       ],
     );
   }
-
-  Widget _buildBackground(String? coverUrl) {
-    if (coverUrl == null || coverUrl.isEmpty) {
-      return Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(-0.3, -0.3),
-            radius: 1.3,
-            colors: [Color(0xFF8B1A1A), Color(0xFF3A0808), Color(0xFF0D0303)],
-          ),
-        ),
-      );
-    }
-    return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-      child: Image.network(
-        coverUrl,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (context, error, stackTrace) =>
-            Container(color: Colors.black),
-      ),
-    );
-  }
 }
 
 class WaveformPainter extends CustomPainter {
@@ -493,14 +673,14 @@ class WaveformPainter extends CustomPainter {
 
     final count = waveform.length;
     final barWidth = size.width / count;
-    final gap = barWidth * 0.3;
-    final midY = size.height * 0.6;
+    final gap = barWidth * 0.35;
+    final midY = size.height * 0.55;
     final progressX = size.width * progress;
 
     for (int i = 0; i < count; i++) {
       final x = i * barWidth + gap / 2;
       final w = barWidth - gap;
-      final h = waveform[i] * midY;
+      final h = waveform[i].clamp(0.08, 1.0) * midY;
       final played = x < progressX;
 
       canvas.drawRRect(
@@ -509,7 +689,20 @@ class WaveformPainter extends CustomPainter {
           const Radius.circular(2),
         ),
         Paint()
-          ..color = played ? AppColors.textPrimary : AppColors.waveformInactive,
+          ..color = played
+              ? AppColors.waveformActive
+              : AppColors.waveformInactive,
+      );
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, midY + 2, w, h * 0.55),
+          const Radius.circular(2),
+        ),
+        Paint()
+          ..color = played
+              ? AppColors.waveformActive.withOpacity(0.75)
+              : AppColors.waveformInactive.withOpacity(0.75),
       );
     }
 
