@@ -1,5 +1,7 @@
 // widgets/full_player.dart
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
@@ -91,11 +93,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
       builder: (context, playerStateSnapshot) {
         final isPlaying = playerStateSnapshot.data?.playing ?? false;
 
-        if (!_initializedControls) {
-          showControls = !isPlaying;
-          _initializedControls = true;
-        }
-
         return StreamBuilder<Duration?>(
           stream: widget.player.durationStream,
           builder: (context, durationSnapshot) {
@@ -119,8 +116,13 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                     ? totalDuration.inSeconds
                     : widget.track.durationSeconds ?? 0;
 
+                final coverUrl = widget.track.coverImageUrl;
+
                 return Scaffold(
                   backgroundColor: Colors.black,
+                  // Tap anywhere → pause (when playing).
+                  // Buttons/waveform are descendants and win the gesture arena,
+                  // so they are unaffected.
                   body: GestureDetector(
                     onTap: showControls
                         ? null
@@ -128,19 +130,17 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Container(
-                          decoration: const BoxDecoration(
-                            gradient: RadialGradient(
-                              center: Alignment(-0.3, -0.3),
-                              radius: 1.3,
-                              colors: [
-                                Color(0xFF8B1A1A),
-                                Color(0xFF3A0808),
-                                Color(0xFF0D0303),
-                              ],
-                            ),
+                        // ── Background: blurred cover art ─────────────────
+                        _buildBackground(coverUrl),
+
+                        // ── Dim overlay when paused ────────────────────────
+                        if (!isPlaying)
+                          const ColoredBox(
+                            color: Color(0x66000000),
+                            child: SizedBox.expand(),
                           ),
-                        ),
+
+                        // ── All UI (always visible) ────────────────────────
                         SafeArea(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,7 +164,27 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                             ],
                           ),
                         ),
-                        if (showControls) _buildPlayOverlay(isPlaying),
+
+                        // ── Center play button (paused only) ──────────────
+                        if (!isPlaying)
+                          Center(
+                            child: GestureDetector(
+                              onTap: widget.onPlayPause,
+                              child: Container(
+                                width: 64,
+                                height: 64,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.textPrimary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.play_arrow_rounded,
+                                  color: AppColors.background,
+                                  size: 36,
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
