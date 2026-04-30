@@ -29,18 +29,18 @@ class SettingsScreen extends StatelessWidget {
           _SettingsTile(
             icon: Icons.person_outline,
             title: 'Account',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AccountScreen()),
-            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const AccountScreen())),
           ),
           const _Divider(),
           const _SectionLabel('Preferences'),
           _SettingsTile(
             icon: Icons.language,
             title: 'Language',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const LanguageScreen()),
-            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const LanguageScreen())),
           ),
           const _Divider(),
           const _SectionLabel('Share & Support'),
@@ -64,9 +64,9 @@ class SettingsScreen extends StatelessWidget {
           _SettingsTile(
             icon: Icons.description_outlined,
             title: 'Legal',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const LegalScreen()),
-            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const LegalScreen())),
           ),
           const SizedBox(height: 40),
         ],

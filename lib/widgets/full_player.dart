@@ -553,7 +553,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
       ],
     );
   }
-
 }
 
 class WaveformPainter extends CustomPainter {

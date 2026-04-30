@@ -53,8 +53,9 @@ class LanguageScreen extends StatelessWidget {
                     style: TextStyle(
                       color: isActive ? Colors.white : AppColors.textSecondary,
                       fontSize: 15,
-                      fontWeight:
-                          isActive ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: isActive
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                   ),
                   trailing: isActive
@@ -73,7 +74,9 @@ class LanguageScreen extends StatelessWidget {
                       : () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Only English is available for now.'),
+                              content: Text(
+                                'Only English is available for now.',
+                              ),
                               duration: Duration(seconds: 2),
                             ),
                           );

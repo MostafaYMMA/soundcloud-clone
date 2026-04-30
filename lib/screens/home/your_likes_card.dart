@@ -125,11 +125,7 @@ class _TrackGridTile extends StatelessWidget {
   final String artist;
   final VoidCallback? onTap;
 
-  const _TrackGridTile({
-    required this.title,
-    required this.artist,
-    this.onTap,
-  });
+  const _TrackGridTile({required this.title, required this.artist, this.onTap});
 
   @override
   Widget build(BuildContext context) {

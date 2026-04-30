@@ -36,8 +36,8 @@ class AccountScreen extends ConsumerWidget {
                   child: CircleAvatar(
                     radius: 48,
                     backgroundColor: AppColors.surfaceLight,
-                    backgroundImage: (user.avatarUrl != null &&
-                            user.avatarUrl!.isNotEmpty)
+                    backgroundImage:
+                        (user.avatarUrl != null && user.avatarUrl!.isNotEmpty)
                         ? NetworkImage(user.avatarUrl!)
                         : null,
                     child: (user.avatarUrl == null || user.avatarUrl!.isEmpty)
@@ -50,14 +50,8 @@ class AccountScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 28),
-                _InfoRow(
-                  label: 'Username',
-                  value: user.userName ?? '—',
-                ),
-                _InfoRow(
-                  label: 'Email',
-                  value: user.email,
-                ),
+                _InfoRow(label: 'Username', value: user.userName ?? '—'),
+                _InfoRow(label: 'Email', value: user.email),
                 if (user.bio != null && user.bio!.isNotEmpty)
                   _InfoRow(label: 'Bio', value: user.bio!),
                 if (user.location != null && user.location!.isNotEmpty)

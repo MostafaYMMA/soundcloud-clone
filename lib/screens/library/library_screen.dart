@@ -50,9 +50,7 @@ class LibraryScreen extends ConsumerWidget {
                 IconButton(
                   icon: const Icon(Icons.settings_outlined),
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const SettingsScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
                   ),
                 ),
                 const SizedBox(width: AppDimensions.spaceSmall),
