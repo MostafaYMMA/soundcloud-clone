@@ -681,12 +681,21 @@ void main() {
           .toList();
 
       if (valid.length >= 2) {
-        final f1 = find.text(valid[0].artist!.displayName);
-        final f2 = find.text(valid[1].artist!.displayName);
-        if (f1.evaluate().isNotEmpty && f2.evaluate().isNotEmpty) {
+        final firstArtist = valid.first.artist!.displayName;
+        final nextDifferentArtist = valid.firstWhere(
+          (track) => track.artist!.displayName != firstArtist,
+          orElse: () => valid.first,
+        );
+
+        if (nextDifferentArtist.artist!.displayName != firstArtist) {
+          final firstFinder = find.text(firstArtist).first;
+          final secondFinder = find.text(nextDifferentArtist.artist!.displayName);
+
+          expect(firstFinder, findsOneWidget);
+          expect(secondFinder, findsOneWidget);
           expect(
-            tester.getTopLeft(f1).dy,
-            lessThanOrEqualTo(tester.getTopLeft(f2).dy),
+            tester.getTopLeft(firstFinder).dy,
+            lessThan(tester.getTopLeft(secondFinder).dy),
           );
         }
       }
