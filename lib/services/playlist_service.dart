@@ -41,31 +41,50 @@ class PlaylistService {
     }
   }
 
+  // GET /playlists/liked
   Future<List<Playlist>> getLikedPlaylists(String accessToken) async {
     try {
       final res = await _dio.get(
         '$baseUrl/playlists/liked',
         options: _authOptions(accessToken),
       );
-
-      print('GET LIKED PLAYLISTS STATUS: ${res.statusCode}');
-      print('GET LIKED PLAYLISTS DATA: ${res.data}');
-
       final data = res.data['data'];
-
       if (data is List) {
         return data
             .whereType<Map<String, dynamic>>()
             .map(Playlist.fromJson)
             .toList();
       }
-
       return [];
     } on DioException catch (e) {
       throw Exception(_readableError(e));
     }
   }
 
+  // GET /users/{username}/playlists
+  Future<List<Playlist>> getUserPlaylists({
+    required String username,
+    required String accessToken,
+  }) async {
+    try {
+      final res = await _dio.get(
+        '$baseUrl/users/$username/playlists',
+        options: _authOptions(accessToken),
+      );
+      final data = res.data['data'];
+      if (data is List) {
+        return data
+            .whereType<Map<String, dynamic>>()
+            .map(Playlist.fromJson)
+            .toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw Exception(_readableError(e));
+    }
+  }
+
+  // GET /playlists/{playlist_id}
   Future<Playlist> getPlaylistById({
     required String playlistId,
     required String accessToken,
@@ -75,16 +94,13 @@ class PlaylistService {
         '$baseUrl/playlists/$playlistId',
         options: _authOptions(accessToken),
       );
-
-      print('GET PLAYLIST STATUS: ${res.statusCode}');
-      print('GET PLAYLIST DATA: ${res.data}');
-
       return Playlist.fromJson(res.data['data']);
     } on DioException catch (e) {
       throw Exception(_readableError(e));
     }
   }
 
+  // GET /search/playlists?keyword=
   Future<List<Playlist>> searchPlaylists({
     required String keyword,
     required String accessToken,
@@ -95,101 +111,83 @@ class PlaylistService {
         queryParameters: {'keyword': keyword},
         options: _authOptions(accessToken),
       );
-
-      print('SEARCH PLAYLISTS STATUS: ${res.statusCode}');
-      print('SEARCH PLAYLISTS DATA: ${res.data}');
-
       final playlists = res.data['data']?['playlists'];
-
       if (playlists is List) {
         return playlists
             .whereType<Map<String, dynamic>>()
             .map(Playlist.fromJson)
             .toList();
       }
-
       return [];
     } on DioException catch (e) {
       throw Exception(_readableError(e));
     }
   }
 
+  // POST /playlists/{playlist_id}/like
   Future<void> likePlaylist({
     required String playlistId,
     required String accessToken,
   }) async {
     try {
-      final res = await _dio.post(
+      await _dio.post(
         '$baseUrl/playlists/$playlistId/like',
         options: _authOptions(accessToken),
       );
-
-      print('LIKE PLAYLIST STATUS: ${res.statusCode}');
-      print('LIKE PLAYLIST DATA: ${res.data}');
     } on DioException catch (e) {
       throw Exception(_readableError(e));
     }
   }
 
+  // DELETE /playlists/{playlist_id}/like
   Future<void> unlikePlaylist({
     required String playlistId,
     required String accessToken,
   }) async {
     try {
-      final res = await _dio.delete(
+      await _dio.delete(
         '$baseUrl/playlists/$playlistId/like',
         options: _authOptions(accessToken),
       );
-
-      print('UNLIKE PLAYLIST STATUS: ${res.statusCode}');
-      print('UNLIKE PLAYLIST DATA: ${res.data}');
     } on DioException catch (e) {
       throw Exception(_readableError(e));
     }
   }
 
+  // POST /playlists/{playlist_id}/tracks
   Future<void> addTrackToPlaylist({
     required String playlistId,
     required String trackId,
     required String accessToken,
   }) async {
     try {
-      final res = await _dio.post(
+      await _dio.post(
         '$baseUrl/playlists/$playlistId/tracks',
         data: {'track_id': trackId},
         options: _authOptions(accessToken),
       );
-
-      print('ADD TRACK STATUS: ${res.statusCode}');
-      print('ADD TRACK DATA: ${res.data}');
     } on DioException catch (e) {
       throw Exception(_readableError(e));
     }
   }
 
+  // DELETE /playlists/{playlist_id}/tracks/{track_id}
   Future<void> removeTrackFromPlaylist({
     required String playlistId,
     required String trackId,
     required String accessToken,
   }) async {
     try {
-      print('CALLING REMOVE TRACK ENDPOINT');
-      print('$baseUrl/playlists/$playlistId/tracks/$trackId');
-
-      final res = await _dio.delete(
+      await _dio.delete(
         '$baseUrl/playlists/$playlistId/tracks/$trackId',
         options: _authOptions(accessToken),
       );
-
-      print('REMOVE TRACK STATUS: ${res.statusCode}');
-      print('REMOVE TRACK DATA: ${res.data}');
     } on DioException catch (e) {
-      print('REMOVE TRACK ERROR STATUS: ${e.response?.statusCode}');
-      print('REMOVE TRACK ERROR DATA: ${e.response?.data}');
       throw Exception(_readableError(e));
     }
   }
 
+  // POST /playlists/{playlist_id}/cover (multipart)
   Future<String?> uploadPlaylistCover({
     required String playlistId,
     required String filePath,
@@ -199,22 +197,18 @@ class PlaylistService {
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(filePath),
       });
-
       final res = await _dio.post(
         '$baseUrl/playlists/$playlistId/cover',
         data: formData,
         options: _authOptions(accessToken),
       );
-
-      print('UPLOAD COVER STATUS: ${res.statusCode}');
-      print('UPLOAD COVER DATA: ${res.data}');
-
       return res.data['data']?['cover_photo_url'];
     } on DioException catch (e) {
       throw Exception(_readableError(e));
     }
   }
 
+  // POST /playlists/
   Future<Playlist> createPlaylist({
     required String accessToken,
     required String name,
@@ -226,11 +220,46 @@ class PlaylistService {
         data: {'name': name, 'description': description ?? ''},
         options: _authOptions(accessToken),
       );
-
-      print('CREATE PLAYLIST STATUS: ${res.statusCode}');
-      print('CREATE PLAYLIST DATA: ${res.data}');
-
       return Playlist.fromJson(res.data['data']);
+    } on DioException catch (e) {
+      throw Exception(_readableError(e));
+    }
+  }
+
+  // PATCH /playlists/{playlist_id}
+  Future<Playlist> updatePlaylist({
+    required String playlistId,
+    required String accessToken,
+    String? name,
+    String? description,
+    bool? isPublic,
+  }) async {
+    try {
+      final res = await _dio.patch(
+        '$baseUrl/playlists/$playlistId',
+        data: {
+          if (name != null) 'name': name,
+          if (description != null) 'description': description,
+          if (isPublic != null) 'is_public': isPublic,
+        },
+        options: _authOptions(accessToken),
+      );
+      return Playlist.fromJson(res.data['data']);
+    } on DioException catch (e) {
+      throw Exception(_readableError(e));
+    }
+  }
+
+  // DELETE /playlists/{playlist_id}
+  Future<void> deletePlaylist({
+    required String playlistId,
+    required String accessToken,
+  }) async {
+    try {
+      await _dio.delete(
+        '$baseUrl/playlists/$playlistId',
+        options: _authOptions(accessToken),
+      );
     } on DioException catch (e) {
       throw Exception(_readableError(e));
     }
