@@ -148,8 +148,7 @@ class _ContextMenuSheetState extends ConsumerState<_ContextMenuSheet> {
                       _MenuItem(
                         icon: Icons.playlist_add,
                         label: 'Add to playlist',
-                        onTap: () {
-                        },
+                        onTap: () {},
                       ),
                     ],
 
@@ -464,9 +463,7 @@ void _showPlaylistPicker(BuildContext context, Track track) {
               return Container(
                 decoration: const BoxDecoration(
                   color: AppColors.background,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(24),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: Column(
                   children: [
@@ -531,8 +528,9 @@ void _showPlaylistPicker(BuildContext context, Track track) {
                                     ),
                                   ),
                                   onTap: () async {
-                                    final messenger =
-                                        ScaffoldMessenger.of(context);
+                                    final messenger = ScaffoldMessenger.of(
+                                      context,
+                                    );
 
                                     Navigator.pop(context); // close sheet FIRST
 
