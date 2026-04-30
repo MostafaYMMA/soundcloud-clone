@@ -191,9 +191,7 @@ class _RootScreenState extends ConsumerState<RootScreen> {
         if (mounted) setState(() => _bootstrapped = true);
       });
 
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (!authState.isLoggedIn) {
