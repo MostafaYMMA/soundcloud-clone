@@ -184,12 +184,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     final Uint8List compressedBytes =
         await FlutterImageCompress.compressWithList(
-      bytes,
-      minWidth: 1080,
-      minHeight: 1080,
-      quality: 70,
-      format: CompressFormat.jpeg,
-    );
+          bytes,
+          minWidth: 1080,
+          minHeight: 1080,
+          quality: 70,
+          format: CompressFormat.jpeg,
+        );
 
     final tempPath = '${file.path}_compressed.jpg';
     final compressedFile = File(tempPath);
@@ -375,9 +375,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               backgroundImage: _selectedAvatarFile != null
                                   ? FileImage(_selectedAvatarFile!)
                                   : (avatarUrl != null && avatarUrl.isNotEmpty)
-                                      ? NetworkImage(avatarUrl)
-                                      : null,
-                              child: (_selectedAvatarFile == null &&
+                                  ? NetworkImage(avatarUrl)
+                                  : null,
+                              child:
+                                  (_selectedAvatarFile == null &&
                                       (avatarUrl == null || avatarUrl.isEmpty))
                                   ? const Icon(
                                       Icons.person,

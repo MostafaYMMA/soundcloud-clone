@@ -58,8 +58,9 @@ class PlaylistState {
       isLiking: isLiking ?? this.isLiking,
       isUpdating: isUpdating ?? this.isUpdating,
       error: clearError ? null : error ?? this.error,
-      successMessage:
-          clearSuccess ? null : successMessage ?? this.successMessage,
+      successMessage: clearSuccess
+          ? null
+          : successMessage ?? this.successMessage,
     );
   }
 }
@@ -116,10 +117,7 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
       return;
     }
 
-    state = state.copyWith(
-      isLoadingUserPlaylists: true,
-      clearError: true,
-    );
+    state = state.copyWith(isLoadingUserPlaylists: true, clearError: true);
 
     try {
       final playlists = await _service.getUserPlaylists(
@@ -144,7 +142,9 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
   Future<Playlist?> getPlaylistDetails(String playlistId) async {
     final token = _token;
     if (token == null || token.isEmpty) {
-      state = state.copyWith(error: 'No access token found. Please log in again.');
+      state = state.copyWith(
+        error: 'No access token found. Please log in again.',
+      );
       return null;
     }
 
@@ -170,11 +170,17 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
       return;
     }
     if (token == null || token.isEmpty) {
-      state = state.copyWith(error: 'No access token found. Please log in again.');
+      state = state.copyWith(
+        error: 'No access token found. Please log in again.',
+      );
       return;
     }
 
-    state = state.copyWith(isSearching: true, clearError: true, clearSuccess: true);
+    state = state.copyWith(
+      isSearching: true,
+      clearError: true,
+      clearSuccess: true,
+    );
 
     try {
       final results = await _service.searchPlaylists(
@@ -199,11 +205,17 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
   Future<void> likePlaylist(String playlistId) async {
     final token = _token;
     if (token == null || token.isEmpty) {
-      state = state.copyWith(error: 'No access token found. Please log in again.');
+      state = state.copyWith(
+        error: 'No access token found. Please log in again.',
+      );
       return;
     }
 
-    state = state.copyWith(isLiking: true, clearError: true, clearSuccess: true);
+    state = state.copyWith(
+      isLiking: true,
+      clearError: true,
+      clearSuccess: true,
+    );
 
     try {
       await _service.likePlaylist(playlistId: playlistId, accessToken: token);
@@ -289,7 +301,10 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
         trackId: trackId,
         accessToken: token,
       );
-      state = state.copyWith(isUpdating: false, successMessage: 'Track removed.');
+      state = state.copyWith(
+        isUpdating: false,
+        successMessage: 'Track removed.',
+      );
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -318,7 +333,10 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
         accessToken: token,
       );
       await fetchLikedPlaylists();
-      state = state.copyWith(isUpdating: false, successMessage: 'Cover updated.');
+      state = state.copyWith(
+        isUpdating: false,
+        successMessage: 'Cover updated.',
+      );
     } catch (e) {
       state = state.copyWith(isUpdating: false, error: e.toString());
     }
@@ -332,11 +350,17 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
   }) async {
     final token = _token;
     if (token == null || token.isEmpty) {
-      state = state.copyWith(error: 'No access token found. Please log in again.');
+      state = state.copyWith(
+        error: 'No access token found. Please log in again.',
+      );
       return null;
     }
 
-    state = state.copyWith(isCreating: true, clearError: true, clearSuccess: true);
+    state = state.copyWith(
+      isCreating: true,
+      clearError: true,
+      clearSuccess: true,
+    );
 
     try {
       final playlist = await _service.createPlaylist(
@@ -369,7 +393,9 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
   }) async {
     final token = _token;
     if (token == null || token.isEmpty) {
-      state = state.copyWith(error: 'No access token found. Please log in again.');
+      state = state.copyWith(
+        error: 'No access token found. Please log in again.',
+      );
       return null;
     }
 
@@ -406,17 +432,16 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
   Future<bool> deletePlaylist(String playlistId) async {
     final token = _token;
     if (token == null || token.isEmpty) {
-      state = state.copyWith(error: 'No access token found. Please log in again.');
+      state = state.copyWith(
+        error: 'No access token found. Please log in again.',
+      );
       return false;
     }
 
     state = state.copyWith(isUpdating: true, clearError: true);
 
     try {
-      await _service.deletePlaylist(
-        playlistId: playlistId,
-        accessToken: token,
-      );
+      await _service.deletePlaylist(playlistId: playlistId, accessToken: token);
 
       // Remove from local state immediately for instant UI feedback
       state = state.copyWith(
@@ -444,8 +469,9 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
   }
 }
 
-final playlistProvider =
-    StateNotifierProvider<PlaylistNotifier, PlaylistState>((ref) {
-  final service = PlaylistService(dio: Dio());
-  return PlaylistNotifier(service, ref);
-});
+final playlistProvider = StateNotifierProvider<PlaylistNotifier, PlaylistState>(
+  (ref) {
+    final service = PlaylistService(dio: Dio());
+    return PlaylistNotifier(service, ref);
+  },
+);

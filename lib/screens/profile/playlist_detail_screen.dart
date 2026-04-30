@@ -49,7 +49,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     final h = total ~/ 3600;
     final m = (total % 3600) ~/ 60;
     final s = total % 60;
-    if (h > 0) return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    if (h > 0)
+      return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
     return '$m:${s.toString().padLeft(2, '0')}';
   }
 
@@ -70,10 +71,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           children: [
             // ── Back button ───────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: GestureDetector(
@@ -123,7 +121,9 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                           height: 110,
                                           fit: BoxFit.cover,
                                           errorBuilder: (_, __, ___) =>
-                                              const _CoverPlaceholder(size: 110),
+                                              const _CoverPlaceholder(
+                                                size: 110,
+                                              ),
                                         )
                                       : const _CoverPlaceholder(size: 110),
                                 ),
@@ -277,24 +277,21 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                           )
                         else
                           SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final t = playlist.tracks[index];
-                                return _TrackRow(
-                                  track: t,
-                                  formatDuration: _formatTrackDuration,
-                                  onTap: () => widget.onTrackTap(
-                                    _playlistTrackToTrack(t),
-                                  ),
-                                );
-                              },
-                              childCount: playlist.tracks.length,
-                            ),
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final t = playlist.tracks[index];
+                              return _TrackRow(
+                                track: t,
+                                formatDuration: _formatTrackDuration,
+                                onTap: () =>
+                                    widget.onTrackTap(_playlistTrackToTrack(t)),
+                              );
+                            }, childCount: playlist.tracks.length),
                           ),
 
-                        const SliverToBoxAdapter(
-                          child: SizedBox(height: 100),
-                        ),
+                        const SliverToBoxAdapter(child: SizedBox(height: 100)),
                       ],
                     ),
             ),
@@ -383,18 +380,12 @@ class _TrackRow extends StatelessWidget {
                     track.artist,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.grey[400], fontSize: 13),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     formatDuration(track.durationSeconds),
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                 ],
               ),
@@ -405,11 +396,7 @@ class _TrackRow extends StatelessWidget {
               onTap: () {},
               child: const Padding(
                 padding: EdgeInsets.only(left: 8),
-                child: Icon(
-                  Icons.more_horiz,
-                  color: Colors.white54,
-                  size: 22,
-                ),
+                child: Icon(Icons.more_horiz, color: Colors.white54, size: 22),
               ),
             ),
           ],

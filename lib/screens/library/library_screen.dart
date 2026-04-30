@@ -130,8 +130,7 @@ class LibraryScreen extends ConsumerWidget {
           SliverToBoxAdapter(
             child: _SectionHeader(
               title: 'Recently Played',
-              onSeeAll: () =>
-                  onNavigate(RecentlyPlayedScreen(onBack: onBack)),
+              onSeeAll: () => onNavigate(RecentlyPlayedScreen(onBack: onBack)),
             ),
           ),
           SliverToBoxAdapter(

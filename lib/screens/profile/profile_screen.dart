@@ -16,7 +16,6 @@ import 'playlist_detail_screen.dart';
 import '../../providers/music_providers.dart';
 import '../../providers/track_provider.dart';
 
-
 const Color kBackgroundColor = Color(0xFF0F0F0F);
 
 List<ProfileCompletionCardData> buildCompletionCards(User user) {
@@ -71,11 +70,7 @@ List<ProfileCompletionCardData> buildCompletionCards(User user) {
 }
 
 class ProfileScreen extends ConsumerStatefulWidget {
-  const ProfileScreen({
-    super.key,
-    this.onTrackTap,
-    this.onNavigate,
-  });
+  const ProfileScreen({super.key, this.onTrackTap, this.onNavigate});
 
   /// Passed down from RootScreen via LibraryScreen — plays a track
   final Future<void> Function(Track)? onTrackTap;
@@ -106,9 +101,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _openEditProfile() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const EditProfileScreen()));
     if (mounted) {
       final username = ref.read(authProvider).user?.userName;
       if (username != null && username.isNotEmpty) {
@@ -341,10 +336,7 @@ class _SectionLoadingPlaceholder extends StatelessWidget {
 }
 
 class _SectionEmptyPlaceholder extends StatelessWidget {
-  const _SectionEmptyPlaceholder({
-    required this.title,
-    required this.message,
-  });
+  const _SectionEmptyPlaceholder({required this.title, required this.message});
   final String title;
   final String message;
 

@@ -36,7 +36,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final FlutterSecureStorage _storage;
 
   AuthNotifier(this._authService, this._userService, this._storage)
-      : super(const AuthState()) {
+    : super(const AuthState()) {
     _bootstrap();
   }
 
