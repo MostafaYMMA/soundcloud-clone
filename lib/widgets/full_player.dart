@@ -197,6 +197,25 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
     );
   }
 
+  Widget _buildBackground(String? coverUrl) {
+    if (coverUrl == null || coverUrl.isEmpty) {
+      return Container(color: Colors.black);
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: NetworkImage(coverUrl),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(color: Colors.black.withOpacity(0.3)),
+      ),
+    );
+  }
+
   Widget _buildTopSection(
     BuildContext context, {
     required bool isFollowing,
