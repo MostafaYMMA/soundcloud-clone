@@ -1,29 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
 import '../../models/track.dart';
-import '../../mock_data/mock_tracks.dart';
+import '../../providers/library_providers.dart';
 import '../library/widgets/track_tile.dart';
 import 'context_menu_sheet.dart';
 
-class HistoryScreen extends StatefulWidget {
+class HistoryScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
 
   const HistoryScreen({super.key, this.onBack});
 
   @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
+  ConsumerState<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
-  late List<Track> tracks;
-
-  @override
-  void initState() {
-    super.initState();
-    tracks = List.from(MockTracks.historyTracks);
-  }
+class _HistoryScreenState extends ConsumerState<HistoryScreen> {
+  List<Track>? _tracks;
 
   Future<void> _confirmClear() async {
     final confirmed = await showDialog<bool>(
@@ -31,12 +26,55 @@ class _HistoryScreenState extends State<HistoryScreen> {
       builder: (ctx) => const _ClearHistoryDialog(),
     );
     if (confirmed == true) {
-      setState(() => tracks.clear());
+      setState(() => _tracks = []);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final historyAsync = ref.watch(listeningHistoryProvider);
+
+    return historyAsync.when(
+      loading: () => _scaffold(
+        tracks: null,
+        body: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, _) => _scaffold(
+        tracks: const [],
+        body: const Center(
+          child: Text(
+            'Failed to load listening history.',
+            style: AppTextStyles.artistName,
+          ),
+        ),
+      ),
+      data: (fetched) {
+        final tracks = _tracks ?? fetched;
+        return _scaffold(
+          tracks: tracks,
+          body: tracks.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No listening history yet.',
+                    style: AppTextStyles.artistName,
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 100),
+                  itemCount: tracks.length,
+                  itemBuilder: (context, index) => TrackTile(
+                    track: tracks[index],
+                    onTap: () {},
+                    onMoreTap: () =>
+                        showTrackContextMenu(context, tracks[index]),
+                  ),
+                ),
+        );
+      },
+    );
+  }
+
+  Widget _scaffold({required List<Track>? tracks, required Widget body}) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -52,27 +90,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
             padding: const EdgeInsets.only(right: AppDimensions.spaceMedium),
             child: IconButton(
               icon: const Icon(Icons.delete_outline),
-              onPressed: tracks.isEmpty ? null : _confirmClear,
+              onPressed: (tracks == null || tracks.isEmpty) ? null : _confirmClear,
             ),
           ),
         ],
       ),
-      body: tracks.isEmpty
-          ? const Center(
-              child: Text(
-                'No listening history yet.',
-                style: AppTextStyles.artistName,
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.only(bottom: 100),
-              itemCount: tracks.length,
-              itemBuilder: (context, index) => TrackTile(
-                track: tracks[index],
-                onTap: () {},
-                onMoreTap: () => showTrackContextMenu(context, tracks[index]),
-              ),
-            ),
+      body: body,
     );
   }
 }
@@ -99,13 +122,13 @@ class _ClearHistoryDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
+            const Text(
               'Clear listening history?',
               style: AppTextStyles.heading2,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppDimensions.spaceSmall),
-            Text(
+            const Text(
               'This will permanently clear your listening history.',
               style: AppTextStyles.artistName,
               textAlign: TextAlign.center,

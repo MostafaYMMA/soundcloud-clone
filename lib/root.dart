@@ -16,6 +16,7 @@ import 'package:my_project/widgets/mini_player.dart';
 import 'package:my_project/screens/auth/welcome_screen.dart';
 import 'package:my_project/providers/auth_providers.dart';
 import './providers/track_provider.dart';
+import './providers/library_providers.dart';
 
 class RootScreen extends ConsumerStatefulWidget {
   const RootScreen({super.key});
@@ -125,6 +126,16 @@ class _RootScreenState extends ConsumerState<RootScreen> {
       }
 
       await _player.play();
+
+      // Notify the backend a play has started so history/recently-played update.
+      ref
+          .read(tracksServiceProvider)
+          .recordPlay(trackId: track.trackId)
+          .then((_) {
+            ref.invalidate(recentlyPlayedProvider);
+            ref.invalidate(listeningHistoryProvider);
+          })
+          .catchError((_) {});
     } catch (e, stack) {
       debugPrint('Audio load failed: $e');
       debugPrint('Stack trace: $stack');
