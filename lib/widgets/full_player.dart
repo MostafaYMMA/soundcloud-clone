@@ -9,7 +9,6 @@ import 'package:my_project/constants/app_colors.dart';
 import 'package:my_project/constants/app_dimensions.dart';
 import 'package:my_project/constants/app_text_styles.dart';
 import 'package:my_project/models/track.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/track_provider.dart';
 import '../../providers/liked_tracks_provider.dart';
@@ -18,24 +17,25 @@ import '../../providers/followers_provider.dart';
 class FullPlayer extends ConsumerStatefulWidget {
   const FullPlayer({
     super.key,
-    required this.track,
+    required this.trackNotifier,
     required this.player,
     required this.onPlayPause,
     required this.onSeek,
+    this.onSkipNext,
   });
 
-  final Track track;
+  final ValueNotifier<Track> trackNotifier;
   final AudioPlayer player;
   final VoidCallback onPlayPause;
   final ValueChanged<Duration> onSeek;
+  final VoidCallback? onSkipNext;
 
   @override
   ConsumerState<FullPlayer> createState() => _FullPlayerState();
 }
 
 class _FullPlayerState extends ConsumerState<FullPlayer> {
-  bool showControls = false;
-  bool _initializedControls = false;
+  late Track _currentTrack;
 
   final List<double> waveform = List.generate(
     70,
@@ -45,17 +45,34 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
   @override
   void initState() {
     super.initState();
-    // Seed this track's liked state into likedTracksProvider if we know it.
-    // This ensures the heart is correct even before LikedTracksScreen loads.
-    if (widget.track.isLiked == true) {
+    _currentTrack = widget.trackNotifier.value;
+    widget.trackNotifier.addListener(_onTrackChanged);
+    _seedLikedState(_currentTrack);
+  }
+
+  void _onTrackChanged() {
+    if (!mounted) return;
+    setState(() => _currentTrack = widget.trackNotifier.value);
+    _seedLikedState(_currentTrack);
+  }
+
+  void _seedLikedState(Track track) {
+    if (track.isLiked == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         final notifier = ref.read(likedTracksProvider.notifier);
         final current = ref.read(likedTracksProvider);
-        if (!current.contains(widget.track.trackId)) {
-          notifier.setAll({...current, widget.track.trackId});
+        if (!current.contains(track.trackId)) {
+          notifier.setAll({...current, track.trackId});
         }
       });
     }
+  }
+
+  @override
+  void dispose() {
+    widget.trackNotifier.removeListener(_onTrackChanged);
+    super.dispose();
   }
 
   String formatTime(int totalSeconds) {
@@ -74,8 +91,8 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
   @override
   Widget build(BuildContext context) {
     // ── Follow state ─────────────────────────────────────────────────────────
-    final artistUsername = widget.track.artist?.username;
-    final artistUserId = widget.track.artist?.userId;
+    final artistUsername = _currentTrack.artist?.username;
+    final artistUserId = _currentTrack.artist?.userId;
 
     final followKey = (artistUsername != null && artistUserId != null)
         ? (userId: artistUserId, username: artistUsername)
@@ -98,7 +115,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
           builder: (context, durationSnapshot) {
             final totalDuration =
                 durationSnapshot.data ??
-                Duration(seconds: widget.track.durationSeconds ?? 0);
+                Duration(seconds: _currentTrack.durationSeconds ?? 0);
 
             return StreamBuilder<Duration>(
               stream: widget.player.positionStream,
@@ -114,9 +131,9 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                 final elapsed = currentPosition.inSeconds;
                 final totalSeconds = totalDuration.inSeconds > 0
                     ? totalDuration.inSeconds
-                    : widget.track.durationSeconds ?? 0;
+                    : _currentTrack.durationSeconds ?? 0;
 
-                final coverUrl = widget.track.coverImageUrl;
+                final coverUrl = _currentTrack.coverImageUrl;
 
                 return Scaffold(
                   backgroundColor: Colors.black,
@@ -124,9 +141,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                   // Buttons/waveform are descendants and win the gesture arena,
                   // so they are unaffected.
                   body: GestureDetector(
-                    onTap: showControls
-                        ? null
-                        : () => setState(() => showControls = true),
+                    onTap: widget.onPlayPause,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
@@ -165,26 +180,56 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                           ),
                         ),
 
-                        // ── Center play button (paused only) ──────────────
-                        if (!isPlaying)
-                          Center(
-                            child: GestureDetector(
-                              onTap: widget.onPlayPause,
-                              child: Container(
-                                width: 64,
-                                height: 64,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.textPrimary,
-                                  shape: BoxShape.circle,
+                        // ── Center controls ────────────────────────────────
+                        // Play button only when paused; skip always visible.
+                        // When playing, tap the background itself to pause.
+                        Center(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (!isPlaying) ...[
+                                GestureDetector(
+                                  onTap: widget.onPlayPause,
+                                  child: Container(
+                                    width: 64,
+                                    height: 64,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.textPrimary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.play_arrow_rounded,
+                                      color: AppColors.background,
+                                      size: 36,
+                                    ),
+                                  ),
                                 ),
-                                child: const Icon(
-                                  Icons.play_arrow_rounded,
-                                  color: AppColors.background,
-                                  size: 36,
+                                const SizedBox(width: AppDimensions.spaceLarge),
+                              ],
+                              GestureDetector(
+                                onTap: widget.onSkipNext,
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface.withValues(
+                                      alpha: 0.85,
+                                    ),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: AppColors.textMuted,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.skip_next_rounded,
+                                    color: AppColors.textPrimary,
+                                    size: 24,
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ),
+                        ),
                       ],
                     ),
                   ),
@@ -231,10 +276,10 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.track.title, style: AppTextStyles.heading2),
+                Text(_currentTrack.title, style: AppTextStyles.heading2),
                 const SizedBox(height: 4),
                 Text(
-                  widget.track.artist?.displayName ?? 'Unknown Artist',
+                  _currentTrack.artist?.displayName ?? 'Unknown Artist',
                   style: AppTextStyles.artistName,
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
@@ -454,13 +499,13 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
 
     // Single source of truth for liked state
     final likedIds = ref.watch(likedTracksProvider);
-    final isLiked = likedIds.contains(widget.track.trackId);
+    final isLiked = likedIds.contains(_currentTrack.trackId);
 
     // Show the server like count, adjusted for optimistic toggle
-    final serverCount = widget.track.likeCount ?? 0;
+    final serverCount = _currentTrack.likeCount ?? 0;
     final displayCount = isLiked
-        ? (widget.track.isLiked == true ? serverCount : serverCount + 1)
-        : (widget.track.isLiked == true ? serverCount - 1 : serverCount);
+        ? (_currentTrack.isLiked == true ? serverCount : serverCount + 1)
+        : (_currentTrack.isLiked == true ? serverCount - 1 : serverCount);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -471,15 +516,15 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
             final wasLiked = isLiked;
 
             // Optimistic update
-            notifier.toggleLocal(widget.track.trackId);
+            notifier.toggleLocal(_currentTrack.trackId);
 
             try {
               await ref
-                  .read(toggleTrackLikeProvider(widget.track.trackId).notifier)
+                  .read(toggleTrackLikeProvider(_currentTrack.trackId).notifier)
                   .toggle(currentlyLiked: wasLiked, username: username);
             } catch (_) {
               // Rollback on failure
-              notifier.toggleLocal(widget.track.trackId);
+              notifier.toggleLocal(_currentTrack.trackId);
             }
           },
           child: Row(
@@ -506,58 +551,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
         const Icon(Icons.queue_music, color: AppColors.textSecondary, size: 22),
         const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 22),
       ],
-    );
-  }
-
-  Widget _buildPlayOverlay(bool isPlaying) {
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black45,
-        child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  widget.onPlayPause();
-                  setState(() => showControls = false);
-                },
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: const BoxDecoration(
-                    color: AppColors.textPrimary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    color: AppColors.background,
-                    size: 30,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceLarge),
-              GestureDetector(
-                onTap: () {},
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface.withOpacity(0.85),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.textMuted),
-                  ),
-                  child: const Icon(
-                    Icons.skip_next_rounded,
-                    color: AppColors.textPrimary,
-                    size: 24,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
