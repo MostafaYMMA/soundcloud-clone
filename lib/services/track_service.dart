@@ -210,13 +210,13 @@ class TracksService {
         .toList();
   }
   // ── POST /likes/tracks/{track_id} ───────────────────────────────────────────
- 
+
   Future<void> likeTrack({required String trackId}) async {
     await _dio.post('$_base/likes/tracks/$trackId');
   }
- 
+
   // ── DELETE /likes/tracks/{track_id} ─────────────────────────────────────────
- 
+
   Future<void> unlikeTrack({required String trackId}) async {
     await _dio.delete('$_base/likes/tracks/$trackId');
   }

@@ -51,8 +51,9 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
         ? List.from(source)
         : source.where((t) {
             final titleMatch = t.title.toLowerCase().contains(query);
-            final artistMatch =
-                (t.artist?.displayName ?? '').toLowerCase().contains(query);
+            final artistMatch = (t.artist?.displayName ?? '')
+                .toLowerCase()
+                .contains(query);
             return titleMatch || artistMatch;
           }).toList();
 
@@ -66,8 +67,11 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
         result.sort((a, b) => a.title.compareTo(b.title));
         break;
       case LikedTracksSortOption.artist:
-        result.sort((a, b) => (a.artist?.displayName ?? '')
-            .compareTo(b.artist?.displayName ?? ''));
+        result.sort(
+          (a, b) => (a.artist?.displayName ?? '').compareTo(
+            b.artist?.displayName ?? '',
+          ),
+        );
         break;
     }
 
@@ -99,7 +103,9 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
               selected: _sortOption == LikedTracksSortOption.recentlyAdded,
               onTap: () {
                 Navigator.pop(context);
-                setState(() => _sortOption = LikedTracksSortOption.recentlyAdded);
+                setState(
+                  () => _sortOption = LikedTracksSortOption.recentlyAdded,
+                );
               },
             ),
             _SortOption(
@@ -140,8 +146,10 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
       return const Scaffold(
         backgroundColor: AppColors.background,
         body: Center(
-          child: Text('You are not logged in.',
-              style: TextStyle(color: Colors.white)),
+          child: Text(
+            'You are not logged in.',
+            style: TextStyle(color: Colors.white),
+          ),
         ),
       );
     }
@@ -152,13 +160,16 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
       loading: () => const Scaffold(
         backgroundColor: AppColors.background,
         body: Center(
-            child: CircularProgressIndicator(color: AppColors.primary)),
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
       ),
       error: (e, _) => Scaffold(
         backgroundColor: AppColors.background,
         body: Center(
-          child: Text(e.toString(),
-              style: const TextStyle(color: Colors.white)),
+          child: Text(
+            e.toString(),
+            style: const TextStyle(color: Colors.white),
+          ),
         ),
       ),
       data: (tracks) {
@@ -206,8 +217,11 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
                               Row(
                                 children: [
                                   IconButton(
-                                    icon: const Icon(Icons.chevron_left,
-                                        color: Colors.white, size: 28),
+                                    icon: const Icon(
+                                      Icons.chevron_left,
+                                      color: Colors.white,
+                                      size: 28,
+                                    ),
                                     onPressed: () => widget.onBack?.call(),
                                   ),
                                   Expanded(
@@ -215,25 +229,29 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
                                       height: 40,
                                       decoration: BoxDecoration(
                                         color: const Color(0xFF1E1E1E),
-                                        borderRadius:
-                                            BorderRadius.circular(20),
+                                        borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: TextField(
                                         controller: _searchController,
                                         style: const TextStyle(
-                                            color: AppColors.textPrimary,
-                                            fontSize: 14),
+                                          color: AppColors.textPrimary,
+                                          fontSize: 14,
+                                        ),
                                         decoration: const InputDecoration(
                                           hintText: 'Search your likes',
                                           hintStyle: TextStyle(
-                                              color: AppColors.textSecondary,
-                                              fontSize: 14),
-                                          prefixIcon: Icon(Icons.search,
-                                              color: AppColors.textSecondary,
-                                              size: 20),
+                                            color: AppColors.textSecondary,
+                                            fontSize: 14,
+                                          ),
+                                          prefixIcon: Icon(
+                                            Icons.search,
+                                            color: AppColors.textSecondary,
+                                            size: 20,
+                                          ),
                                           border: InputBorder.none,
                                           contentPadding: EdgeInsets.symmetric(
-                                              vertical: 10),
+                                            vertical: 10,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -247,10 +265,14 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
                                       decoration: BoxDecoration(
                                         color: AppColors.surface,
                                         borderRadius: BorderRadius.circular(
-                                            AppDimensions.borderRadiusPill),
+                                          AppDimensions.borderRadiusPill,
+                                        ),
                                       ),
-                                      child: const Icon(Icons.sort,
-                                          color: AppColors.primary, size: 22),
+                                      child: const Icon(
+                                        Icons.sort,
+                                        color: AppColors.primary,
+                                        size: 22,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -258,7 +280,8 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
                               const SizedBox(height: 20),
                               Padding(
                                 padding: const EdgeInsets.only(
-                                    left: AppDimensions.spaceSmall),
+                                  left: AppDimensions.spaceSmall,
+                                ),
                                 child: Text(
                                   'Your likes (${displayed.length})',
                                   style: const TextStyle(
@@ -283,7 +306,8 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
                                         size: 24,
                                       ),
                                       onPressed: () => setState(
-                                          () => _isShuffled = !_isShuffled),
+                                        () => _isShuffled = !_isShuffled,
+                                      ),
                                     ),
                                     const SizedBox(width: 8),
                                     GestureDetector(
@@ -297,8 +321,11 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
                                           color: Colors.white,
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const Icon(Icons.play_arrow,
-                                            color: Colors.black, size: 30),
+                                        child: const Icon(
+                                          Icons.play_arrow,
+                                          color: Colors.black,
+                                          size: 30,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -319,8 +346,10 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
                       ? const Padding(
                           padding: EdgeInsets.only(top: 60),
                           child: Center(
-                            child: Text('No liked tracks yet.',
-                                style: TextStyle(color: Colors.white70)),
+                            child: Text(
+                              'No liked tracks yet.',
+                              style: TextStyle(color: Colors.white70),
+                            ),
                           ),
                         )
                       : ProfileTrackListSection(

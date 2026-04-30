@@ -80,18 +80,20 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
         return StreamBuilder<Duration?>(
           stream: widget.player.durationStream,
           builder: (context, durationSnapshot) {
-            final totalDuration = durationSnapshot.data ??
+            final totalDuration =
+                durationSnapshot.data ??
                 Duration(seconds: widget.track.durationSeconds ?? 0);
 
             return StreamBuilder<Duration>(
               stream: widget.player.positionStream,
               initialData: widget.player.position,
               builder: (context, positionSnapshot) {
-                final currentPosition =
-                    positionSnapshot.data ?? Duration.zero;
+                final currentPosition = positionSnapshot.data ?? Duration.zero;
                 final totalMs = totalDuration.inMilliseconds;
-                final currentMs = currentPosition.inMilliseconds
-                    .clamp(0, totalMs > 0 ? totalMs : 1);
+                final currentMs = currentPosition.inMilliseconds.clamp(
+                  0,
+                  totalMs > 0 ? totalMs : 1,
+                );
                 final progress = totalMs > 0 ? currentMs / totalMs : 0.0;
                 final elapsed = currentPosition.inSeconds;
                 final totalSeconds = totalDuration.inSeconds > 0
@@ -134,8 +136,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                               ),
                               _buildCommentBar(),
                               _buildBottomBar(),
-                              const SizedBox(
-                                  height: AppDimensions.spaceSmall),
+                              const SizedBox(height: AppDimensions.spaceSmall),
                             ],
                           ),
                         ),
@@ -171,8 +172,11 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                 const SizedBox(height: AppDimensions.spaceSmall),
                 const Row(
                   children: [
-                    Icon(Icons.graphic_eq,
-                        color: AppColors.textMuted, size: 14),
+                    Icon(
+                      Icons.graphic_eq,
+                      color: AppColors.textMuted,
+                      size: 14,
+                    ),
                     SizedBox(width: 4),
                     Text('Behind this track', style: AppTextStyles.caption),
                   ],
@@ -216,17 +220,24 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
         LayoutBuilder(
           builder: (context, constraints) {
             return GestureDetector(
-              onHorizontalDragUpdate: (details) =>
-                  _seekFromDx(details.localPosition.dx,
-                      constraints.maxWidth, totalDuration),
+              onHorizontalDragUpdate: (details) => _seekFromDx(
+                details.localPosition.dx,
+                constraints.maxWidth,
+                totalDuration,
+              ),
               onTapDown: (details) => _seekFromDx(
-                  details.localPosition.dx, constraints.maxWidth, totalDuration),
+                details.localPosition.dx,
+                constraints.maxWidth,
+                totalDuration,
+              ),
               child: SizedBox(
                 height: 80,
                 width: double.infinity,
                 child: CustomPaint(
                   painter: WaveformPainter(
-                      waveform: waveform, progress: progress),
+                    waveform: waveform,
+                    progress: progress,
+                  ),
                 ),
               ),
             );
@@ -250,18 +261,19 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final knobLeft =
-                        (progress * (constraints.maxWidth - 12))
-                            .clamp(0.0, constraints.maxWidth - 12);
+                    final knobLeft = (progress * (constraints.maxWidth - 12))
+                        .clamp(0.0, constraints.maxWidth - 12);
                     return GestureDetector(
                       onTapDown: (details) => _seekFromDx(
-                          details.localPosition.dx,
-                          constraints.maxWidth,
-                          totalDuration),
+                        details.localPosition.dx,
+                        constraints.maxWidth,
+                        totalDuration,
+                      ),
                       onHorizontalDragUpdate: (details) => _seekFromDx(
-                          details.localPosition.dx,
-                          constraints.maxWidth,
-                          totalDuration),
+                        details.localPosition.dx,
+                        constraints.maxWidth,
+                        totalDuration,
+                      ),
                       child: SizedBox(
                         height: 20,
                         child: Stack(
@@ -323,15 +335,17 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
         decoration: const ShapeDecoration(
           color: AppColors.surface,
           shape: StadiumBorder(
-              side: BorderSide(color: AppColors.textMuted, width: 0.5)),
+            side: BorderSide(color: AppColors.textMuted, width: 0.5),
+          ),
         ),
         child: Row(
           children: [
             Expanded(
               child: Text(
                 'Comment...',
-                style: AppTextStyles.caption
-                    .copyWith(color: AppColors.textMuted),
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textMuted,
+                ),
               ),
             ),
             const Text('🔥', style: TextStyle(fontSize: 18)),
@@ -372,10 +386,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
             try {
               await ref
                   .read(toggleTrackLikeProvider(widget.track.trackId).notifier)
-                  .toggle(
-                    currentlyLiked: wasLiked,
-                    username: username,
-                  );
+                  .toggle(currentlyLiked: wasLiked, username: username);
             } catch (_) {
               // Rollback on failure
               notifier.toggleLocal(widget.track.trackId);
@@ -391,20 +402,19 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
               const SizedBox(width: 4),
               Text(
                 '$displayCount',
-                style: AppTextStyles.caption
-                    .copyWith(color: AppColors.primary),
+                style: AppTextStyles.caption.copyWith(color: AppColors.primary),
               ),
             ],
           ),
         ),
-        const Icon(Icons.chat_bubble_outline,
-            color: AppColors.textSecondary, size: 22),
-        const Icon(Icons.ios_share,
-            color: AppColors.textSecondary, size: 22),
-        const Icon(Icons.queue_music,
-            color: AppColors.textSecondary, size: 22),
-        const Icon(Icons.more_horiz,
-            color: AppColors.textSecondary, size: 22),
+        const Icon(
+          Icons.chat_bubble_outline,
+          color: AppColors.textSecondary,
+          size: 22,
+        ),
+        const Icon(Icons.ios_share, color: AppColors.textSecondary, size: 22),
+        const Icon(Icons.queue_music, color: AppColors.textSecondary, size: 22),
+        const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 22),
       ],
     );
   }
@@ -430,9 +440,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    isPlaying
-                        ? Icons.pause_rounded
-                        : Icons.play_arrow_rounded,
+                    isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                     color: AppColors.background,
                     size: 30,
                   ),
@@ -449,8 +457,11 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.textMuted),
                   ),
-                  child: const Icon(Icons.skip_next_rounded,
-                      color: AppColors.textPrimary, size: 24),
+                  child: const Icon(
+                    Icons.skip_next_rounded,
+                    color: AppColors.textPrimary,
+                    size: 24,
+                  ),
                 ),
               ),
             ],
@@ -488,8 +499,7 @@ class WaveformPainter extends CustomPainter {
           const Radius.circular(2),
         ),
         Paint()
-          ..color =
-              played ? AppColors.textPrimary : AppColors.waveformInactive,
+          ..color = played ? AppColors.textPrimary : AppColors.waveformInactive,
       );
     }
 
