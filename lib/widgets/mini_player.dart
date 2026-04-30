@@ -63,10 +63,15 @@ class MiniPlayer extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(track.title, style: AppTextStyles.trackTitle),
                     Text(
-                      track.artist?.displayName ?? 'Unknown Artist',
-                      style: AppTextStyles.artistName,
+                      track.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      track.artist?.displayName ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),

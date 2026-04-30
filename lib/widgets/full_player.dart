@@ -9,10 +9,11 @@ import 'package:my_project/constants/app_colors.dart';
 import 'package:my_project/constants/app_dimensions.dart';
 import 'package:my_project/constants/app_text_styles.dart';
 import 'package:my_project/models/track.dart';
+
 import '../../providers/auth_providers.dart';
-import '../../providers/track_provider.dart';
-import '../../providers/liked_tracks_provider.dart';
 import '../../providers/followers_provider.dart';
+import '../../providers/liked_tracks_provider.dart';
+import '../../providers/track_provider.dart';
 
 class FullPlayer extends ConsumerStatefulWidget {
   const FullPlayer({
@@ -37,11 +38,6 @@ class FullPlayer extends ConsumerStatefulWidget {
 class _FullPlayerState extends ConsumerState<FullPlayer> {
   late Track _currentTrack;
 
-  final List<double> waveform = List.generate(
-    70,
-    (index) => 0.2 + ((index % 7) * 0.08),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -52,7 +48,11 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
 
   void _onTrackChanged() {
     if (!mounted) return;
-    setState(() => _currentTrack = widget.trackNotifier.value);
+
+    setState(() {
+      _currentTrack = widget.trackNotifier.value;
+    });
+
     _seedLikedState(_currentTrack);
   }
 
@@ -60,8 +60,10 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
     if (track.isLiked == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
+
         final notifier = ref.read(likedTracksProvider.notifier);
         final current = ref.read(likedTracksProvider);
+
         if (!current.contains(track.trackId)) {
           notifier.setAll({...current, track.trackId});
         }
@@ -83,14 +85,23 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
 
   void _seekFromDx(double dx, double width, Duration totalDuration) {
     if (width <= 0 || totalDuration.inMilliseconds <= 0) return;
+
     final newProgress = (dx / width).clamp(0.0, 1.0);
     final targetMs = (newProgress * totalDuration.inMilliseconds).round();
+
     widget.onSeek(Duration(milliseconds: targetMs));
+  }
+
+  List<double> get _fallbackWaveform {
+    return List.generate(90, (index) => 0.2 + ((index % 7) * 0.08));
   }
 
   @override
   Widget build(BuildContext context) {
-    // ── Follow state ─────────────────────────────────────────────────────────
+    final waveformAsync = ref.watch(
+      trackWaveformProvider(_currentTrack.trackId),
+    );
+
     final artistUsername = _currentTrack.artist?.username;
     final artistUserId = _currentTrack.artist?.userId;
 
@@ -122,11 +133,13 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
               initialData: widget.player.position,
               builder: (context, positionSnapshot) {
                 final currentPosition = positionSnapshot.data ?? Duration.zero;
+
                 final totalMs = totalDuration.inMilliseconds;
                 final currentMs = currentPosition.inMilliseconds.clamp(
                   0,
                   totalMs > 0 ? totalMs : 1,
                 );
+
                 final progress = totalMs > 0 ? currentMs / totalMs : 0.0;
                 final elapsed = currentPosition.inSeconds;
                 final totalSeconds = totalDuration.inSeconds > 0
@@ -137,25 +150,19 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
 
                 return Scaffold(
                   backgroundColor: Colors.black,
-                  // Tap anywhere → pause (when playing).
-                  // Buttons/waveform are descendants and win the gesture arena,
-                  // so they are unaffected.
                   body: GestureDetector(
                     onTap: widget.onPlayPause,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        // ── Background: blurred cover art ─────────────────
                         _buildBackground(coverUrl),
 
-                        // ── Dim overlay when paused ────────────────────────
                         if (!isPlaying)
                           const ColoredBox(
                             color: Color(0x66000000),
                             child: SizedBox.expand(),
                           ),
 
-                        // ── All UI (always visible) ────────────────────────
                         SafeArea(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,12 +173,32 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                                 isFollowLoading: isFollowLoading,
                                 followKey: followKey,
                               ),
-                              const Spacer(),
-                              _buildWaveform(
-                                elapsed: elapsed,
-                                totalSeconds: totalSeconds,
-                                progress: progress,
-                                totalDuration: totalDuration,
+                              Expanded(child: _buildArtworkArea()),
+                              waveformAsync.when(
+                                data: (waveform) {
+                                  return _buildWaveform(
+                                    waveform: waveform,
+                                    elapsed: elapsed,
+                                    totalSeconds: totalSeconds,
+                                    progress: progress,
+                                    totalDuration: totalDuration,
+                                  );
+                                },
+                                loading: () {
+                                  return _buildWaveformLoading(
+                                    elapsed: elapsed,
+                                    totalSeconds: totalSeconds,
+                                  );
+                                },
+                                error: (_, __) {
+                                  return _buildWaveform(
+                                    waveform: _fallbackWaveform,
+                                    elapsed: elapsed,
+                                    totalSeconds: totalSeconds,
+                                    progress: progress,
+                                    totalDuration: totalDuration,
+                                  );
+                                },
                               ),
                               _buildCommentBar(),
                               _buildBottomBar(),
@@ -180,9 +207,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                           ),
                         ),
 
-                        // ── Center controls ────────────────────────────────
-                        // Play button only when paused; skip always visible.
-                        // When playing, tap the background itself to pause.
                         Center(
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -212,9 +236,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                                   width: 44,
                                   height: 44,
                                   decoration: BoxDecoration(
-                                    color: AppColors.surface.withValues(
-                                      alpha: 0.85,
-                                    ),
+                                    color: AppColors.surface.withOpacity(0.85),
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: AppColors.textMuted,
@@ -247,16 +269,52 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
       return Container(color: Colors.black);
     }
 
+    final fixedCoverUrl = coverUrl.startsWith('http')
+        ? coverUrl
+        : 'https://streamline-swp.duckdns.org$coverUrl';
+
     return Container(
       decoration: BoxDecoration(
         image: DecorationImage(
-          image: NetworkImage(coverUrl),
+          image: NetworkImage(fixedCoverUrl),
           fit: BoxFit.cover,
         ),
       ),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(color: Colors.black.withOpacity(0.3)),
+      ),
+    );
+  }
+
+  Widget _buildArtworkArea() {
+    final imageUrl = _currentTrack.coverImageUrl;
+
+    return Center(
+      child: Container(
+        width: 260,
+        height: 260,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          shape: BoxShape.circle,
+          image: imageUrl != null && imageUrl.isNotEmpty
+              ? DecorationImage(
+                  image: NetworkImage(
+                    imageUrl.startsWith('http')
+                        ? imageUrl
+                        : 'https://streamline-swp.duckdns.org$imageUrl',
+                  ),
+                  fit: BoxFit.cover,
+                )
+              : null,
+        ),
+        child: imageUrl == null || imageUrl.isEmpty
+            ? Icon(
+                Icons.music_note_rounded,
+                size: 70,
+                color: Colors.white.withOpacity(0.15),
+              )
+            : null,
       ),
     );
   }
@@ -304,8 +362,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                 color: AppColors.textSecondary,
                 onPressed: () => Navigator.pop(context),
               ),
-
-              // ── Follow / Unfollow button ──────────────────────────────────
               IconButton(
                 icon: isFollowLoading
                     ? const SizedBox(
@@ -327,10 +383,10 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                 tooltip: isFollowing ? 'Unfollow' : 'Follow',
                 onPressed: (isFollowLoading || followKey == null)
                     ? null
-                    : () =>
-                          ref.read(followProvider(followKey).notifier).toggle(),
+                    : () {
+                        ref.read(followProvider(followKey).notifier).toggle();
+                      },
               ),
-
               IconButton(
                 icon: const Icon(Icons.grid_view_rounded),
                 color: AppColors.textSecondary,
@@ -343,34 +399,68 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
     );
   }
 
+  Widget _buildWaveformLoading({
+    required int elapsed,
+    required int totalSeconds,
+  }) {
+    return Column(
+      children: [
+        const SizedBox(
+          height: 130,
+          width: double.infinity,
+          child: Center(
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+        _buildTimeRow(
+          elapsed: elapsed,
+          totalSeconds: totalSeconds,
+          progress: 0,
+          totalDuration: Duration(seconds: totalSeconds),
+        ),
+      ],
+    );
+  }
+
   Widget _buildWaveform({
+    required List<double> waveform,
     required int elapsed,
     required int totalSeconds,
     required double progress,
     required Duration totalDuration,
   }) {
+    final displayWaveform = waveform.isEmpty ? _fallbackWaveform : waveform;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         LayoutBuilder(
           builder: (context, constraints) {
             return GestureDetector(
-              onHorizontalDragUpdate: (details) => _seekFromDx(
-                details.localPosition.dx,
-                constraints.maxWidth,
-                totalDuration,
-              ),
-              onTapDown: (details) => _seekFromDx(
-                details.localPosition.dx,
-                constraints.maxWidth,
-                totalDuration,
-              ),
+              onHorizontalDragUpdate: (details) {
+                _seekFromDx(
+                  details.localPosition.dx,
+                  constraints.maxWidth,
+                  totalDuration,
+                );
+              },
+              onTapDown: (details) {
+                _seekFromDx(
+                  details.localPosition.dx,
+                  constraints.maxWidth,
+                  totalDuration,
+                );
+              },
               child: SizedBox(
-                height: 80,
+                height: 130,
                 width: double.infinity,
                 child: CustomPaint(
                   painter: WaveformPainter(
-                    waveform: waveform,
+                    waveform: displayWaveform,
                     progress: progress,
                   ),
                 ),
@@ -378,83 +468,104 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
             );
           },
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.spaceMedium,
-            vertical: AppDimensions.spaceExtraSmall,
-          ),
-          child: Row(
-            children: [
-              Text(
-                formatTime(elapsed),
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceSmall),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final knobLeft = (progress * (constraints.maxWidth - 12))
-                        .clamp(0.0, constraints.maxWidth - 12);
-                    return GestureDetector(
-                      onTapDown: (details) => _seekFromDx(
-                        details.localPosition.dx,
-                        constraints.maxWidth,
-                        totalDuration,
-                      ),
-                      onHorizontalDragUpdate: (details) => _seekFromDx(
-                        details.localPosition.dx,
-                        constraints.maxWidth,
-                        totalDuration,
-                      ),
-                      child: SizedBox(
-                        height: 20,
-                        child: Stack(
-                          alignment: Alignment.centerLeft,
-                          children: [
-                            Container(
-                              height: 3,
-                              decoration: BoxDecoration(
-                                color: AppColors.waveformInactive,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            FractionallySizedBox(
-                              widthFactor: progress,
-                              child: Container(
-                                height: 3,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              left: knobLeft,
-                              child: Container(
-                                width: 12,
-                                height: 12,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceSmall),
-              Text(formatTime(totalSeconds), style: AppTextStyles.caption),
-            ],
-          ),
+        _buildTimeRow(
+          elapsed: elapsed,
+          totalSeconds: totalSeconds,
+          progress: progress,
+          totalDuration: totalDuration,
         ),
       ],
+    );
+  }
+
+  Widget _buildTimeRow({
+    required int elapsed,
+    required int totalSeconds,
+    required double progress,
+    required Duration totalDuration,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.spaceMedium,
+        vertical: AppDimensions.spaceExtraSmall,
+      ),
+      child: Row(
+        children: [
+          Text(
+            formatTime(elapsed),
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: AppDimensions.spaceSmall),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final knobLeft = (progress * (constraints.maxWidth - 12)).clamp(
+                  0.0,
+                  constraints.maxWidth - 12,
+                );
+
+                return GestureDetector(
+                  onTapDown: (details) {
+                    _seekFromDx(
+                      details.localPosition.dx,
+                      constraints.maxWidth,
+                      totalDuration,
+                    );
+                  },
+                  onHorizontalDragUpdate: (details) {
+                    _seekFromDx(
+                      details.localPosition.dx,
+                      constraints.maxWidth,
+                      totalDuration,
+                    );
+                  },
+                  child: SizedBox(
+                    height: 20,
+                    child: Stack(
+                      alignment: Alignment.centerLeft,
+                      children: [
+                        Container(
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: AppColors.waveformInactive,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        FractionallySizedBox(
+                          widthFactor: progress,
+                          child: Container(
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: knobLeft,
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: AppDimensions.spaceSmall),
+          Text(formatTime(totalSeconds), style: AppTextStyles.caption),
+        ],
+      ),
     );
   }
 
@@ -496,12 +607,9 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
 
   Widget _buildBottomBar() {
     final username = ref.watch(authProvider).user?.userName ?? '';
-
-    // Single source of truth for liked state
     final likedIds = ref.watch(likedTracksProvider);
     final isLiked = likedIds.contains(_currentTrack.trackId);
 
-    // Show the server like count, adjusted for optimistic toggle
     final serverCount = _currentTrack.likeCount ?? 0;
     final displayCount = isLiked
         ? (_currentTrack.isLiked == true ? serverCount : serverCount + 1)
@@ -515,7 +623,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
             final notifier = ref.read(likedTracksProvider.notifier);
             final wasLiked = isLiked;
 
-            // Optimistic update
             notifier.toggleLocal(_currentTrack.trackId);
 
             try {
@@ -523,7 +630,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                   .read(toggleTrackLikeProvider(_currentTrack.trackId).notifier)
                   .toggle(currentlyLiked: wasLiked, username: username);
             } catch (_) {
-              // Rollback on failure
               notifier.toggleLocal(_currentTrack.trackId);
             }
           },
@@ -564,16 +670,17 @@ class WaveformPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (waveform.isEmpty) return;
+
     final count = waveform.length;
     final barWidth = size.width / count;
-    final gap = barWidth * 0.3;
-    final midY = size.height * 0.6;
+    final gap = barWidth * 0.35;
+    final midY = size.height * 0.55;
     final progressX = size.width * progress;
 
     for (int i = 0; i < count; i++) {
       final x = i * barWidth + gap / 2;
       final w = barWidth - gap;
-      final h = waveform[i] * midY;
+      final h = waveform[i].clamp(0.08, 1.0) * midY;
       final played = x < progressX;
 
       canvas.drawRRect(
@@ -582,7 +689,20 @@ class WaveformPainter extends CustomPainter {
           const Radius.circular(2),
         ),
         Paint()
-          ..color = played ? AppColors.textPrimary : AppColors.waveformInactive,
+          ..color = played
+              ? AppColors.waveformActive
+              : AppColors.waveformInactive,
+      );
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, midY + 2, w, h * 0.55),
+          const Radius.circular(2),
+        ),
+        Paint()
+          ..color = played
+              ? AppColors.waveformActive.withOpacity(0.75)
+              : AppColors.waveformInactive.withOpacity(0.75),
       );
     }
 
@@ -596,6 +716,7 @@ class WaveformPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(WaveformPainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.waveform != waveform;
+  bool shouldRepaint(WaveformPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.waveform != waveform;
+  }
 }
