@@ -43,6 +43,8 @@ class _RootScreenState extends ConsumerState<RootScreen> {
 
   final Map<int, Widget> _subScreens = {};
 
+  bool _bootstrapped = false;
+
   void _pushSubScreen(Widget screen) {
     setState(() => _subScreens[_selectedIndex] = screen);
   }
@@ -183,9 +185,21 @@ class _RootScreenState extends ConsumerState<RootScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
+    // 🔥 Wait for bootstrap (prevent flicker)
+    if (!_bootstrapped) {
+      Future.microtask(() {
+        if (mounted) setState(() => _bootstrapped = true);
+      });
+
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     if (!authState.isLoggedIn) {
       return const WelcomeScreen();
     }
+
     return Scaffold(
       body: _subScreens[_selectedIndex] ?? _buildScreens()[_selectedIndex],
       bottomNavigationBar: Column(
