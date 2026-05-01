@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/playlist_provider.dart';
 import '../../providers/track_provider.dart';
+import '../../providers/liked_tracks_provider.dart';
+import '../../providers/repost_provider.dart';
 import '../../models/user.dart';
 import '../../models/track.dart';
 import '../../models/playlist.dart';
@@ -68,8 +70,6 @@ List<ProfileCompletionCardData> buildCompletionCards(User user) {
   ];
 }
 
-// ── Sealed type for mixed likes feed ──────────────────────────────────────────
-
 sealed class _LikeItem {}
 
 class _LikeTrack extends _LikeItem {
@@ -81,8 +81,6 @@ class _LikePlaylist extends _LikeItem {
   final Playlist playlist;
   _LikePlaylist(this.playlist);
 }
-
-// ── Profile Screen ─────────────────────────────────────────────────────────────
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key, this.onTrackTap, this.onNavigate});
@@ -108,9 +106,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (username == null || username.isEmpty) return;
 
     ref.read(playlistProvider.notifier).fetchUserPlaylists(username);
-    ref.invalidate(userRepostsProvider(username));
-    ref.invalidate(userLikedTracksProvider(username));
     ref.invalidate(userLikedPlaylistsProvider);
+
+    // Liked tracks → seed likedTracksProvider
+    ref.invalidate(userLikedTracksProvider(username));
+    ref.listenManual(userLikedTracksProvider(username), (_, next) {
+      next.whenData((tracks) {
+        if (!mounted) return;
+        final ids = tracks.map((t) => t.trackId).toSet();
+        final existing = ref.read(likedTracksProvider);
+        ref.read(likedTracksProvider.notifier).setAll({...existing, ...ids});
+      });
+    });
+
+    // Reposts → seed repostedTracksProvider
+    ref.invalidate(userRepostsProvider(username));
+    ref.listenManual(userRepostsProvider(username), (_, next) {
+      next.whenData((tracks) {
+        if (!mounted) return;
+        final ids = tracks.map((t) => t.trackId).toSet();
+        final existing = ref.read(repostedTracksProvider);
+        ref
+            .read(repostedTracksProvider.notifier)
+            .setAll({...existing, ...ids});
+      });
+    });
   }
 
   Future<void> _openEditProfile() async {
@@ -130,11 +150,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final screen = PlaylistDetailScreen(
       playlist: playlist,
       onTrackTap: widget.onTrackTap ?? (_) async {},
-      // Pass onBack so the back button pops the sub-screen correctly
-      // instead of navigating all the way back to login
       onBack: widget.onNavigate != null
           ? () => widget.onNavigate!(
-                // Pop by pushing the profile screen itself back
                 ProfileScreen(
                   onTrackTap: widget.onTrackTap,
                   onNavigate: widget.onNavigate,
@@ -142,7 +159,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               )
           : null,
     );
-
     if (widget.onNavigate != null) {
       widget.onNavigate!(screen);
     } else {
@@ -158,7 +174,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (playlistState.isLoadingUserPlaylists) {
       return const _SectionLoadingPlaceholder(title: 'Playlists');
     }
-
     if (playlistState.userPlaylists.isEmpty) {
       return const _SectionEmptyPlaceholder(
         title: 'Playlists',
@@ -224,7 +239,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  // ── Likes section — mixed tracks + playlists ───────────────────────────────
+  // ── Likes section ──────────────────────────────────────────────────────────
 
   Widget _buildLikesSection(String username) {
     final likedTracksAsync = ref.watch(userLikedTracksProvider(username));
@@ -307,8 +322,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ],
     );
   }
-
-  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -547,7 +560,6 @@ class _LikePlaylistRow extends StatelessWidget {
               ),
             ),
           ),
-          // No 3 dots for playlists
           const SizedBox(width: 8),
         ],
       ),
@@ -572,8 +584,6 @@ class _ThumbPlaceholder extends StatelessWidget {
     );
   }
 }
-
-// ── Helper placeholder widgets ─────────────────────────────────────────────────
 
 class _SectionLoadingPlaceholder extends StatelessWidget {
   const _SectionLoadingPlaceholder({required this.title});

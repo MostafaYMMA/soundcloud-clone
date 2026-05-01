@@ -608,3 +608,28 @@ final toggleTrackLikeProvider =
     AsyncNotifierProviderFamily<ToggleTrackLikeNotifier, void, String>(
   ToggleTrackLikeNotifier.new,
 );
+
+// ─── POST+DELETE /tracks/{track_id}/repost ────────────────────────────────────
+
+class ToggleRepostNotifier extends FamilyAsyncNotifier<void, String> {
+  @override
+  Future<void> build(String arg) async {}
+
+  Future<void> toggle({required bool currentlyReposted}) async {
+    final service = ref.read(tracksServiceProvider);
+    try {
+      if (currentlyReposted) {
+        await service.unrepostTrack(trackId: arg);
+      } else {
+        await service.repostTrack(trackId: arg);
+      }
+    } on DioException catch (e) {
+      throw Exception(_dioError(e));
+    }
+  }
+}
+
+final toggleRepostProvider =
+    AsyncNotifierProviderFamily<ToggleRepostNotifier, void, String>(
+  ToggleRepostNotifier.new,
+);
