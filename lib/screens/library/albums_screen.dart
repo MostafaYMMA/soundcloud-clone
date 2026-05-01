@@ -19,7 +19,12 @@ class AlbumsScreen extends ConsumerStatefulWidget {
   final Future<void> Function(Track track) onTrackTap;
   final void Function(Widget screen) onNavigate;
 
-  const AlbumsScreen({super.key, this.onBack, required this.onTrackTap, required this.onNavigate});
+  const AlbumsScreen({
+    super.key,
+    this.onBack,
+    required this.onTrackTap,
+    required this.onNavigate,
+  });
 
   @override
   ConsumerState<AlbumsScreen> createState() => _AlbumsScreenState();
