@@ -143,7 +143,11 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
 
     final success = await widget.ref
         .read(subscriptionProvider.notifier)
-        .upgrade(paymentToken: token, isYearly: widget.plan.isYearly);
+        .upgrade(
+          paymentToken: token,
+          isYearly: widget.plan.isYearly,
+          isPro: widget.plan.isPro, // ← routes to correct endpoint
+        );
 
     if (!mounted) return;
     if (success) {
@@ -320,10 +324,10 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
     final subState = ref.read(subscriptionProvider);
 
     if (subState.isPremium) {
-      final currentPlanIndex = _plans.lastIndexWhere(
-        (p) => subState.isCurrentPlanFor(p.billingType),
+      final isThisCurrentPlan = subState.isCurrentPlanFor(
+        plan.billingType,
+        isPro: plan.isPro,
       );
-      final isThisCurrentPlan = currentPlanIndex == _plans.indexOf(plan);
 
       if (isThisCurrentPlan) {
         _showManageDialog();
@@ -465,7 +469,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                "You're on Premium · ${subState.status?.billingCycle ?? ''}",
+                                "You're on ${subState.status?.plan ?? 'Premium'} · ${subState.status?.billingCycle ?? ''}",
                                 style: const TextStyle(
                                   color: Color(0xFF4CD38A),
                                   fontSize: 13,
@@ -495,12 +499,13 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                       child: AnimatedBuilder(
                         animation: _pageController,
                         builder: (context, child) {
-                          // Find the single current plan index — last match wins
-                          // (Artist over Artist Pro for same billing cycle)
+                          // Use indexWhere — with tier+cycle check there's exactly one match
                           final int currentPlanIndex = subState.isPremium
-                              ? _plans.lastIndexWhere(
-                                  (p) =>
-                                      subState.isCurrentPlanFor(p.billingType),
+                              ? _plans.indexWhere(
+                                  (p) => subState.isCurrentPlanFor(
+                                    p.billingType,
+                                    isPro: p.isPro,
+                                  ),
                                 )
                               : -1;
 
@@ -1120,7 +1125,7 @@ class _UpgradeFaqTileState extends State<UpgradeFaqTile> {
 
 class UpgradePlan {
   final String title;
-  final String billingType; // "Monthly" or "Yearly"
+  final String billingType;
   final String price;
   final Color topColor;
   final Color bottomColor;
