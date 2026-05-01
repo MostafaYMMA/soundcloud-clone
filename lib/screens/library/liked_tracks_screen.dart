@@ -15,7 +15,8 @@ enum LikedTracksSortOption { recentlyAdded, firstAdded, trackName, artist }
 
 class LikedTracksScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
-  const LikedTracksScreen({super.key, this.onBack});
+  final Future<void> Function(Track track) onTrackTap;
+  const LikedTracksScreen({super.key, this.onBack, required this.onTrackTap});
 
   @override
   ConsumerState<LikedTracksScreen> createState() => _LikedTracksScreenState();
@@ -355,7 +356,7 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
                       : ProfileTrackListSection(
                           title: '',
                           tracks: displayed,
-                          onTrackTap: (_) {},
+                          onTrackTap: (track) => widget.onTrackTap(track),
                           onMoreTap: (track) =>
                               showTrackContextMenu(context, track),
                         ),

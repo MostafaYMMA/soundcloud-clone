@@ -9,12 +9,17 @@ import 'widgets/album_tile.dart';
 import 'collections_screen.dart';
 import 'collections_details_mapper.dart';
 import 'context_menu_sheet.dart';
+import '../../models/track.dart';
+import 'collections_details_mapper.dart';
 
 enum AlbumsSortOption { recentlyAdded, firstAdded, albumName }
 
 class AlbumsScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
-  const AlbumsScreen({super.key, this.onBack});
+  final Future<void> Function(Track track) onTrackTap;
+  final void Function(Widget screen) onNavigate;
+
+  const AlbumsScreen({super.key, this.onBack, required this.onTrackTap, required this.onNavigate});
 
   @override
   ConsumerState<AlbumsScreen> createState() => _AlbumsScreenState();
@@ -54,12 +59,30 @@ class _AlbumsScreenState extends ConsumerState<AlbumsScreen> {
       return;
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CollectionDetailsScreen(
-          data: CollectionDetailsMapper.fromAlbum(detailed),
-        ),
+    widget.onNavigate(
+      CollectionDetailsScreen(
+        data: CollectionDetailsMapper.fromAlbum(detailed),
+        onBack: widget.onBack,
+        onTrackTap: (collectionTrack) async {
+          final playableTrack = Track(
+            trackId: collectionTrack.id,
+            title: collectionTrack.title,
+            coverImageUrl: collectionTrack.artworkPath,
+            streamUrl:
+                'https://streamline-swp.duckdns.org/api/tracks/${collectionTrack.id}/audio',
+            artist: TrackArtist(
+              userId: '',
+              username: '',
+              displayName: collectionTrack.artist,
+              followerCount: 0,
+            ),
+            visibility: 'public',
+            processingStatus: '',
+            playCount: 0,
+            durationSeconds: collectionTrack.durationSeconds,
+          );
+          await widget.onTrackTap(playableTrack);
+        },
       ),
     );
   }
