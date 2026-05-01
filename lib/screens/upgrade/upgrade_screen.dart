@@ -397,8 +397,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child:
-                const Text('Got it', style: TextStyle(color: Colors.orange)),
+            child: const Text('Got it', style: TextStyle(color: Colors.orange)),
           ),
         ],
       ),
@@ -406,9 +405,9 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
   }
 
   void _openRestrictionsScreen(UpgradePlan plan) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => RestrictionsScreen(plan: plan)),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => RestrictionsScreen(plan: plan)));
   }
 
   @override
@@ -453,8 +452,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color:
-                                const Color(0xFF4CD38A).withOpacity(0.2),
+                            color: const Color(0xFF4CD38A).withOpacity(0.2),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: const Color(0xFF4CD38A),
@@ -520,16 +518,17 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                               double pageValue = _currentPage.toDouble();
                               if (_pageController.hasClients) {
                                 try {
-                                  pageValue = _pageController.page ??
+                                  pageValue =
+                                      _pageController.page ??
                                       _currentPage.toDouble();
                                 } catch (_) {}
                               }
-                              final double distance =
-                                  (pageValue - index).abs().clamp(0.0, 1.0);
+                              final double distance = (pageValue - index)
+                                  .abs()
+                                  .clamp(0.0, 1.0);
                               final double scale = 1 - (distance * 0.08);
                               final double verticalPadding = distance * 8;
-                              final double opacity =
-                                  1 - (distance * 0.16);
+                              final double opacity = 1 - (distance * 0.16);
 
                               return AnimatedContainer(
                                 duration: const Duration(milliseconds: 180),
@@ -546,8 +545,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                                     opacity: opacity,
                                     child: UpgradePlanCard(
                                       plan: _plans[index],
-                                      isCurrentPlan:
-                                          currentPlanIndex == index,
+                                      isCurrentPlan: currentPlanIndex == index,
                                       isUpgrading: subState.isUpgrading,
                                       onSubscribePressed: () =>
                                           _onSubscribePressed(_plans[index]),
@@ -635,8 +633,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                       child: Container(
                         width: screenWidth < 380 ? 230 : 250,
                         height: screenWidth < 380 ? 230 : 250,
-                        decoration:
-                            const BoxDecoration(shape: BoxShape.circle),
+                        decoration: const BoxDecoration(shape: BoxShape.circle),
                         child: ClipOval(
                           child: Transform.scale(
                             scale: 1.2,
@@ -895,9 +892,9 @@ class RestrictionsScreen extends StatelessWidget {
     final uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open link')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Could not open link')));
       }
     }
   }

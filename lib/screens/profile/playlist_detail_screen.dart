@@ -282,23 +282,20 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                           )
                         else
                           SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final t = playlist.tracks[index];
-                                final asTrack = _playlistTrackToTrack(t);
-                                return _TrackRow(
-                                  track: t,
-                                  formatDuration: _formatTrackDuration,
-                                  onTap: () =>
-                                      widget.onTrackTap(asTrack),
-                                  onMoreTap: () => showTrackContextMenu(
-                                    context,
-                                    asTrack,
-                                  ),
-                                );
-                              },
-                              childCount: playlist.tracks.length,
-                            ),
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final t = playlist.tracks[index];
+                              final asTrack = _playlistTrackToTrack(t);
+                              return _TrackRow(
+                                track: t,
+                                formatDuration: _formatTrackDuration,
+                                onTap: () => widget.onTrackTap(asTrack),
+                                onMoreTap: () =>
+                                    showTrackContextMenu(context, asTrack),
+                              );
+                            }, childCount: playlist.tracks.length),
                           ),
 
                         const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -402,11 +399,7 @@ class _TrackRow extends StatelessWidget {
               onTap: onMoreTap,
               child: const Padding(
                 padding: EdgeInsets.only(left: 8),
-                child: Icon(
-                  Icons.more_horiz,
-                  color: Colors.white54,
-                  size: 22,
-                ),
+                child: Icon(Icons.more_horiz, color: Colors.white54, size: 22),
               ),
             ),
           ],
