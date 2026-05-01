@@ -44,9 +44,7 @@ class SubscriptionService {
         '$_baseUrl/subscriptions/me',
         options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
       );
-      return SubscriptionStatus.fromJson(
-        response.data as Map<String, dynamic>,
-      );
+      return SubscriptionStatus.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -112,8 +110,6 @@ class SubscriptionService {
     } else if (statusCode == 401) {
       return Exception('Session expired. Please log in again.');
     }
-    return Exception(
-      e.message ?? 'Something went wrong. Please try again.',
-    );
+    return Exception(e.message ?? 'Something went wrong. Please try again.');
   }
 }
