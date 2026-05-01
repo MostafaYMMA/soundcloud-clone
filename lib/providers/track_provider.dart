@@ -295,8 +295,8 @@ class FollowingFeedNotifier extends StateNotifier<FeedState> {
 
 final followingFeedProvider =
     StateNotifierProvider<FollowingFeedNotifier, FeedState>((ref) {
-  return FollowingFeedNotifier(ref.read(tracksServiceProvider));
-});
+      return FollowingFeedNotifier(ref.read(tracksServiceProvider));
+    });
 
 // ─── GET /feed/discover ───────────────────────────────────────────────────────
 
@@ -381,8 +381,8 @@ class DiscoverFeedNotifier extends StateNotifier<FeedState> {
 
 final discoverFeedProvider =
     StateNotifierProvider<DiscoverFeedNotifier, FeedState>((ref) {
-  return DiscoverFeedNotifier(ref.read(tracksServiceProvider));
-});
+      return DiscoverFeedNotifier(ref.read(tracksServiceProvider));
+    });
 
 // ─── POST /tracks/{track_id}/plays ───────────────────────────────────────────
 
@@ -406,8 +406,8 @@ class RecordPlayNotifier extends FamilyAsyncNotifier<void, String> {
 
 final recordPlayProvider =
     AsyncNotifierProviderFamily<RecordPlayNotifier, void, String>(
-  RecordPlayNotifier.new,
-);
+      RecordPlayNotifier.new,
+    );
 
 // ─── POST /tracks/ ────────────────────────────────────────────────────────────
 
@@ -527,8 +527,8 @@ class UpdateTrackNotifier extends FamilyAsyncNotifier<Track?, String> {
 
 final updateTrackProvider =
     AsyncNotifierProviderFamily<UpdateTrackNotifier, Track?, String>(
-  UpdateTrackNotifier.new,
-);
+      UpdateTrackNotifier.new,
+    );
 
 // ─── DELETE /tracks/{track_id} ───────────────────────────────────────────────
 
@@ -553,8 +553,8 @@ class DeleteTrackNotifier extends FamilyAsyncNotifier<void, String> {
 
 final deleteTrackProvider =
     AsyncNotifierProviderFamily<DeleteTrackNotifier, void, String>(
-  DeleteTrackNotifier.new,
-);
+      DeleteTrackNotifier.new,
+    );
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -606,8 +606,8 @@ class ToggleTrackLikeNotifier extends FamilyAsyncNotifier<void, String> {
 
 final toggleTrackLikeProvider =
     AsyncNotifierProviderFamily<ToggleTrackLikeNotifier, void, String>(
-  ToggleTrackLikeNotifier.new,
-);
+      ToggleTrackLikeNotifier.new,
+    );
 
 // ─── POST+DELETE /tracks/{track_id}/repost ────────────────────────────────────
 
@@ -631,5 +631,5 @@ class ToggleRepostNotifier extends FamilyAsyncNotifier<void, String> {
 
 final toggleRepostProvider =
     AsyncNotifierProviderFamily<ToggleRepostNotifier, void, String>(
-  ToggleRepostNotifier.new,
-);
+      ToggleRepostNotifier.new,
+    );

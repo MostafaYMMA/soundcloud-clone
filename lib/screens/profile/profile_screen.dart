@@ -126,17 +126,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         if (!mounted) return;
         final ids = tracks.map((t) => t.trackId).toSet();
         final existing = ref.read(repostedTracksProvider);
-        ref
-            .read(repostedTracksProvider.notifier)
-            .setAll({...existing, ...ids});
+        ref.read(repostedTracksProvider.notifier).setAll({...existing, ...ids});
       });
     });
   }
 
   Future<void> _openEditProfile() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const EditProfileScreen()));
     if (mounted) {
       final username = ref.read(authProvider).user?.userName;
       if (username != null && username.isNotEmpty) {
@@ -152,11 +150,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       onTrackTap: widget.onTrackTap ?? (_) async {},
       onBack: widget.onNavigate != null
           ? () => widget.onNavigate!(
-                ProfileScreen(
-                  onTrackTap: widget.onTrackTap,
-                  onNavigate: widget.onNavigate,
-                ),
-              )
+              ProfileScreen(
+                onTrackTap: widget.onTrackTap,
+                onNavigate: widget.onNavigate,
+              ),
+            )
           : null,
     );
     if (widget.onNavigate != null) {
@@ -308,14 +306,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             final item = preview[index];
             return switch (item) {
               _LikeTrack(:final track) => _LikeTrackRow(
-                  track: track,
-                  onTap: () => widget.onTrackTap?.call(track),
-                  onMoreTap: () => showTrackContextMenu(context, track),
-                ),
+                track: track,
+                onTap: () => widget.onTrackTap?.call(track),
+                onMoreTap: () => showTrackContextMenu(context, track),
+              ),
               _LikePlaylist(:final playlist) => _LikePlaylistRow(
-                  playlist: playlist,
-                  onTap: () => _openPlaylistDetail(playlist),
-                ),
+                playlist: playlist,
+                onTap: () => _openPlaylistDetail(playlist),
+              ),
             };
           },
         ),
@@ -428,8 +426,8 @@ class _LikeTrackRow extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
-            child: (track.coverImageUrl != null &&
-                    track.coverImageUrl!.isNotEmpty)
+            child:
+                (track.coverImageUrl != null && track.coverImageUrl!.isNotEmpty)
                 ? Image.network(
                     track.coverImageUrl!,
                     width: 58,

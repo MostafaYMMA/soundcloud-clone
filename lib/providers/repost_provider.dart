@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final repostedTracksProvider =
     StateNotifierProvider<RepostedTracksNotifier, Set<String>>(
-  (ref) => RepostedTracksNotifier(),
-);
+      (ref) => RepostedTracksNotifier(),
+    );
 
 class RepostedTracksNotifier extends StateNotifier<Set<String>> {
   RepostedTracksNotifier() : super({});

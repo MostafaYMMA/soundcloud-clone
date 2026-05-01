@@ -61,8 +61,9 @@ class _AddToPlaylistSheetState extends ConsumerState<_AddToPlaylistSheet> {
           .read(playlistProvider.notifier)
           .getPlaylistDetails(playlist.id);
       if (details != null) {
-        final hasTrack =
-            details.tracks.any((t) => t.id == widget.track.trackId);
+        final hasTrack = details.tracks.any(
+          (t) => t.id == widget.track.trackId,
+        );
         if (hasTrack) contained.add(playlist.id);
       }
     }
@@ -78,8 +79,10 @@ class _AddToPlaylistSheetState extends ConsumerState<_AddToPlaylistSheet> {
   List<Playlist> _filteredPlaylists(List<Playlist> all) {
     if (_searchQuery.trim().isEmpty) return all;
     return all
-        .where((p) =>
-            p.name.toLowerCase().contains(_searchQuery.trim().toLowerCase()))
+        .where(
+          (p) =>
+              p.name.toLowerCase().contains(_searchQuery.trim().toLowerCase()),
+        )
         .toList();
   }
 
@@ -147,14 +150,14 @@ class _AddToPlaylistSheetState extends ConsumerState<_AddToPlaylistSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel',
-                style: TextStyle(color: Colors.white54)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white54),
+            ),
           ),
           TextButton(
-            onPressed: () =>
-                Navigator.of(ctx).pop(nameController.text.trim()),
-            child: const Text('Create',
-                style: TextStyle(color: Colors.orange)),
+            onPressed: () => Navigator.of(ctx).pop(nameController.text.trim()),
+            child: const Text('Create', style: TextStyle(color: Colors.orange)),
           ),
         ],
       ),
@@ -165,10 +168,9 @@ class _AddToPlaylistSheetState extends ConsumerState<_AddToPlaylistSheet> {
           .read(playlistProvider.notifier)
           .createPlaylist(name: name);
       if (playlist != null) {
-        await ref.read(playlistProvider.notifier).addTrack(
-              playlistId: playlist.id,
-              trackId: widget.track.trackId,
-            );
+        await ref
+            .read(playlistProvider.notifier)
+            .addTrack(playlistId: playlist.id, trackId: widget.track.trackId);
         if (mounted) Navigator.of(context).pop();
       }
     }
@@ -216,22 +218,23 @@ class _AddToPlaylistSheetState extends ConsumerState<_AddToPlaylistSheet> {
                   child: Row(
                     children: [
                       const SizedBox(width: 14),
-                      const Icon(Icons.search,
-                          color: Colors.white54, size: 20),
+                      const Icon(Icons.search, color: Colors.white54, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
                           controller: _searchController,
-                          onChanged: (v) =>
-                              setState(() => _searchQuery = v),
+                          onChanged: (v) => setState(() => _searchQuery = v),
                           style: const TextStyle(
-                              color: Colors.white, fontSize: 15),
+                            color: Colors.white,
+                            fontSize: 15,
+                          ),
                           cursorColor: Colors.white,
                           decoration: InputDecoration(
-                            hintText:
-                                'Search ${allPlaylists.length} playlists',
+                            hintText: 'Search ${allPlaylists.length} playlists',
                             hintStyle: const TextStyle(
-                                color: Colors.white38, fontSize: 15),
+                              color: Colors.white38,
+                              fontSize: 15,
+                            ),
                             border: InputBorder.none,
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
@@ -267,21 +270,24 @@ class _AddToPlaylistSheetState extends ConsumerState<_AddToPlaylistSheet> {
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(color: Colors.white24),
                               ),
-                              child: const Icon(Icons.add,
-                                  color: Colors.white, size: 26),
+                              child: const Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 26,
+                              ),
                             ),
                             title: const Text(
                               'New playlist',
                               style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500),
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                           const Divider(color: Colors.white12, height: 1),
                           ...filtered.map((playlist) {
-                            final isChecked =
-                                _selected.contains(playlist.id);
+                            final isChecked = _selected.contains(playlist.id);
                             return ListTile(
                               onTap: () => setState(() {
                                 if (isChecked) {
@@ -306,14 +312,17 @@ class _AddToPlaylistSheetState extends ConsumerState<_AddToPlaylistSheet> {
                               title: Text(
                                 playlist.name,
                                 style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500),
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                               subtitle: Text(
                                 '${playlist.trackCount} tracks',
                                 style: const TextStyle(
-                                    color: Colors.white54, fontSize: 13),
+                                  color: Colors.white54,
+                                  fontSize: 13,
+                                ),
                               ),
                               trailing: Checkbox(
                                 value: isChecked,
@@ -326,8 +335,7 @@ class _AddToPlaylistSheetState extends ConsumerState<_AddToPlaylistSheet> {
                                 }),
                                 activeColor: Colors.white,
                                 checkColor: Colors.black,
-                                side: const BorderSide(
-                                    color: Colors.white54),
+                                side: const BorderSide(color: Colors.white54),
                               ),
                             );
                           }),
@@ -355,14 +363,17 @@ class _AddToPlaylistSheetState extends ConsumerState<_AddToPlaylistSheet> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.black),
+                              strokeWidth: 2,
+                              color: Colors.black,
+                            ),
                           )
                         : const Text(
                             'Done',
                             style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold),
+                              color: Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                   ),
                 ),
@@ -382,8 +393,7 @@ class _PlaylistThumb extends StatelessWidget {
       width: 52,
       height: 52,
       color: const Color(0xFF2A2A2A),
-      child:
-          const Icon(Icons.queue_music, color: Colors.white38, size: 24),
+      child: const Icon(Icons.queue_music, color: Colors.white38, size: 24),
     );
   }
 }

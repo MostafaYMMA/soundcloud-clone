@@ -30,11 +30,12 @@ class Comment {
       trackId: json['track_id']?.toString() ?? '',
       userId: json['user_id']?.toString() ?? '',
       // API doesn't return display_name — use username or fallback
-      userDisplayName: json['display_name']?.toString() ??
+      userDisplayName:
+          json['display_name']?.toString() ??
           json['username']?.toString() ??
           'Unknown',
-      userProfilePicture: json['profile_picture']?.toString() ??
-          json['avatar_url']?.toString(),
+      userProfilePicture:
+          json['profile_picture']?.toString() ?? json['avatar_url']?.toString(),
       content: json['content']?.toString() ?? '',
       timestampInTrack: json['timestamp_in_track'] as int?,
       parentCommentId: json['parent_comment_id']?.toString(),

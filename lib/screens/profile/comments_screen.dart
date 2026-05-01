@@ -58,9 +58,9 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
       _commentController.clear();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to post comment: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to post comment: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSending = false);
@@ -89,8 +89,7 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final commentsAsync =
-        ref.watch(commentsProvider(widget.track.trackId));
+    final commentsAsync = ref.watch(commentsProvider(widget.track.trackId));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -210,26 +209,17 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
                     const SizedBox(width: 8),
                     Text(
                       '${widget.track.likeCount ?? 0}',
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.grey[400], fontSize: 14),
                     ),
                     const Spacer(),
                     Text(
                       '${comments.length} comments',
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: Colors.grey[400], fontSize: 13),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       '· ${widget.track.repostCount ?? 0} reposts',
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: Colors.grey[400], fontSize: 13),
                     ),
                   ],
                 ),
@@ -321,7 +311,8 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
               padding: EdgeInsets.only(
                 left: AppDimensions.spaceMedium,
                 right: AppDimensions.spaceMedium,
-                bottom: MediaQuery.of(context).viewInsets.bottom +
+                bottom:
+                    MediaQuery.of(context).viewInsets.bottom +
                     AppDimensions.spaceMedium,
                 top: 8,
               ),
@@ -331,14 +322,13 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
                   CircleAvatar(
                     radius: 18,
                     backgroundColor: AppColors.surfaceLight,
-                    backgroundImage: ref.watch(authProvider).user?.avatarUrl
-                                ?.isNotEmpty ==
+                    backgroundImage:
+                        ref.watch(authProvider).user?.avatarUrl?.isNotEmpty ==
                             true
-                        ? NetworkImage(
-                            ref.watch(authProvider).user!.avatarUrl!,
-                          )
+                        ? NetworkImage(ref.watch(authProvider).user!.avatarUrl!)
                         : null,
-                    child: ref.watch(authProvider).user?.avatarUrl?.isNotEmpty ==
+                    child:
+                        ref.watch(authProvider).user?.avatarUrl?.isNotEmpty ==
                             true
                         ? null
                         : const Icon(
@@ -376,8 +366,9 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
                                 ),
                                 border: InputBorder.none,
                                 isDense: true,
-                                contentPadding:
-                                    EdgeInsets.symmetric(vertical: 10),
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
                               ),
                             ),
                           ),
@@ -455,15 +446,11 @@ class _CommentTile extends StatelessWidget {
                 backgroundColor: AppColors.surfaceLight,
                 backgroundImage:
                     (comment.userProfilePicture?.isNotEmpty ?? false)
-                        ? NetworkImage(comment.userProfilePicture!)
-                        : null,
+                    ? NetworkImage(comment.userProfilePicture!)
+                    : null,
                 child: (comment.userProfilePicture?.isNotEmpty ?? false)
                     ? null
-                    : const Icon(
-                        Icons.person,
-                        color: Colors.white54,
-                        size: 18,
-                      ),
+                    : const Icon(Icons.person, color: Colors.white54, size: 18),
               ),
               const SizedBox(width: 10),
 
@@ -589,19 +576,17 @@ class _CommentTile extends StatelessWidget {
                         CircleAvatar(
                           radius: 14,
                           backgroundColor: AppColors.surfaceLight,
-                          backgroundImage: (reply.userProfilePicture
-                                      ?.isNotEmpty ??
-                                  false)
+                          backgroundImage:
+                              (reply.userProfilePicture?.isNotEmpty ?? false)
                               ? NetworkImage(reply.userProfilePicture!)
                               : null,
-                          child:
-                              (reply.userProfilePicture?.isNotEmpty ?? false)
-                                  ? null
-                                  : const Icon(
-                                      Icons.person,
-                                      color: Colors.white54,
-                                      size: 14,
-                                    ),
+                          child: (reply.userProfilePicture?.isNotEmpty ?? false)
+                              ? null
+                              : const Icon(
+                                  Icons.person,
+                                  color: Colors.white54,
+                                  size: 14,
+                                ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(

@@ -159,8 +159,7 @@ class _RootScreenState extends ConsumerState<RootScreen> {
 
   Future<void> _handlePlay(Track track) async {
     // If this track is already in the queue, just navigate to it
-    final existingIndex =
-        _queue.indexWhere((t) => t.trackId == track.trackId);
+    final existingIndex = _queue.indexWhere((t) => t.trackId == track.trackId);
     if (existingIndex >= 0) {
       _currentQueueIndex = existingIndex;
       await _playTrack(track);
