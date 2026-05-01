@@ -58,9 +58,8 @@ class PlaylistState {
       isLiking: isLiking ?? this.isLiking,
       isUpdating: isUpdating ?? this.isUpdating,
       error: clearError ? null : error ?? this.error,
-      successMessage: clearSuccess
-          ? null
-          : successMessage ?? this.successMessage,
+      successMessage:
+          clearSuccess ? null : successMessage ?? this.successMessage,
     );
   }
 }
@@ -244,7 +243,10 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
     state = state.copyWith(isUpdating: true, clearError: true);
 
     try {
-      await _service.unlikePlaylist(playlistId: playlistId, accessToken: token);
+      await _service.unlikePlaylist(
+        playlistId: playlistId,
+        accessToken: token,
+      );
       await fetchLikedPlaylists();
       state = state.copyWith(
         isUpdating: false,
@@ -301,10 +303,7 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
         trackId: trackId,
         accessToken: token,
       );
-      state = state.copyWith(
-        isUpdating: false,
-        successMessage: 'Track removed.',
-      );
+      state = state.copyWith(isUpdating: false, successMessage: 'Track removed.');
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -333,10 +332,7 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
         accessToken: token,
       );
       await fetchLikedPlaylists();
-      state = state.copyWith(
-        isUpdating: false,
-        successMessage: 'Cover updated.',
-      );
+      state = state.copyWith(isUpdating: false, successMessage: 'Cover updated.');
     } catch (e) {
       state = state.copyWith(isUpdating: false, error: e.toString());
     }
@@ -409,14 +405,8 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
         description: description,
         isPublic: isPublic,
       );
-
-      // Refresh both lists so UI stays in sync
       await fetchLikedPlaylists();
-
-      state = state.copyWith(
-        isUpdating: false,
-        successMessage: 'Playlist updated.',
-      );
+      state = state.copyWith(isUpdating: false, successMessage: 'Playlist updated.');
       return updated;
     } catch (e) {
       state = state.copyWith(
@@ -441,17 +431,16 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
     state = state.copyWith(isUpdating: true, clearError: true);
 
     try {
-      await _service.deletePlaylist(playlistId: playlistId, accessToken: token);
-
-      // Remove from local state immediately for instant UI feedback
+      await _service.deletePlaylist(
+        playlistId: playlistId,
+        accessToken: token,
+      );
       state = state.copyWith(
         isUpdating: false,
-        userPlaylists: state.userPlaylists
-            .where((p) => p.id != playlistId)
-            .toList(),
-        likedPlaylists: state.likedPlaylists
-            .where((p) => p.id != playlistId)
-            .toList(),
+        userPlaylists:
+            state.userPlaylists.where((p) => p.id != playlistId).toList(),
+        likedPlaylists:
+            state.likedPlaylists.where((p) => p.id != playlistId).toList(),
         successMessage: 'Playlist deleted.',
       );
       return true;
@@ -469,9 +458,17 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
   }
 }
 
-final playlistProvider = StateNotifierProvider<PlaylistNotifier, PlaylistState>(
-  (ref) {
-    final service = PlaylistService(dio: Dio());
-    return PlaylistNotifier(service, ref);
-  },
-);
+final playlistProvider =
+    StateNotifierProvider<PlaylistNotifier, PlaylistState>((ref) {
+  final service = PlaylistService(dio: Dio());
+  return PlaylistNotifier(service, ref);
+});
+
+// ── FutureProvider for liked playlists — used by profile Likes section ────────
+
+final userLikedPlaylistsProvider = FutureProvider<List<Playlist>>((ref) async {
+  final token = ref.watch(authProvider).tokens?.accessToken;
+  if (token == null || token.isEmpty) return [];
+  final service = PlaylistService(dio: Dio());
+  return service.getLikedPlaylists(token);
+});

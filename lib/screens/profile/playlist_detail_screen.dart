@@ -3,17 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/playlist.dart';
 import '../../models/track.dart';
 import '../../providers/playlist_provider.dart';
-import '../../constants/app_colors.dart';
+import '../../screens/library/context_menu_sheet.dart';
 
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
   const PlaylistDetailScreen({
     super.key,
     required this.playlist,
     required this.onTrackTap,
+    this.onBack,
   });
 
   final Playlist playlist;
   final Future<void> Function(Track) onTrackTap;
+
+  /// Use this instead of Navigator.pop() when screen was pushed via onNavigate
+  final VoidCallback? onBack;
 
   @override
   ConsumerState<PlaylistDetailScreen> createState() =>
@@ -44,13 +48,22 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     });
   }
 
+  void _goBack() {
+    if (widget.onBack != null) {
+      widget.onBack!();
+    } else {
+      Navigator.of(context).pop();
+    }
+  }
+
   String _formatTotalDuration(List<PlaylistTrack> tracks) {
     final total = tracks.fold(0, (sum, t) => sum + t.durationSeconds);
     final h = total ~/ 3600;
     final m = (total % 3600) ~/ 60;
     final s = total % 60;
-    if (h > 0)
+    if (h > 0) {
       return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    }
     return '$m:${s.toString().padLeft(2, '0')}';
   }
 
@@ -75,11 +88,11 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
+                  onTap: _goBack,
                   child: Container(
                     width: 36,
                     height: 36,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.white12,
                       shape: BoxShape.circle,
                     ),
@@ -111,7 +124,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Cover art
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
                                   child: playlist.coverUrl.isNotEmpty
@@ -128,8 +140,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                       : const _CoverPlaceholder(size: 110),
                                 ),
                                 const SizedBox(width: 16),
-
-                                // Info
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -153,8 +163,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                         ),
                                       ),
                                       const SizedBox(height: 10),
-
-                                      // Owner row
                                       Row(
                                         children: [
                                           Container(
@@ -191,13 +199,12 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
 
                         const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
-                        // ── Action row (like, more, shuffle, play) ────────
+                        // ── Action row ────────────────────────────────────
                         SliverToBoxAdapter(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Row(
                               children: [
-                                // Like
                                 GestureDetector(
                                   onTap: () {},
                                   child: const Icon(
@@ -207,7 +214,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 18),
-                                // More
                                 GestureDetector(
                                   onTap: () {},
                                   child: const Icon(
@@ -217,7 +223,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                   ),
                                 ),
                                 const Spacer(),
-                                // Shuffle
                                 GestureDetector(
                                   onTap: () {},
                                   child: Icon(
@@ -227,13 +232,13 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 16),
-                                // Play button
                                 GestureDetector(
                                   onTap: () {
                                     if (playlist.tracks.isNotEmpty) {
-                                      final first = playlist.tracks.first;
                                       widget.onTrackTap(
-                                        _playlistTrackToTrack(first),
+                                        _playlistTrackToTrack(
+                                          playlist.tracks.first,
+                                        ),
                                       );
                                     }
                                   },
@@ -277,18 +282,23 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                           )
                         else
                           SliverList(
-                            delegate: SliverChildBuilderDelegate((
-                              context,
-                              index,
-                            ) {
-                              final t = playlist.tracks[index];
-                              return _TrackRow(
-                                track: t,
-                                formatDuration: _formatTrackDuration,
-                                onTap: () =>
-                                    widget.onTrackTap(_playlistTrackToTrack(t)),
-                              );
-                            }, childCount: playlist.tracks.length),
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final t = playlist.tracks[index];
+                                final asTrack = _playlistTrackToTrack(t);
+                                return _TrackRow(
+                                  track: t,
+                                  formatDuration: _formatTrackDuration,
+                                  onTap: () =>
+                                      widget.onTrackTap(asTrack),
+                                  onMoreTap: () => showTrackContextMenu(
+                                    context,
+                                    asTrack,
+                                  ),
+                                );
+                              },
+                              childCount: playlist.tracks.length,
+                            ),
                           ),
 
                         const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -301,7 +311,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     );
   }
 
-  /// Converts a PlaylistTrack to a Track so RootScreen._handlePlay can use it.
   Track _playlistTrackToTrack(PlaylistTrack t) {
     return Track(
       trackId: t.id,
@@ -329,11 +338,13 @@ class _TrackRow extends StatelessWidget {
     required this.track,
     required this.formatDuration,
     required this.onTap,
+    required this.onMoreTap,
   });
 
   final PlaylistTrack track;
   final String Function(int) formatDuration;
   final VoidCallback onTap;
+  final VoidCallback onMoreTap;
 
   @override
   Widget build(BuildContext context) {
@@ -344,7 +355,6 @@ class _TrackRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
-            // Artwork
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: track.artworkUrl.isNotEmpty
@@ -359,8 +369,6 @@ class _TrackRow extends StatelessWidget {
                   : const _TrackArtPlaceholder(),
             ),
             const SizedBox(width: 12),
-
-            // Title + artist
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,13 +398,15 @@ class _TrackRow extends StatelessWidget {
                 ],
               ),
             ),
-
-            // More button
             GestureDetector(
-              onTap: () {},
+              onTap: onMoreTap,
               child: const Padding(
                 padding: EdgeInsets.only(left: 8),
-                child: Icon(Icons.more_horiz, color: Colors.white54, size: 22),
+                child: Icon(
+                  Icons.more_horiz,
+                  color: Colors.white54,
+                  size: 22,
+                ),
               ),
             ),
           ],

@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/playlist_provider.dart';
-import '../../providers/music_providers.dart';
+import '../../providers/track_provider.dart';
 import '../../models/user.dart';
 import '../../models/track.dart';
 import '../../models/playlist.dart';
+import '../../screens/library/context_menu_sheet.dart';
 import 'widgets/profile_header_section.dart';
 import 'widgets/profile_completion_section.dart';
 import 'widgets/profile_more_button.dart';
@@ -13,8 +14,6 @@ import 'widgets/profile_playlists_section.dart';
 import 'widgets/profile_track_list_section.dart';
 import 'edit_profile_screen.dart';
 import 'playlist_detail_screen.dart';
-import '../../providers/music_providers.dart';
-import '../../providers/track_provider.dart';
 
 const Color kBackgroundColor = Color(0xFF0F0F0F);
 
@@ -69,14 +68,26 @@ List<ProfileCompletionCardData> buildCompletionCards(User user) {
   ];
 }
 
+// ── Sealed type for mixed likes feed ──────────────────────────────────────────
+
+sealed class _LikeItem {}
+
+class _LikeTrack extends _LikeItem {
+  final Track track;
+  _LikeTrack(this.track);
+}
+
+class _LikePlaylist extends _LikeItem {
+  final Playlist playlist;
+  _LikePlaylist(this.playlist);
+}
+
+// ── Profile Screen ─────────────────────────────────────────────────────────────
+
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key, this.onTrackTap, this.onNavigate});
 
-  /// Passed down from RootScreen via LibraryScreen — plays a track
   final Future<void> Function(Track)? onTrackTap;
-
-  /// Passed down from RootScreen via LibraryScreen — pushes a sub-screen
-  /// while keeping the mini player visible
   final void Function(Widget)? onNavigate;
 
   @override
@@ -95,15 +106,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void _loadAllSections() {
     final username = ref.read(authProvider).user?.userName;
     if (username == null || username.isEmpty) return;
+
     ref.read(playlistProvider.notifier).fetchUserPlaylists(username);
-    ref.invalidate(userTracksProvider(username));
+    ref.invalidate(userRepostsProvider(username));
     ref.invalidate(userLikedTracksProvider(username));
+    ref.invalidate(userLikedPlaylistsProvider);
   }
 
   Future<void> _openEditProfile() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const EditProfileScreen()));
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+    );
     if (mounted) {
       final username = ref.read(authProvider).user?.userName;
       if (username != null && username.isNotEmpty) {
@@ -113,12 +126,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  /// Opens playlist detail. Uses onNavigate to keep mini player visible,
-  /// falls back to Navigator.push if onNavigate wasn't provided.
   void _openPlaylistDetail(Playlist playlist) {
     final screen = PlaylistDetailScreen(
       playlist: playlist,
       onTrackTap: widget.onTrackTap ?? (_) async {},
+      // Pass onBack so the back button pops the sub-screen correctly
+      // instead of navigating all the way back to login
+      onBack: widget.onNavigate != null
+          ? () => widget.onNavigate!(
+                // Pop by pushing the profile screen itself back
+                ProfileScreen(
+                  onTrackTap: widget.onTrackTap,
+                  onNavigate: widget.onNavigate,
+                ),
+              )
+          : null,
     );
 
     if (widget.onNavigate != null) {
@@ -145,8 +167,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
 
     final username = ref.read(authProvider).user?.userName ?? '';
-
-    // Map Playlist → Track shape so ProfilePlaylistsSection can render cards
     final asTracks = playlistState.userPlaylists.map((p) {
       return Track(
         trackId: p.id,
@@ -169,7 +189,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       title: 'Playlists',
       tracks: asTracks,
       onTrackTap: (track) {
-        // Match the tapped card back to its Playlist by id
         final playlist = playlistState.userPlaylists.firstWhere(
           (p) => p.id == track.trackId,
           orElse: () => playlistState.userPlaylists.first,
@@ -182,8 +201,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   // ── Reposts section ────────────────────────────────────────────────────────
 
   Widget _buildRepostsSection(String username) {
-    final tracksAsync = ref.watch(userTracksProvider(username));
-    return tracksAsync.when(
+    final repostsAsync = ref.watch(userRepostsProvider(username));
+    return repostsAsync.when(
       loading: () => const _SectionLoadingPlaceholder(title: 'Reposts'),
       error: (_, __) => const _SectionErrorPlaceholder(title: 'Reposts'),
       data: (tracks) {
@@ -199,35 +218,93 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           tracks: tracks.take(3).toList(),
           onSeeAllTap: () {},
           onTrackTap: (t) => widget.onTrackTap?.call(t),
-          onMoreTap: (_) {},
+          onMoreTap: (t) => showTrackContextMenu(context, t),
         );
       },
     );
   }
 
-  // ── Likes section ──────────────────────────────────────────────────────────
+  // ── Likes section — mixed tracks + playlists ───────────────────────────────
 
   Widget _buildLikesSection(String username) {
-    final likedAsync = ref.watch(userLikedTracksProvider(username));
-    return likedAsync.when(
-      loading: () => const _SectionLoadingPlaceholder(title: 'Likes'),
-      error: (_, __) => const _SectionErrorPlaceholder(title: 'Likes'),
-      data: (tracks) {
-        if (tracks.isEmpty) {
-          return const _SectionEmptyPlaceholder(
-            title: 'Likes',
-            message: 'No liked tracks yet',
-          );
-        }
-        return ProfileTrackListSection(
-          title: 'Likes',
-          showSeeAll: tracks.length > 3,
-          tracks: tracks.take(3).toList(),
-          onSeeAllTap: () {},
-          onTrackTap: (t) => widget.onTrackTap?.call(t),
-          onMoreTap: (_) {},
-        );
-      },
+    final likedTracksAsync = ref.watch(userLikedTracksProvider(username));
+    final likedPlaylistsAsync = ref.watch(userLikedPlaylistsProvider);
+
+    if (likedTracksAsync.isLoading || likedPlaylistsAsync.isLoading) {
+      return const _SectionLoadingPlaceholder(title: 'Likes');
+    }
+
+    final tracks = likedTracksAsync.valueOrNull ?? [];
+    final playlists = likedPlaylistsAsync.valueOrNull ?? [];
+
+    final List<_LikeItem> items = [
+      ...tracks.map((t) => _LikeTrack(t)),
+      ...playlists.map((p) => _LikePlaylist(p)),
+    ];
+
+    if (items.isEmpty) {
+      return const _SectionEmptyPlaceholder(
+        title: 'Likes',
+        message: 'No liked tracks or playlists yet',
+      );
+    }
+
+    final preview = items.take(3).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              const Text(
+                'Likes',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              if (items.length > 3)
+                GestureDetector(
+                  onTap: () {},
+                  child: Text(
+                    'See all',
+                    style: TextStyle(
+                      color: Colors.grey[300],
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        ListView.separated(
+          itemCount: preview.length,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          separatorBuilder: (_, __) => const SizedBox(height: 14),
+          itemBuilder: (context, index) {
+            final item = preview[index];
+            return switch (item) {
+              _LikeTrack(:final track) => _LikeTrackRow(
+                  track: track,
+                  onTap: () => widget.onTrackTap?.call(track),
+                  onMoreTap: () => showTrackContextMenu(context, track),
+                ),
+              _LikePlaylist(:final playlist) => _LikePlaylistRow(
+                  playlist: playlist,
+                  onTap: () => _openPlaylistDetail(playlist),
+                ),
+            };
+          },
+        ),
+      ],
     );
   }
 
@@ -292,6 +369,205 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Like row widgets ───────────────────────────────────────────────────────────
+
+class _LikeTrackRow extends StatelessWidget {
+  const _LikeTrackRow({
+    required this.track,
+    required this.onTap,
+    required this.onMoreTap,
+  });
+
+  final Track track;
+  final VoidCallback onTap;
+  final VoidCallback onMoreTap;
+
+  String _formatCount(int count) {
+    if (count >= 1000000) {
+      final v = count / 1000000;
+      return '${v % 1 == 0 ? v.toInt() : v.toStringAsFixed(1)}M';
+    } else if (count >= 1000) {
+      final v = count / 1000;
+      return '${v % 1 == 0 ? v.toInt() : v.toStringAsFixed(1)}K';
+    }
+    return count.toString();
+  }
+
+  String _formatDuration(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: (track.coverImageUrl != null &&
+                    track.coverImageUrl!.isNotEmpty)
+                ? Image.network(
+                    track.coverImageUrl!,
+                    width: 58,
+                    height: 58,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        const _ThumbPlaceholder(isTrack: true),
+                  )
+                : const _ThumbPlaceholder(isTrack: true),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    track.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: (screenWidth * 0.046).clamp(14.0, 17.0),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    track.artist?.displayName ?? 'Unknown Artist',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: (screenWidth * 0.04).clamp(13.0, 15.0),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '▶ ${_formatCount(track.likeCount ?? 0)} · ${_formatDuration(track.durationSeconds ?? 0)}',
+                    style: TextStyle(
+                      color: Colors.grey[500],
+                      fontSize: (screenWidth * 0.037).clamp(12.0, 14.0),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: onMoreTap,
+            child: const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Icon(Icons.more_horiz, color: Colors.white70),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LikePlaylistRow extends StatelessWidget {
+  const _LikePlaylistRow({required this.playlist, required this.onTap});
+
+  final Playlist playlist;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: playlist.coverUrl.isNotEmpty
+                ? Image.network(
+                    playlist.coverUrl,
+                    width: 58,
+                    height: 58,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        const _ThumbPlaceholder(isTrack: false),
+                  )
+                : const _ThumbPlaceholder(isTrack: false),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    playlist.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: (screenWidth * 0.046).clamp(14.0, 17.0),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    playlist.owner,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: (screenWidth * 0.04).clamp(13.0, 15.0),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${playlist.trackCount} tracks',
+                    style: TextStyle(
+                      color: Colors.grey[500],
+                      fontSize: (screenWidth * 0.037).clamp(12.0, 14.0),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // No 3 dots for playlists
+          const SizedBox(width: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThumbPlaceholder extends StatelessWidget {
+  const _ThumbPlaceholder({required this.isTrack});
+  final bool isTrack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 58,
+      height: 58,
+      color: const Color(0xFF2A2A2A),
+      child: Icon(
+        isTrack ? Icons.music_note : Icons.queue_music,
+        color: Colors.white54,
       ),
     );
   }
