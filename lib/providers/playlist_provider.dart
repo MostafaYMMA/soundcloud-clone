@@ -368,6 +368,11 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
         name: name,
         description: description,
       );
+
+      await _service.likePlaylist(
+        playlistId: playlist.id,
+        accessToken: token,
+      );
       await fetchLikedPlaylists();
       state = state.copyWith(
         isCreating: false,
