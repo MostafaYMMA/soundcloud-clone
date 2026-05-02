@@ -2,6 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_project/models/auth_token.dart';
 
 void main() {
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+  });
   group('AuthTokens.fromJson', () {
     test('parses tokens from data wrapper', () {
       final tokens = AuthTokens.fromJson({
@@ -35,7 +38,9 @@ void main() {
     });
 
     test('handles empty data map', () {
-      final tokens = AuthTokens.fromJson({'data': {}});
+      final tokens = AuthTokens.fromJson({
+        'data': <String, dynamic>{}
+      });
       expect(tokens.accessToken, '');
       expect(tokens.refreshToken, '');
     });

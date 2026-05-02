@@ -45,6 +45,9 @@ final _trackData = {
 };
 
 void main() {
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+  });
   late MockDio mockDio;
   late TracksService sut;
 

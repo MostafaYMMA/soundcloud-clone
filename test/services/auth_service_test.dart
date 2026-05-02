@@ -24,6 +24,9 @@ DioException _dioErr({int statusCode = 500, dynamic data}) => DioException(
     );
 
 void main() {
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+  });
   late MockDio mockDio;
   late AuthService sut;
 

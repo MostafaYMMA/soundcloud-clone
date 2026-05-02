@@ -35,6 +35,9 @@ final _playlistData = {
 };
 
 void main() {
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+  });
   late MockDio mockDio;
   late PlaylistService sut;
 

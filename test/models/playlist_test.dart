@@ -2,6 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_project/models/playlist.dart';
 
 void main() {
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+  });
   // ── PlaylistTrack ─────────────────────────────────────────────────────────
 
   group('PlaylistTrack.fromJson', () {
