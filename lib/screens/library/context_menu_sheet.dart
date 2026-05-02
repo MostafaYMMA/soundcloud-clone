@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:my_project/providers/playlist_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
@@ -796,5 +797,124 @@ class _Divider extends StatelessWidget {
     color: AppColors.divider,
     indent: AppDimensions.spaceMedium,
     endIndent: AppDimensions.spaceMedium,
+  );
+}
+
+void _showPlaylistPicker(BuildContext context, Track track) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (ctx) {
+      return Consumer(
+        builder: (context, ref, _) {
+          final playlists = ref.watch(playlistProvider).likedPlaylists;
+
+          return DraggableScrollableSheet(
+            initialChildSize: 0.5,
+            minChildSize: 0.3,
+            maxChildSize: 0.85,
+            expand: false,
+            builder: (context, scrollController) {
+              return Container(
+                decoration: const BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+
+                    // handle bar
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    const Text(
+                      "Add to playlist",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    Expanded(
+                      child: playlists.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "No playlists found",
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            )
+                          : ListView.separated(
+                              controller: scrollController,
+                              itemCount: playlists.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(color: Colors.white10),
+                              itemBuilder: (context, index) {
+                                final p = playlists[index];
+
+                                return ListTile(
+                                  leading: const Icon(
+                                    Icons.queue_music,
+                                    color: Colors.white,
+                                  ),
+                                  title: Text(
+                                    p.name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    p.description ?? '',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  onTap: () async {
+                                    final messenger = ScaffoldMessenger.of(
+                                      context,
+                                    );
+
+                                    Navigator.pop(context); // close sheet FIRST
+
+                                    await ref
+                                        .read(playlistProvider.notifier)
+                                        .addTrack(
+                                          playlistId: p.id,
+                                          trackId: track.trackId,
+                                        );
+
+                                    messenger.showSnackBar(
+                                      const SnackBar(
+                                        content: Text("Added to playlist"),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      );
+    },
   );
 }

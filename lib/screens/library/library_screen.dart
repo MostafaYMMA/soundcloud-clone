@@ -86,7 +86,9 @@ class LibraryScreen extends ConsumerWidget {
               delegate: SliverChildListDelegate([
                 LibraryTile(
                   title: 'Liked Tracks',
-                  onTap: () => onNavigate(LikedTracksScreen(onBack: onBack)),
+                  onTap: () => onNavigate(
+                    LikedTracksScreen(onBack: onBack, onTrackTap: onTrackTap),
+                  ),
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
                 LibraryTile(
@@ -102,7 +104,13 @@ class LibraryScreen extends ConsumerWidget {
                 const SizedBox(height: AppDimensions.spaceSmall),
                 LibraryTile(
                   title: 'Albums',
-                  onTap: () => onNavigate(AlbumsScreen(onBack: onBack)),
+                  onTap: () => onNavigate(
+                    AlbumsScreen(
+                      onBack: onBack,
+                      onTrackTap: onTrackTap,
+                      onNavigate: onNavigate,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
                 LibraryTile(
