@@ -18,12 +18,13 @@ class AlbumsScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
   final Future<void> Function(Track track) onTrackTap;
   final void Function(Widget screen) onNavigate;
-
+  final void Function(List<Track> tracks, int startIndex) onQueuePlay;
   const AlbumsScreen({
     super.key,
     this.onBack,
     required this.onTrackTap,
     required this.onNavigate,
+    required this.onQueuePlay,
   });
 
   @override
@@ -68,6 +69,7 @@ class _AlbumsScreenState extends ConsumerState<AlbumsScreen> {
       CollectionDetailsScreen(
         data: CollectionDetailsMapper.fromAlbum(detailed),
         onBack: widget.onBack,
+        onQueuePlay: widget.onQueuePlay,
         onTrackTap: (collectionTrack) async {
           final playableTrack = Track(
             trackId: collectionTrack.id,
