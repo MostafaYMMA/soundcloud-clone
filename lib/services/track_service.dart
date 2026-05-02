@@ -166,7 +166,9 @@ class TracksService {
     final res = await _dio.get('$_base/users/$username/tracks');
     final data = res.data['data'] as Map<String, dynamic>;
     final List tracks = data['tracks'] as List? ?? [];
-    return tracks.map((e) => Track.fromJson(e as Map<String, dynamic>)).toList();
+    return tracks
+        .map((e) => Track.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   // ── GET /users/{username}/liked-tracks ────────────────────────────────────
@@ -175,7 +177,9 @@ class TracksService {
     final res = await _dio.get('$_base/users/$username/liked-tracks');
     final data = res.data['data'] as Map<String, dynamic>;
     final List tracks = data['tracks'] as List? ?? [];
-    return tracks.map((e) => Track.fromJson(e as Map<String, dynamic>)).toList();
+    return tracks
+        .map((e) => Track.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   // ── GET /search/tracks?keyword= ──────────────────────────────────────────
@@ -186,7 +190,9 @@ class TracksService {
       queryParameters: {'keyword': keyword},
     );
     final List tracks = (res.data['data']['tracks'] as List?) ?? [];
-    return tracks.map((e) => Track.fromJson(e as Map<String, dynamic>)).toList();
+    return tracks
+        .map((e) => Track.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   // ── POST /likes/tracks/{track_id} ─────────────────────────────────────────

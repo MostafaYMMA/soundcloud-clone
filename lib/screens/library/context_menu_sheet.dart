@@ -61,8 +61,8 @@ class _ContextMenuSheet extends ConsumerStatefulWidget {
     required this.rootContext,
   });
   const _ContextMenuSheet.collection({required this.rootContext})
-      : track = null,
-        onGoToProfile = null;
+    : track = null,
+      onGoToProfile = null;
 
   bool get isTrack => track != null;
 
@@ -82,17 +82,19 @@ class _ContextMenuSheetState extends ConsumerState<_ContextMenuSheet> {
       if (widget.track?.isLiked == true) {
         final current = ref.read(likedTracksProvider);
         if (!current.contains(widget.track!.trackId)) {
-          ref
-              .read(likedTracksProvider.notifier)
-              .setAll({...current, widget.track!.trackId});
+          ref.read(likedTracksProvider.notifier).setAll({
+            ...current,
+            widget.track!.trackId,
+          });
         }
       }
       if (widget.track?.isReposted == true) {
         final current = ref.read(repostedTracksProvider);
         if (!current.contains(widget.track!.trackId)) {
-          ref
-              .read(repostedTracksProvider.notifier)
-              .setAll({...current, widget.track!.trackId});
+          ref.read(repostedTracksProvider.notifier).setAll({
+            ...current,
+            widget.track!.trackId,
+          });
         }
       }
     });
@@ -307,14 +309,18 @@ class _ContextMenuSheetState extends ConsumerState<_ContextMenuSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final likedIds =
-        widget.isTrack ? ref.watch(likedTracksProvider) : const <String>{};
-    final isLiked =
-        widget.isTrack ? likedIds.contains(widget.track!.trackId) : false;
-    final repostedIds =
-        widget.isTrack ? ref.watch(repostedTracksProvider) : const <String>{};
-    final isReposted =
-        widget.isTrack ? repostedIds.contains(widget.track!.trackId) : false;
+    final likedIds = widget.isTrack
+        ? ref.watch(likedTracksProvider)
+        : const <String>{};
+    final isLiked = widget.isTrack
+        ? likedIds.contains(widget.track!.trackId)
+        : false;
+    final repostedIds = widget.isTrack
+        ? ref.watch(repostedTracksProvider)
+        : const <String>{};
+    final isReposted = widget.isTrack
+        ? repostedIds.contains(widget.track!.trackId)
+        : false;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
@@ -436,8 +442,7 @@ class _ContextMenuSheetState extends ConsumerState<_ContextMenuSheet> {
                     _MenuItem(
                       icon: isReposted ? Icons.repeat_on : Icons.repeat,
                       iconColor: isReposted ? AppColors.primary : null,
-                      label:
-                          isReposted ? 'Reposted' : 'Repost on SoundCloud',
+                      label: isReposted ? 'Reposted' : 'Repost on SoundCloud',
                       labelColor: isReposted ? AppColors.primary : null,
                       closeOnTap: false,
                       onTap: _toggleRepost,
@@ -561,11 +566,11 @@ class _TrackHeader extends StatelessWidget {
   }
 
   Widget _placeholder(double size) => Container(
-        width: size,
-        height: size,
-        color: AppColors.surfaceLight,
-        child: const Icon(Icons.music_note, color: AppColors.textSecondary),
-      );
+    width: size,
+    height: size,
+    color: AppColors.surfaceLight,
+    child: const Icon(Icons.music_note, color: AppColors.textSecondary),
+  );
 }
 
 // ── Share row ─────────────────────────────────────────────────────────────────
@@ -740,10 +745,7 @@ class _ShareButton extends StatelessWidget {
                   child: Icon(icon, color: AppColors.textPrimary, size: 22),
                 ),
             const SizedBox(height: 6),
-            Text(
-              label,
-              style: AppTextStyles.artistName.copyWith(fontSize: 12),
-            ),
+            Text(label, style: AppTextStyles.artistName.copyWith(fontSize: 12)),
           ],
         ),
       ),
@@ -796,10 +798,10 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Divider(
-        height: 1,
-        thickness: 0.5,
-        color: AppColors.divider,
-        indent: AppDimensions.spaceMedium,
-        endIndent: AppDimensions.spaceMedium,
-      );
+    height: 1,
+    thickness: 0.5,
+    color: AppColors.divider,
+    indent: AppDimensions.spaceMedium,
+    endIndent: AppDimensions.spaceMedium,
+  );
 }
