@@ -8,11 +8,14 @@ import 'package:my_project/models/track.dart';
 import 'package:my_project/providers/playlist_provider.dart';
 import 'package:my_project/providers/music_providers.dart';
 import 'package:my_project/screens/library/collections_screen.dart';
+import 'package:my_project/screens/library/context_menu_sheet.dart';
 import 'package:my_project/screens/search/search_bar.dart';
 import 'package:my_project/screens/search/vibes_section.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
-  const SearchScreen({super.key});
+  final void Function(Track)? onTrackTap;
+
+  const SearchScreen({super.key, this.onTrackTap});
 
   @override
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
@@ -172,6 +175,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     return ListView(
       children: [
+        // ───── TRACKS ─────
         if (tracks.isNotEmpty) ...[
           const Padding(
             padding: EdgeInsets.all(12),
@@ -180,30 +184,46 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               style: TextStyle(color: Colors.white, fontSize: 18),
             ),
           ),
+
           ...tracks.map((track) {
             final artistName = track.artist?.displayName ?? 'Unknown Artist';
             final image = fixImageUrl(track.coverImageUrl);
 
             return ListTile(
+              onTap: () {
+                widget.onTrackTap?.call(track);
+              },
+
               leading: _SquareImage(
                 imageUrl: image,
                 fallbackIcon: Icons.music_note,
               ),
+
               title: Text(
                 track.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.white),
               ),
+
               subtitle: Text(
                 artistName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.white70),
               ),
+
+              trailing: IconButton(
+                icon: const Icon(Icons.more_vert, color: Colors.white),
+                onPressed: () {
+                  showTrackContextMenu(context, track);
+                },
+              ),
             );
           }),
         ],
+
+        // ───── PLAYLISTS ─────
         if (playlists.isNotEmpty) ...[
           const Padding(
             padding: EdgeInsets.all(12),
@@ -212,23 +232,27 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               style: TextStyle(color: Colors.white, fontSize: 18),
             ),
           ),
+
           ...playlists.map((playlist) {
             final image = fixImageUrl(playlist.coverUrl);
             final isLiked = _isPlaylistLiked(playlist, playlistState);
             final isUpdating = _updatingPlaylistId == playlist.id;
 
             return ListTile(
-              onTap: () => _openPlaylist(playlist),
+              onTap: () => openPlaylist(playlist),
+
               leading: _SquareImage(
                 imageUrl: image,
                 fallbackIcon: Icons.queue_music,
               ),
+
               title: Text(
                 playlist.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.white),
               ),
+
               subtitle: Text(
                 playlist.description.isEmpty
                     ? 'Playlist'
@@ -237,6 +261,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.white70),
               ),
+
               trailing: IconButton(
                 tooltip: isLiked ? 'Remove from likes' : 'Add to likes',
                 icon: isUpdating
@@ -262,19 +287,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Future<void> _openPlaylist(Playlist playlist) async {
+  Future<void> openPlaylist(Playlist playlist) async {
     final detailed = await ref
         .read(playlistProvider.notifier)
         .getPlaylistDetails(playlist.id);
 
     if (!mounted) return;
-
     if (detailed == null) {
       final error =
           ref.read(playlistProvider).error ?? 'Could not open playlist.';
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error)));
+
       return;
     }
 
