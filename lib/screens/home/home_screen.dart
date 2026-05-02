@@ -217,7 +217,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                   if (tracks.isEmpty && state.items.isNotEmpty) {
                     final shuffled = (state.items.toList()..shuffle());
-                    tracks = shuffled.take(10).map((item) => item.toTrack()).toList();
+                    tracks = shuffled
+                        .take(10)
+                        .map((item) => item.toTrack())
+                        .toList();
                   }
 
                   return MoreLikeSection(
@@ -240,7 +243,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                   if (tracks.isEmpty && state.items.isNotEmpty) {
                     final shuffled = (state.items.toList()..shuffle());
-                    tracks = shuffled.take(10).map((item) => item.toTrack()).toList();
+                    tracks = shuffled
+                        .take(10)
+                        .map((item) => item.toTrack())
+                        .toList();
                   }
 
                   return MoreLikeSection(
@@ -276,7 +282,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         }
 
                         if (displayPlaylists.length > 1) {
-                          final shuffled = (displayPlaylists.toList()..shuffle());
+                          final shuffled = (displayPlaylists.toList()
+                            ..shuffle());
                           displayPlaylists = shuffled;
                         }
 

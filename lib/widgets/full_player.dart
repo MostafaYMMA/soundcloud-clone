@@ -352,10 +352,10 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                 GestureDetector(
                   onTap: _currentTrack.artist?.username != null
                       ? () => _openArtistProfile(
-                            context,
-                            _currentTrack.artist!.username,
-                            _currentTrack.artist!.displayName,
-                          )
+                          context,
+                          _currentTrack.artist!.username,
+                          _currentTrack.artist!.displayName,
+                        )
                       : null,
                   child: Text(
                     _currentTrack.artist?.displayName ?? 'Unknown Artist',
@@ -604,9 +604,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
         ),
         child: Text(
           'Comment...',
-          style: AppTextStyles.caption.copyWith(
-            color: AppColors.textMuted,
-          ),
+          style: AppTextStyles.caption.copyWith(color: AppColors.textMuted),
         ),
       ),
     );

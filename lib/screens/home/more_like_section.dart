@@ -32,10 +32,7 @@ class MoreLikeSection extends StatelessWidget {
           height: 180,
           child: tracks.isEmpty
               ? const Center(
-                  child: Text(
-                    'No items yet',
-                    style: AppTextStyles.caption,
-                  ),
+                  child: Text('No items yet', style: AppTextStyles.caption),
                 )
               : SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -80,7 +77,8 @@ class MoreLikeSection extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Text(
-                                  tracks[i].artist?.displayName ?? 'Unknown Artist',
+                                  tracks[i].artist?.displayName ??
+                                      'Unknown Artist',
                                   style: AppTextStyles.caption,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,

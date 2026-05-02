@@ -32,10 +32,7 @@ class AlbumsForYouSection extends StatelessWidget {
           height: 210,
           child: albums.isEmpty
               ? const Center(
-                  child: Text(
-                    'No items yet',
-                    style: AppTextStyles.caption,
-                  ),
+                  child: Text('No items yet', style: AppTextStyles.caption),
                 )
               : SingleChildScrollView(
                   scrollDirection: Axis.horizontal,

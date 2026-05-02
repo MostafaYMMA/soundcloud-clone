@@ -106,10 +106,7 @@ class ArtistProfileScreen extends ConsumerWidget {
                     const SizedBox(height: 4),
                     Text(
                       '@$username',
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.grey[400], fontSize: 14),
                     ),
                     const SizedBox(height: 12),
                     if (!isCurrentUser)
@@ -139,9 +136,7 @@ class ArtistProfileScreen extends ConsumerWidget {
                                 ),
                           label: Text(
                             isFollowing ? 'Following' : 'Follow',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isFollowing
@@ -445,8 +440,7 @@ class _TrackTile extends StatelessWidget {
                     width: 58,
                     height: 58,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        const _ThumbPlaceholder(),
+                    errorBuilder: (_, __, ___) => const _ThumbPlaceholder(),
                   )
                 : const _ThumbPlaceholder(),
           ),

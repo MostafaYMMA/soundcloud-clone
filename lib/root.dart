@@ -31,7 +31,8 @@ class _RootScreenState extends ConsumerState<RootScreen> {
 
   final AudioPlayer _player = AudioPlayer();
   late final ValueNotifier<Track> _currentTrackNotifier;
-  late final ValueNotifier<({List<Track> queue, int currentIndex})> _queueNotifier;
+  late final ValueNotifier<({List<Track> queue, int currentIndex})>
+  _queueNotifier;
 
   bool _isPlaying = false;
   bool _hasLoaded = false;
@@ -117,7 +118,10 @@ class _RootScreenState extends ConsumerState<RootScreen> {
   // ── Queue management ───────────────────────────────────────────────────────
 
   void _syncQueueNotifier() {
-    _queueNotifier.value = (queue: List.from(_queue), currentIndex: _currentQueueIndex);
+    _queueNotifier.value = (
+      queue: List.from(_queue),
+      currentIndex: _currentQueueIndex,
+    );
   }
 
   void _handleQueueReorder(int oldIndex, int newIndex) {
@@ -126,9 +130,11 @@ class _RootScreenState extends ConsumerState<RootScreen> {
     _queue.insert(newIndex, track);
     if (oldIndex == _currentQueueIndex) {
       _currentQueueIndex = newIndex;
-    } else if (oldIndex < _currentQueueIndex && newIndex >= _currentQueueIndex) {
+    } else if (oldIndex < _currentQueueIndex &&
+        newIndex >= _currentQueueIndex) {
       _currentQueueIndex--;
-    } else if (oldIndex > _currentQueueIndex && newIndex <= _currentQueueIndex) {
+    } else if (oldIndex > _currentQueueIndex &&
+        newIndex <= _currentQueueIndex) {
       _currentQueueIndex++;
     }
     _syncQueueNotifier();
@@ -248,7 +254,9 @@ class _RootScreenState extends ConsumerState<RootScreen> {
       final shuffled = List<Track>.from(_queue)..shuffle();
       _queue.addAll(shuffled.take(8));
       _syncQueueNotifier();
-      debugPrint('AUTO-FILLED: Added ${shuffled.take(8).length} tracks to queue');
+      debugPrint(
+        'AUTO-FILLED: Added ${shuffled.take(8).length} tracks to queue',
+      );
     } catch (e) {
       debugPrint('Auto-fill failed: $e');
     }
