@@ -18,8 +18,14 @@ import 'package:my_project/screens/library/collections_details_mapper.dart';
 class SearchScreen extends ConsumerStatefulWidget {
   final void Function(Track)? onTrackTap;
   final void Function(Widget screen)? onNavigate;
+  final void Function(List<Track> tracks, int startIndex)? onQueuePlay;
   
-  const SearchScreen({super.key, this.onTrackTap, this.onNavigate});
+  const SearchScreen({
+    super.key, 
+    this.onTrackTap, 
+    this.onNavigate,
+    this.onQueuePlay,
+    });
 
   @override
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
@@ -366,36 +372,57 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return;
   }
 
-  widget.onNavigate?.call( // ← was Navigator.push
-    CollectionDetailsScreen(
-      playlistId: detailed.id,
-      data: CollectionDetailsData(
-        type: CollectionType.playlist,
-        title: detailed.name,
-        artworkPath: detailed.coverUrl,
-        ownerName: detailed.owner,
-        ownerAvatarPath: '',
-        yearText: '${detailed.trackCount} tracks',
-        likesText: detailed.owner,
-        tracks: detailed.tracks
-            .map(
-              (track) => CollectionTrack(
+  widget.onNavigate?.call(
+  CollectionDetailsScreen(
+    playlistId: detailed.id,
+    data: CollectionDetailsData(
+      type: CollectionType.playlist,
+      title: detailed.name,
+      artworkPath: detailed.coverUrl,
+      ownerName: detailed.owner,
+      ownerAvatarPath: '',
+      yearText: '${detailed.trackCount} tracks',
+      likesText: detailed.owner,
+      tracks: detailed.tracks
+          .map((track) => CollectionTrack(
                 id: track.id,
                 title: track.title,
                 artist: track.artist,
                 artworkPath: track.artworkUrl,
                 durationSeconds: track.durationSeconds,
                 isAvailable: true,
-              ),
-            )
-            .toList(),
-      ),
-      onBack: () => widget.onNavigate?.call(SearchScreen(
-        onTrackTap: widget.onTrackTap,
-        onNavigate: widget.onNavigate,
-      )),
+              ))
+          .toList(),
     ),
-  );
+    onTrackTap: (collectionTrack) async {       // ← add
+      final playableTrack = Track(
+        trackId: collectionTrack.id,
+        title: collectionTrack.title,
+        coverImageUrl: collectionTrack.artworkPath,
+        streamUrl:
+            'https://streamline-swp.duckdns.org/api/tracks/${collectionTrack.id}/audio',
+        artist: TrackArtist(
+          userId: '',
+          username: '',
+          displayName: collectionTrack.artist,
+          followerCount: 0,
+        ),
+        visibility: 'public',
+        processingStatus: '',
+        playCount: 0,
+        durationSeconds: collectionTrack.durationSeconds,
+      );
+      widget.onTrackTap?.call(playableTrack);
+    },
+    onQueuePlay: widget.onQueuePlay,   
+       
+    onBack: () => widget.onNavigate?.call(SearchScreen(
+      onTrackTap: widget.onTrackTap,
+      onNavigate: widget.onNavigate,
+      
+    )),
+  ),
+);
 }
   Future<void> _openAlbum(Album album) async {
   final detailed = await ref
@@ -410,15 +437,38 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return;
   }
 
-  widget.onNavigate?.call( 
-    CollectionDetailsScreen(
-      data: CollectionDetailsMapper.fromAlbum(detailed),
-      onBack: () => widget.onNavigate?.call(SearchScreen(
-        onTrackTap: widget.onTrackTap,
-        onNavigate: widget.onNavigate,
-      )),
-    ),
-  );
+  widget.onNavigate?.call(
+  CollectionDetailsScreen(
+    data: CollectionDetailsMapper.fromAlbum(detailed),
+    onTrackTap: (collectionTrack) async {       // ← add
+      final playableTrack = Track(
+        trackId: collectionTrack.id,
+        title: collectionTrack.title,
+        coverImageUrl: collectionTrack.artworkPath,
+        streamUrl:
+            'https://streamline-swp.duckdns.org/api/tracks/${collectionTrack.id}/audio',
+        artist: TrackArtist(
+          userId: '',
+          username: '',
+          displayName: collectionTrack.artist,
+          followerCount: 0,
+        ),
+        visibility: 'public',
+        processingStatus: '',
+        playCount: 0,
+        durationSeconds: collectionTrack.durationSeconds,
+      );
+      widget.onTrackTap?.call(playableTrack);
+    },
+            
+    onQueuePlay: widget.onQueuePlay,
+   
+    onBack: () => widget.onNavigate?.call(SearchScreen(
+      onTrackTap: widget.onTrackTap,
+      onNavigate: widget.onNavigate,
+    )),
+  ),
+);
 }
 }
 class _SquareImage extends StatelessWidget {

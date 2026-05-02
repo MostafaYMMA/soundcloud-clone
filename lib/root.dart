@@ -302,7 +302,7 @@ class _RootScreenState extends ConsumerState<RootScreen> {
   List<Widget> _buildScreens() => [
     HomeScreen(onTrackTap: _handlePlay, onQueuePlay: _setQueueAndPlay),
     FeedScreen(onTrackTap: _handlePlay),
-    SearchScreen(onTrackTap: _handlePlay, onNavigate: _pushSubScreen),
+    SearchScreen(onTrackTap: _handlePlay, onNavigate: _pushSubScreen, onQueuePlay: _setQueueAndPlay,),
     LibraryScreen(
       onNavigate: _pushSubScreen,
       onBack: _popSubScreen,
