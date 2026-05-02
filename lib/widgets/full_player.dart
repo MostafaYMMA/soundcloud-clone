@@ -14,6 +14,7 @@ import '../../providers/auth_providers.dart';
 import '../../providers/followers_provider.dart';
 import '../../providers/liked_tracks_provider.dart';
 import '../../providers/track_provider.dart';
+import '../../screens/home/queue_screen.dart';
 
 class FullPlayer extends ConsumerStatefulWidget {
   const FullPlayer({
@@ -23,6 +24,11 @@ class FullPlayer extends ConsumerStatefulWidget {
     required this.onPlayPause,
     required this.onSeek,
     this.onSkipNext,
+    this.queueNotifier,
+    this.onQueueReorder,
+    this.onQueueRemove,
+    this.onQueueJumpTo,
+    this.onQueueAdd,
   });
 
   final ValueNotifier<Track> trackNotifier;
@@ -30,6 +36,11 @@ class FullPlayer extends ConsumerStatefulWidget {
   final VoidCallback onPlayPause;
   final ValueChanged<Duration> onSeek;
   final VoidCallback? onSkipNext;
+  final ValueNotifier<({List<Track> queue, int currentIndex})>? queueNotifier;
+  final void Function(int oldIndex, int newIndex)? onQueueReorder;
+  final void Function(int index)? onQueueRemove;
+  final void Function(int index)? onQueueJumpTo;
+  final void Function(Track track)? onQueueAdd;
 
   @override
   ConsumerState<FullPlayer> createState() => _FullPlayerState();
@@ -605,6 +616,22 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
     );
   }
 
+  void _openQueueSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => QueueScreen(
+        queueNotifier: widget.queueNotifier!,
+        currentTrack: _currentTrack,
+        onReorder: widget.onQueueReorder!,
+        onRemove: widget.onQueueRemove!,
+        onJumpTo: widget.onQueueJumpTo!,
+        onAddTrack: widget.onQueueAdd!,
+      ),
+    );
+  }
+
   Widget _buildBottomBar() {
     final username = ref.watch(authProvider).user?.userName ?? '';
     final likedIds = ref.watch(likedTracksProvider);
@@ -654,7 +681,16 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
           size: 22,
         ),
         const Icon(Icons.ios_share, color: AppColors.textSecondary, size: 22),
-        const Icon(Icons.queue_music, color: AppColors.textSecondary, size: 22),
+        GestureDetector(
+          onTap: widget.queueNotifier != null ? _openQueueSheet : null,
+          child: Icon(
+            Icons.queue_music,
+            color: widget.queueNotifier != null
+                ? AppColors.textPrimary
+                : AppColors.textSecondary,
+            size: 22,
+          ),
+        ),
         const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 22),
       ],
     );

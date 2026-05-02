@@ -31,6 +31,7 @@ class _RootScreenState extends ConsumerState<RootScreen> {
 
   final AudioPlayer _player = AudioPlayer();
   late final ValueNotifier<Track> _currentTrackNotifier;
+  late final ValueNotifier<({List<Track> queue, int currentIndex})> _queueNotifier;
 
   bool _isPlaying = false;
   bool _hasLoaded = false;
@@ -62,6 +63,7 @@ class _RootScreenState extends ConsumerState<RootScreen> {
   void initState() {
     super.initState();
     _currentTrackNotifier = ValueNotifier(MockTracks.hotTrack);
+    _queueNotifier = ValueNotifier((queue: const [], currentIndex: -1));
     _listenToPlayer();
   }
 
@@ -108,15 +110,54 @@ class _RootScreenState extends ConsumerState<RootScreen> {
     _playerStateSub?.cancel();
     _player.dispose();
     _currentTrackNotifier.dispose();
+    _queueNotifier.dispose();
     super.dispose();
   }
 
   // ── Queue management ───────────────────────────────────────────────────────
 
+  void _syncQueueNotifier() {
+    _queueNotifier.value = (queue: List.from(_queue), currentIndex: _currentQueueIndex);
+  }
+
+  void _handleQueueReorder(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) newIndex -= 1;
+    final track = _queue.removeAt(oldIndex);
+    _queue.insert(newIndex, track);
+    if (oldIndex == _currentQueueIndex) {
+      _currentQueueIndex = newIndex;
+    } else if (oldIndex < _currentQueueIndex && newIndex >= _currentQueueIndex) {
+      _currentQueueIndex--;
+    } else if (oldIndex > _currentQueueIndex && newIndex <= _currentQueueIndex) {
+      _currentQueueIndex++;
+    }
+    _syncQueueNotifier();
+  }
+
+  void _handleQueueRemove(int index) {
+    _queue.removeAt(index);
+    if (index < _currentQueueIndex) {
+      _currentQueueIndex--;
+    } else if (index == _currentQueueIndex) {
+      _currentQueueIndex = (_currentQueueIndex).clamp(-1, _queue.length - 1);
+      if (_queue.isNotEmpty && _currentQueueIndex >= 0) {
+        _playTrack(_queue[_currentQueueIndex]);
+      }
+    }
+    _syncQueueNotifier();
+  }
+
+  void _handleQueueJumpTo(int index) {
+    _currentQueueIndex = index;
+    _playTrack(_queue[index]);
+    _syncQueueNotifier();
+  }
+
   void _setQueueAndPlay(List<Track> tracks, int startIndex) {
     _queue = List.from(tracks);
     _currentQueueIndex = startIndex;
     _playTrack(tracks[startIndex]);
+    _syncQueueNotifier();
   }
 
   void _addToQueueNext(Track track) {
@@ -142,6 +183,7 @@ class _RootScreenState extends ConsumerState<RootScreen> {
     debugPrint(
       'QUEUE NEXT: ${_queue.map((t) => t.title).toList()} idx=$_currentQueueIndex',
     );
+    _syncQueueNotifier();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${track.title} will play next'),
@@ -172,6 +214,7 @@ class _RootScreenState extends ConsumerState<RootScreen> {
     debugPrint(
       'QUEUE LAST: ${_queue.map((t) => t.title).toList()} idx=$_currentQueueIndex',
     );
+    _syncQueueNotifier();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${track.title} added to queue'),
@@ -187,9 +230,27 @@ class _RootScreenState extends ConsumerState<RootScreen> {
     if (_currentQueueIndex < _queue.length - 1) {
       _currentQueueIndex++;
       debugPrint('PLAYING NEXT: ${_queue[_currentQueueIndex].title}');
+      _syncQueueNotifier();
       await _playTrack(_queue[_currentQueueIndex]);
+      _autoFillQueueIfLow();
     } else {
       debugPrint('QUEUE ENDED - no more tracks');
+    }
+  }
+
+  void _autoFillQueueIfLow() {
+    final tracksRemaining = _queue.length - _currentQueueIndex - 1;
+    if (tracksRemaining >= 5) return;
+
+    if (_queue.isEmpty) return;
+
+    try {
+      final shuffled = List<Track>.from(_queue)..shuffle();
+      _queue.addAll(shuffled.take(8));
+      _syncQueueNotifier();
+      debugPrint('AUTO-FILLED: Added ${shuffled.take(8).length} tracks to queue');
+    } catch (e) {
+      debugPrint('Auto-fill failed: $e');
     }
   }
 
@@ -205,6 +266,7 @@ class _RootScreenState extends ConsumerState<RootScreen> {
       _currentQueueIndex = 0;
       await _playTrack(track);
     }
+    _syncQueueNotifier();
   }
 
   // ── Core play logic ────────────────────────────────────────────────────────
@@ -294,6 +356,11 @@ class _RootScreenState extends ConsumerState<RootScreen> {
           onPlayPause: _toggleCurrentTrack,
           onSeek: _seekTo,
           onSkipNext: () => _playNextInQueue(),
+          queueNotifier: _queueNotifier,
+          onQueueReorder: _handleQueueReorder,
+          onQueueRemove: _handleQueueRemove,
+          onQueueJumpTo: _handleQueueJumpTo,
+          onQueueAdd: _addToQueueLast,
         ),
       ),
     );
