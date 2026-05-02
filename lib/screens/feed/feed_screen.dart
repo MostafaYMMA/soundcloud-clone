@@ -160,6 +160,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
       backgroundColor: Colors.black,
 
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.black,
         elevation: 0,
         bottom: PreferredSize(

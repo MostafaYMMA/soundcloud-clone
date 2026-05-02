@@ -118,7 +118,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final isSearching = _query.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Search')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text('Search'),
+      ),
       body: SafeArea(
         child: Column(
           children: [
