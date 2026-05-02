@@ -38,9 +38,7 @@ void main() {
     });
 
     test('handles empty data map', () {
-      final tokens = AuthTokens.fromJson({
-        'data': <String, dynamic>{}
-      });
+      final tokens = AuthTokens.fromJson({'data': <String, dynamic>{}});
       expect(tokens.accessToken, '');
       expect(tokens.refreshToken, '');
     });
@@ -48,14 +46,19 @@ void main() {
 
   group('AuthTokens.toJson', () {
     test('serializes both tokens correctly', () {
-      const tokens = AuthTokens(accessToken: 'myAccess', refreshToken: 'myRefresh');
+      const tokens = AuthTokens(
+        accessToken: 'myAccess',
+        refreshToken: 'myRefresh',
+      );
       final json = tokens.toJson();
       expect(json['access_token'], 'myAccess');
       expect(json['refresh_token'], 'myRefresh');
     });
 
     test('round-trips through fromJson and toJson', () {
-      final original = {'data': {'access_token': 'a', 'refresh_token': 'r'}};
+      final original = {
+        'data': {'access_token': 'a', 'refresh_token': 'r'},
+      };
       final tokens = AuthTokens.fromJson(original);
       final json = tokens.toJson();
       expect(json['access_token'], 'a');

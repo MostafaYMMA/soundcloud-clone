@@ -17,10 +17,7 @@ void main() {
     });
 
     test('copyWith preserves fields when nothing updated', () {
-      final state = const AlbumState(
-        likedAlbums: [],
-        isLoadingLiked: false,
-      );
+      final state = const AlbumState(likedAlbums: [], isLoadingLiked: false);
 
       final updated = state.copyWith();
 

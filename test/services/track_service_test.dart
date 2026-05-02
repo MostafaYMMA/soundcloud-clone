@@ -6,20 +6,20 @@ import 'package:my_project/services/track_service.dart';
 class MockDio extends Mock implements Dio {}
 
 Response<dynamic> _res(dynamic data, {int statusCode = 200}) => Response(
-      data: data,
-      statusCode: statusCode,
-      requestOptions: RequestOptions(path: ''),
-    );
+  data: data,
+  statusCode: statusCode,
+  requestOptions: RequestOptions(path: ''),
+);
 
 DioException _dioErr({int statusCode = 500}) => DioException(
-      requestOptions: RequestOptions(path: ''),
-      response: Response(
-        data: {},
-        statusCode: statusCode,
-        requestOptions: RequestOptions(path: ''),
-      ),
-      type: DioExceptionType.badResponse,
-    );
+  requestOptions: RequestOptions(path: ''),
+  response: Response(
+    data: {},
+    statusCode: statusCode,
+    requestOptions: RequestOptions(path: ''),
+  ),
+  type: DioExceptionType.badResponse,
+);
 
 final _trackData = {
   'track_id': 'trk-1',
@@ -86,7 +86,10 @@ void main() {
         ),
       ).thenThrow(_dioErr(statusCode: 404));
 
-      expect(() => sut.getTrack(trackId: 'missing'), throwsA(isA<DioException>()));
+      expect(
+        () => sut.getTrack(trackId: 'missing'),
+        throwsA(isA<DioException>()),
+      );
     });
   });
 
@@ -94,7 +97,8 @@ void main() {
 
   group('TracksService.updateTrack', () {
     test('returns updated Track on success', () async {
-      final updatedData = Map<String, dynamic>.from(_trackData)..['title'] = 'Updated';
+      final updatedData = Map<String, dynamic>.from(_trackData)
+        ..['title'] = 'Updated';
 
       when(
         () => mockDio.put(
@@ -160,7 +164,10 @@ void main() {
         ),
       ).thenThrow(_dioErr(statusCode: 403));
 
-      expect(() => sut.deleteTrack(trackId: 'trk-1'), throwsA(isA<DioException>()));
+      expect(
+        () => sut.deleteTrack(trackId: 'trk-1'),
+        throwsA(isA<DioException>()),
+      );
     });
   });
 
@@ -178,7 +185,9 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => _res({
-          'data': {'tracks': [_trackData]},
+          'data': {
+            'tracks': [_trackData],
+          },
         }),
       );
 
@@ -196,7 +205,11 @@ void main() {
           cancelToken: any(named: 'cancelToken'),
           onReceiveProgress: any(named: 'onReceiveProgress'),
         ),
-      ).thenAnswer((_) async => _res({'data': {'tracks': null}}));
+      ).thenAnswer(
+        (_) async => _res({
+          'data': {'tracks': null},
+        }),
+      );
 
       final tracks = await sut.searchTracks(keyword: 'notfound');
       expect(tracks, isEmpty);
@@ -213,7 +226,10 @@ void main() {
         ),
       ).thenThrow(_dioErr(statusCode: 500));
 
-      expect(() => sut.searchTracks(keyword: 'test'), throwsA(isA<DioException>()));
+      expect(
+        () => sut.searchTracks(keyword: 'test'),
+        throwsA(isA<DioException>()),
+      );
     });
   });
 
@@ -231,7 +247,9 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => _res({
-          'data': {'tracks': [_trackData, _trackData]},
+          'data': {
+            'tracks': [_trackData, _trackData],
+          },
         }),
       );
 
@@ -249,7 +267,9 @@ void main() {
           onReceiveProgress: any(named: 'onReceiveProgress'),
         ),
       ).thenAnswer(
-        (_) async => _res({'data': {'tracks': null}}),
+        (_) async => _res({
+          'data': {'tracks': null},
+        }),
       );
 
       final tracks = await sut.getUserTracks(username: 'noone');
@@ -271,7 +291,9 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => _res({
-          'data': {'tracks': [_trackData]},
+          'data': {
+            'tracks': [_trackData],
+          },
         }),
       );
 
@@ -315,7 +337,11 @@ void main() {
           cancelToken: any(named: 'cancelToken'),
           onReceiveProgress: any(named: 'onReceiveProgress'),
         ),
-      ).thenAnswer((_) async => _res({'data': {'items': [], 'has_more': false}}));
+      ).thenAnswer(
+        (_) async => _res({
+          'data': {'items': [], 'has_more': false},
+        }),
+      );
 
       final result = await sut.getFollowingFeed();
       expect(result['items'], isEmpty);
@@ -336,7 +362,10 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => _res({
-          'data': {'items': [_trackData], 'has_more': false},
+          'data': {
+            'items': [_trackData],
+            'has_more': false,
+          },
         }),
       );
 
@@ -413,7 +442,10 @@ void main() {
         ),
       ).thenThrow(_dioErr(statusCode: 401));
 
-      expect(() => sut.likeTrack(trackId: 'trk-1'), throwsA(isA<DioException>()));
+      expect(
+        () => sut.likeTrack(trackId: 'trk-1'),
+        throwsA(isA<DioException>()),
+      );
     });
   });
 
@@ -458,7 +490,10 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => _res({
-          'data': {'peaks': [0.5, 0.8, 0.3], 'duration_seconds': 180},
+          'data': {
+            'peaks': [0.5, 0.8, 0.3],
+            'duration_seconds': 180,
+          },
         }),
       );
 

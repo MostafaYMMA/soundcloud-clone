@@ -44,7 +44,10 @@ void main() {
         'cover_image_url': '/media/cover.jpg',
         'duration_seconds': 0,
       });
-      expect(track.artworkUrl, 'https://streamline-swp.duckdns.org/media/cover.jpg');
+      expect(
+        track.artworkUrl,
+        'https://streamline-swp.duckdns.org/media/cover.jpg',
+      );
     });
 
     test('returns empty string for null artwork url', () {
@@ -58,12 +61,18 @@ void main() {
     });
 
     test('defaults title to Untitled Track when missing', () {
-      final track = PlaylistTrack.fromJson({'track_id': 't1', 'duration_seconds': 0});
+      final track = PlaylistTrack.fromJson({
+        'track_id': 't1',
+        'duration_seconds': 0,
+      });
       expect(track.title, 'Untitled Track');
     });
 
     test('defaults artist to Unknown Artist when missing', () {
-      final track = PlaylistTrack.fromJson({'track_id': 't1', 'duration_seconds': 0});
+      final track = PlaylistTrack.fromJson({
+        'track_id': 't1',
+        'duration_seconds': 0,
+      });
       expect(track.artist, 'Unknown Artist');
     });
 
@@ -160,7 +169,10 @@ void main() {
       final json = Map<String, dynamic>.from(playlistJson)
         ..['cover_photo_url'] = '/media/playlist_cover.jpg';
       final playlist = Playlist.fromJson(json);
-      expect(playlist.coverUrl, 'https://streamline-swp.duckdns.org/media/playlist_cover.jpg');
+      expect(
+        playlist.coverUrl,
+        'https://streamline-swp.duckdns.org/media/playlist_cover.jpg',
+      );
     });
 
     test('is_public defaults to false when absent', () {
@@ -174,11 +186,15 @@ void main() {
       expect(playlist.name, 'Untitled playlist');
     });
 
-    test('trackCount falls back to tracks.length when track_count is absent', () {
-      final json = Map<String, dynamic>.from(playlistJson)..remove('track_count');
-      final playlist = Playlist.fromJson(json);
-      expect(playlist.trackCount, 2);
-    });
+    test(
+      'trackCount falls back to tracks.length when track_count is absent',
+      () {
+        final json = Map<String, dynamic>.from(playlistJson)
+          ..remove('track_count');
+        final playlist = Playlist.fromJson(json);
+        expect(playlist.trackCount, 2);
+      },
+    );
 
     test('owner getter returns constant string', () {
       final playlist = Playlist.fromJson(playlistJson);
@@ -187,7 +203,16 @@ void main() {
 
     test('skips non-map entries in tracks list gracefully', () {
       final json = Map<String, dynamic>.from(playlistJson)
-        ..['tracks'] = ['invalid_entry', null, {'track_id': 't3', 'title': 'C', 'artist_name': 'A', 'duration_seconds': 0}];
+        ..['tracks'] = [
+          'invalid_entry',
+          null,
+          {
+            'track_id': 't3',
+            'title': 'C',
+            'artist_name': 'A',
+            'duration_seconds': 0,
+          },
+        ];
       // whereType<Map<String, dynamic>> filters out non-maps
       final playlist = Playlist.fromJson(json);
       expect(playlist.tracks, hasLength(1));

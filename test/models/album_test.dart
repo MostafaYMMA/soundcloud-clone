@@ -62,8 +62,18 @@ void main() {
       final json = {
         ...albumJson,
         'tracks': [
-          {'track_id': 'track-1', 'title': 'Song 1', 'artist': 'Artist', 'duration_seconds': 180},
-          {'track_id': 'track-2', 'title': 'Song 2', 'artist': 'Artist', 'duration_seconds': 240},
+          {
+            'track_id': 'track-1',
+            'title': 'Song 1',
+            'artist': 'Artist',
+            'duration_seconds': 180,
+          },
+          {
+            'track_id': 'track-2',
+            'title': 'Song 2',
+            'artist': 'Artist',
+            'duration_seconds': 240,
+          },
         ],
       };
 
@@ -74,17 +84,20 @@ void main() {
     });
 
     test('parses artwork from multiple possible fields', () {
-      final json1 = {...albumJson, 'cover_photo_url': 'https://example.com/photo.jpg'};
+      final json1 = {
+        ...albumJson,
+        'cover_photo_url': 'https://example.com/photo.jpg',
+      };
       final json2 = {
         ...albumJson,
         'cover_photo_url': null,
-        'cover_image_url': 'https://example.com/image.jpg'
+        'cover_image_url': 'https://example.com/image.jpg',
       };
       final json3 = {
         ...albumJson,
         'cover_photo_url': null,
         'cover_image_url': null,
-        'artwork_url': 'https://example.com/artwork.jpg'
+        'artwork_url': 'https://example.com/artwork.jpg',
       };
 
       final album1 = Album.fromJson(json1);

@@ -70,10 +70,7 @@ void main() {
     });
 
     test('apiIdentifier returns username when available', () {
-      final json = {
-        'user_id': 'id-123',
-        'username': 'testuser',
-      };
+      final json = {'user_id': 'id-123', 'username': 'testuser'};
 
       final follower = Follower.fromJson(json);
 

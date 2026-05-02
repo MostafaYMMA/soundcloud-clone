@@ -6,20 +6,20 @@ import 'package:my_project/services/playlist_service.dart';
 class MockDio extends Mock implements Dio {}
 
 Response<dynamic> _res(dynamic data, {int statusCode = 200}) => Response(
-      data: data,
-      statusCode: statusCode,
-      requestOptions: RequestOptions(path: ''),
-    );
+  data: data,
+  statusCode: statusCode,
+  requestOptions: RequestOptions(path: ''),
+);
 
 DioException _dioErr({int statusCode = 500, String? detail}) => DioException(
-      requestOptions: RequestOptions(path: ''),
-      response: Response(
-        data: detail != null ? {'detail': detail} : {},
-        statusCode: statusCode,
-        requestOptions: RequestOptions(path: ''),
-      ),
-      type: DioExceptionType.badResponse,
-    );
+  requestOptions: RequestOptions(path: ''),
+  response: Response(
+    data: detail != null ? {'detail': detail} : {},
+    statusCode: statusCode,
+    requestOptions: RequestOptions(path: ''),
+  ),
+  type: DioExceptionType.badResponse,
+);
 
 const _token = 'test-access-token';
 
@@ -58,7 +58,11 @@ void main() {
           cancelToken: any(named: 'cancelToken'),
           onReceiveProgress: any(named: 'onReceiveProgress'),
         ),
-      ).thenAnswer((_) async => _res({'data': [_playlistData]}));
+      ).thenAnswer(
+        (_) async => _res({
+          'data': [_playlistData],
+        }),
+      );
 
       final playlists = await sut.getLikedPlaylists(_token);
       expect(playlists, hasLength(1));
@@ -129,7 +133,9 @@ void main() {
       expect(
         () => sut.getLikedPlaylists(_token),
         throwsA(
-          predicate<Exception>((e) => e.toString().contains('Custom server error')),
+          predicate<Exception>(
+            (e) => e.toString().contains('Custom server error'),
+          ),
         ),
       );
     });
@@ -167,10 +173,15 @@ void main() {
           onReceiveProgress: any(named: 'onReceiveProgress'),
         ),
       ).thenAnswer(
-        (_) async => _res({'data': [_playlistData, _playlistData]}),
+        (_) async => _res({
+          'data': [_playlistData, _playlistData],
+        }),
       );
 
-      final playlists = await sut.getUserPlaylists(username: 'user1', accessToken: _token);
+      final playlists = await sut.getUserPlaylists(
+        username: 'user1',
+        accessToken: _token,
+      );
       expect(playlists, hasLength(2));
     });
 
@@ -185,7 +196,10 @@ void main() {
         ),
       ).thenAnswer((_) async => _res({'data': null}));
 
-      final playlists = await sut.getUserPlaylists(username: 'user1', accessToken: _token);
+      final playlists = await sut.getUserPlaylists(
+        username: 'user1',
+        accessToken: _token,
+      );
       expect(playlists, isEmpty);
     });
   });
@@ -204,7 +218,10 @@ void main() {
         ),
       ).thenAnswer((_) async => _res({'data': _playlistData}));
 
-      final playlist = await sut.getPlaylistById(playlistId: 'pl-1', accessToken: _token);
+      final playlist = await sut.getPlaylistById(
+        playlistId: 'pl-1',
+        accessToken: _token,
+      );
       expect(playlist.id, 'pl-1');
       expect(playlist.name, 'My Playlist');
     });
@@ -221,8 +238,11 @@ void main() {
       ).thenThrow(_dioErr(statusCode: 404));
 
       expect(
-        () => sut.getPlaylistById(playlistId: 'nonexistent', accessToken: _token),
-        throwsA(predicate<Exception>((e) => e.toString().contains('not found'))),
+        () =>
+            sut.getPlaylistById(playlistId: 'nonexistent', accessToken: _token),
+        throwsA(
+          predicate<Exception>((e) => e.toString().contains('not found')),
+        ),
       );
     });
   });
@@ -241,11 +261,16 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => _res({
-          'data': {'playlists': [_playlistData]},
+          'data': {
+            'playlists': [_playlistData],
+          },
         }),
       );
 
-      final results = await sut.searchPlaylists(keyword: 'my', accessToken: _token);
+      final results = await sut.searchPlaylists(
+        keyword: 'my',
+        accessToken: _token,
+      );
       expect(results, hasLength(1));
       expect(results.first.name, 'My Playlist');
     });
@@ -259,9 +284,16 @@ void main() {
           cancelToken: any(named: 'cancelToken'),
           onReceiveProgress: any(named: 'onReceiveProgress'),
         ),
-      ).thenAnswer((_) async => _res({'data': {'playlists': null}}));
+      ).thenAnswer(
+        (_) async => _res({
+          'data': {'playlists': null},
+        }),
+      );
 
-      final results = await sut.searchPlaylists(keyword: 'nothing', accessToken: _token);
+      final results = await sut.searchPlaylists(
+        keyword: 'nothing',
+        accessToken: _token,
+      );
       expect(results, isEmpty);
     });
   });
@@ -305,7 +337,9 @@ void main() {
 
       expect(
         () => sut.createPlaylist(accessToken: _token, name: ''),
-        throwsA(predicate<Exception>((e) => e.toString().contains('Invalid data'))),
+        throwsA(
+          predicate<Exception>((e) => e.toString().contains('Invalid data')),
+        ),
       );
     });
   });
@@ -314,7 +348,8 @@ void main() {
 
   group('PlaylistService.updatePlaylist', () {
     test('returns updated Playlist', () async {
-      final updated = Map<String, dynamic>.from(_playlistData)..['name'] = 'Renamed';
+      final updated = Map<String, dynamic>.from(_playlistData)
+        ..['name'] = 'Renamed';
 
       when(
         () => mockDio.patch(
@@ -370,7 +405,9 @@ void main() {
 
       expect(
         () => sut.deletePlaylist(playlistId: 'pl-1', accessToken: _token),
-        throwsA(predicate<Exception>((e) => e.toString().contains('not allowed'))),
+        throwsA(
+          predicate<Exception>((e) => e.toString().contains('not allowed')),
+        ),
       );
     });
   });
@@ -412,7 +449,11 @@ void main() {
 
       expect(
         () => sut.likePlaylist(playlistId: 'pl-1', accessToken: _token),
-        throwsA(predicate<Exception>((e) => e.toString().contains('Too many requests'))),
+        throwsA(
+          predicate<Exception>(
+            (e) => e.toString().contains('Too many requests'),
+          ),
+        ),
       );
     });
   });
@@ -455,7 +496,11 @@ void main() {
       ).thenAnswer((_) async => _res({'message': 'added'}));
 
       await expectLater(
-        sut.addTrackToPlaylist(playlistId: 'pl-1', trackId: 'trk-1', accessToken: _token),
+        sut.addTrackToPlaylist(
+          playlistId: 'pl-1',
+          trackId: 'trk-1',
+          accessToken: _token,
+        ),
         completes,
       );
     });
@@ -502,7 +547,9 @@ void main() {
           trackId: 'trk-1',
           accessToken: _token,
         ),
-        throwsA(predicate<Exception>((e) => e.toString().contains('Server error'))),
+        throwsA(
+          predicate<Exception>((e) => e.toString().contains('Server error')),
+        ),
       );
     });
   });

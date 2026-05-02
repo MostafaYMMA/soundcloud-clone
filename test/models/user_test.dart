@@ -37,22 +37,30 @@ void main() {
       final json = Map<String, dynamic>.from(fullJson)
         ..['avatar_url'] = '/media/avatar.jpg';
       final user = User.fromJson(json);
-      expect(user.avatarUrl, 'https://streamline-swp.duckdns.org/api/media/avatar.jpg');
+      expect(
+        user.avatarUrl,
+        'https://streamline-swp.duckdns.org/api/media/avatar.jpg',
+      );
     });
 
     test('resolves api/ prefixed avatar_url correctly', () {
       final json = Map<String, dynamic>.from(fullJson)
         ..['avatar_url'] = 'api/media/avatar.jpg';
       final user = User.fromJson(json);
-      expect(user.avatarUrl, 'https://streamline-swp.duckdns.org/api/media/avatar.jpg');
+      expect(
+        user.avatarUrl,
+        'https://streamline-swp.duckdns.org/api/media/avatar.jpg',
+      );
     });
 
-    test('avatarUrl is null when both avatar_url and profile_picture are absent', () {
-      final json = Map<String, dynamic>.from(fullJson)
-        ..remove('avatar_url');
-      final user = User.fromJson(json);
-      expect(user.avatarUrl, isNull);
-    });
+    test(
+      'avatarUrl is null when both avatar_url and profile_picture are absent',
+      () {
+        final json = Map<String, dynamic>.from(fullJson)..remove('avatar_url');
+        final user = User.fromJson(json);
+        expect(user.avatarUrl, isNull);
+      },
+    );
 
     test('falls back to profile_picture when avatar_url is absent', () {
       final json = Map<String, dynamic>.from(fullJson)
@@ -101,7 +109,8 @@ void main() {
     });
 
     test('followers is null for invalid string', () {
-      final json = Map<String, dynamic>.from(fullJson)..['followers'] = 'not-a-number';
+      final json = Map<String, dynamic>.from(fullJson)
+        ..['followers'] = 'not-a-number';
       final user = User.fromJson(json);
       expect(user.followers, isNull);
     });

@@ -46,10 +46,7 @@ void main() {
     });
 
     test('parses createdAt timestamp', () {
-      final json = {
-        'id': 'notif-1',
-        'created_at': '2024-06-15T12:00:00.000Z',
-      };
+      final json = {'id': 'notif-1', 'created_at': '2024-06-15T12:00:00.000Z'};
 
       final notification = AppNotification.fromJson(json);
 

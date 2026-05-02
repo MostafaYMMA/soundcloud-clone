@@ -11,14 +11,14 @@ class MockFollowersService extends Mock implements FollowersService {}
 class MockRef extends Mock implements Ref {}
 
 DioException _dioErr({int statusCode = 500}) => DioException(
-      requestOptions: RequestOptions(path: ''),
-      response: Response(
-        data: {},
-        statusCode: statusCode,
-        requestOptions: RequestOptions(path: ''),
-      ),
-      type: DioExceptionType.badResponse,
-    );
+  requestOptions: RequestOptions(path: ''),
+  response: Response(
+    data: {},
+    statusCode: statusCode,
+    requestOptions: RequestOptions(path: ''),
+  ),
+  type: DioExceptionType.badResponse,
+);
 
 void main() {
   setUpAll(() {
@@ -46,10 +46,10 @@ void main() {
     });
 
     test('toggle follows user when not following', () async {
-      when(() => mockService.followUser(username: 'testuser'))
-          .thenAnswer((_) async {});
-      when(() => mockRef.invalidate(myFollowingProvider))
-          .thenReturn(null);
+      when(
+        () => mockService.followUser(username: 'testuser'),
+      ).thenAnswer((_) async {});
+      when(() => mockRef.invalidate(myFollowingProvider)).thenReturn(null);
 
       final notifier = FollowNotifier(
         service: mockService,
@@ -66,10 +66,10 @@ void main() {
     });
 
     test('toggle unfollows user when following', () async {
-      when(() => mockService.unfollowUser(username: 'testuser'))
-          .thenAnswer((_) async {});
-      when(() => mockRef.invalidate(myFollowingProvider))
-          .thenReturn(null);
+      when(
+        () => mockService.unfollowUser(username: 'testuser'),
+      ).thenAnswer((_) async {});
+      when(() => mockRef.invalidate(myFollowingProvider)).thenReturn(null);
 
       final notifier = FollowNotifier(
         service: mockService,
@@ -85,8 +85,9 @@ void main() {
     });
 
     test('toggle reverts on service error', () async {
-      when(() => mockService.followUser(username: 'testuser'))
-          .thenThrow(_dioErr());
+      when(
+        () => mockService.followUser(username: 'testuser'),
+      ).thenThrow(_dioErr());
 
       final notifier = FollowNotifier(
         service: mockService,
@@ -102,10 +103,10 @@ void main() {
     });
 
     test('toggle ignores requests while loading', () async {
-      when(() => mockService.followUser(username: 'testuser'))
-          .thenAnswer((_) async => Future.delayed(Duration(seconds: 1)));
-      when(() => mockRef.invalidate(myFollowingProvider))
-          .thenReturn(null);
+      when(
+        () => mockService.followUser(username: 'testuser'),
+      ).thenAnswer((_) async => Future.delayed(Duration(seconds: 1)));
+      when(() => mockRef.invalidate(myFollowingProvider)).thenReturn(null);
 
       final notifier = FollowNotifier(
         service: mockService,
@@ -139,8 +140,9 @@ void main() {
     });
 
     test('toggle blocks user', () async {
-      when(() => mockService.blockUser(username: 'testuser'))
-          .thenAnswer((_) async {});
+      when(
+        () => mockService.blockUser(username: 'testuser'),
+      ).thenAnswer((_) async {});
 
       final notifier = BlockNotifier(
         service: mockService,
@@ -155,10 +157,12 @@ void main() {
     });
 
     test('toggle unblocks user when blocked', () async {
-      when(() => mockService.blockUser(username: 'testuser'))
-          .thenAnswer((_) async {});
-      when(() => mockService.unblockUser(username: 'testuser'))
-          .thenAnswer((_) async {});
+      when(
+        () => mockService.blockUser(username: 'testuser'),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockService.unblockUser(username: 'testuser'),
+      ).thenAnswer((_) async {});
 
       final notifier = BlockNotifier(
         service: mockService,
@@ -175,8 +179,9 @@ void main() {
     });
 
     test('toggle reverts on service error', () async {
-      when(() => mockService.blockUser(username: 'testuser'))
-          .thenThrow(_dioErr());
+      when(
+        () => mockService.blockUser(username: 'testuser'),
+      ).thenThrow(_dioErr());
 
       final notifier = BlockNotifier(
         service: mockService,
@@ -190,8 +195,9 @@ void main() {
     });
 
     test('toggle ignores requests while loading', () async {
-      when(() => mockService.blockUser(username: 'testuser'))
-          .thenAnswer((_) async => Future.delayed(Duration(seconds: 1)));
+      when(
+        () => mockService.blockUser(username: 'testuser'),
+      ).thenAnswer((_) async => Future.delayed(Duration(seconds: 1)));
 
       final notifier = BlockNotifier(
         service: mockService,
@@ -209,18 +215,14 @@ void main() {
     test('returns follower list', () async {
       final container = ProviderContainer(
         overrides: [
-          followersServiceProvider.overrideWithValue(
-            MockFollowersService(),
-          ),
+          followersServiceProvider.overrideWithValue(MockFollowersService()),
         ],
       );
 
-      final service = container.read(followersServiceProvider)
-          as MockFollowersService;
+      final service =
+          container.read(followersServiceProvider) as MockFollowersService;
       final response = FollowerListResponse(
-        followers: [
-          Follower(userId: 'u1', username: 'user1'),
-        ],
+        followers: [Follower(userId: 'u1', username: 'user1')],
         count: 1,
       );
       when(() => service.getMyFollowers()).thenAnswer((_) async => response);
@@ -236,18 +238,14 @@ void main() {
     test('returns following list', () async {
       final container = ProviderContainer(
         overrides: [
-          followersServiceProvider.overrideWithValue(
-            MockFollowersService(),
-          ),
+          followersServiceProvider.overrideWithValue(MockFollowersService()),
         ],
       );
 
-      final service = container.read(followersServiceProvider)
-          as MockFollowersService;
+      final service =
+          container.read(followersServiceProvider) as MockFollowersService;
       final response = FollowingListResponse(
-        following: [
-          Follower(userId: 'u1', username: 'user1'),
-        ],
+        following: [Follower(userId: 'u1', username: 'user1')],
         count: 1,
       );
       when(() => service.getMyFollowing()).thenAnswer((_) async => response);
@@ -263,25 +261,23 @@ void main() {
     test('returns followers for specific user', () async {
       final container = ProviderContainer(
         overrides: [
-          followersServiceProvider.overrideWithValue(
-            MockFollowersService(),
-          ),
+          followersServiceProvider.overrideWithValue(MockFollowersService()),
         ],
       );
 
-      final service = container.read(followersServiceProvider)
-          as MockFollowersService;
+      final service =
+          container.read(followersServiceProvider) as MockFollowersService;
       final response = FollowerListResponse(
-        followers: [
-          Follower(userId: 'u1', username: 'user1'),
-        ],
+        followers: [Follower(userId: 'u1', username: 'user1')],
         count: 1,
       );
-      when(() => service.getUserFollowers(username: 'targetuser'))
-          .thenAnswer((_) async => response);
+      when(
+        () => service.getUserFollowers(username: 'targetuser'),
+      ).thenAnswer((_) async => response);
 
-      final result =
-          await container.read(userFollowersProvider('targetuser').future);
+      final result = await container.read(
+        userFollowersProvider('targetuser').future,
+      );
 
       expect(result.followers.length, 1);
     });
@@ -291,25 +287,23 @@ void main() {
     test('returns following for specific user', () async {
       final container = ProviderContainer(
         overrides: [
-          followersServiceProvider.overrideWithValue(
-            MockFollowersService(),
-          ),
+          followersServiceProvider.overrideWithValue(MockFollowersService()),
         ],
       );
 
-      final service = container.read(followersServiceProvider)
-          as MockFollowersService;
+      final service =
+          container.read(followersServiceProvider) as MockFollowersService;
       final response = FollowingListResponse(
-        following: [
-          Follower(userId: 'u1', username: 'user1'),
-        ],
+        following: [Follower(userId: 'u1', username: 'user1')],
         count: 1,
       );
-      when(() => service.getUserFollowing(username: 'targetuser'))
-          .thenAnswer((_) async => response);
+      when(
+        () => service.getUserFollowing(username: 'targetuser'),
+      ).thenAnswer((_) async => response);
 
-      final result =
-          await container.read(userFollowingProvider('targetuser').future);
+      final result = await container.read(
+        userFollowingProvider('targetuser').future,
+      );
 
       expect(result.following.length, 1);
     });

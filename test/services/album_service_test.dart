@@ -6,20 +6,20 @@ import 'package:my_project/services/album_service.dart';
 class MockDio extends Mock implements Dio {}
 
 Response<dynamic> _res(dynamic data, {int statusCode = 200}) => Response(
-      data: data,
-      statusCode: statusCode,
-      requestOptions: RequestOptions(path: ''),
-    );
+  data: data,
+  statusCode: statusCode,
+  requestOptions: RequestOptions(path: ''),
+);
 
 DioException _dioErr({int statusCode = 500}) => DioException(
-      requestOptions: RequestOptions(path: ''),
-      response: Response(
-        data: {},
-        statusCode: statusCode,
-        requestOptions: RequestOptions(path: ''),
-      ),
-      type: DioExceptionType.badResponse,
-    );
+  requestOptions: RequestOptions(path: ''),
+  response: Response(
+    data: {},
+    statusCode: statusCode,
+    requestOptions: RequestOptions(path: ''),
+  ),
+  type: DioExceptionType.badResponse,
+);
 
 void main() {
   setUpAll(() {
@@ -37,19 +37,10 @@ void main() {
 
   group('AlbumService.getLikedAlbums', () {
     test('returns list of liked albums', () async {
-      when(
-        () => mockDio.get(
-          any(),
-          options: any(named: 'options'),
-        ),
-      ).thenAnswer(
+      when(() => mockDio.get(any(), options: any(named: 'options'))).thenAnswer(
         (_) async => _res({
           'data': [
-            {
-              'album_id': 'album-1',
-              'title': 'Album 1',
-              'artist': 'Artist 1',
-            },
+            {'album_id': 'album-1', 'title': 'Album 1', 'artist': 'Artist 1'},
           ],
         }),
       );
@@ -83,19 +74,19 @@ void main() {
 
   // ── Get Album by ID ───────────────────────────────────────────────────────
 
-
   // ── Create Album ─────────────────────────────────────────────────────────
 
   group('AlbumService.createAlbum', () {
     test('creates album and returns details', () async {
       when(
-        () => mockDio.post(any(), data: any(named: 'data'), options: any(named: 'options')),
+        () => mockDio.post(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
       ).thenAnswer(
         (_) async => _res({
-          'data': {
-            'album_id': 'album-1',
-            'title': 'New Album',
-          },
+          'data': {'album_id': 'album-1', 'title': 'New Album'},
         }),
       );
 
@@ -114,13 +105,14 @@ void main() {
   group('AlbumService.updateAlbum', () {
     test('updates album', () async {
       when(
-        () => mockDio.patch(any(), data: any(named: 'data'), options: any(named: 'options')),
+        () => mockDio.patch(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
       ).thenAnswer(
         (_) async => _res({
-          'data': {
-            'album_id': 'album-1',
-            'title': 'Updated Album',
-          },
+          'data': {'album_id': 'album-1', 'title': 'Updated Album'},
         }),
       );
 
@@ -138,8 +130,9 @@ void main() {
 
   group('AlbumService.deleteAlbum', () {
     test('deletes album', () async {
-      when(() => mockDio.delete(any(), options: any(named: 'options')))
-          .thenAnswer((_) async => _res({}));
+      when(
+        () => mockDio.delete(any(), options: any(named: 'options')),
+      ).thenAnswer((_) async => _res({}));
 
       await expectLater(
         sut.deleteAlbum(albumId: 'album-1', accessToken: 'token'),
@@ -152,8 +145,9 @@ void main() {
 
   group('AlbumService.likeAlbum', () {
     test('completes on success', () async {
-      when(() => mockDio.post(any(), options: any(named: 'options')))
-          .thenAnswer((_) async => _res({}));
+      when(
+        () => mockDio.post(any(), options: any(named: 'options')),
+      ).thenAnswer((_) async => _res({}));
 
       await expectLater(
         sut.likeAlbum(albumId: 'album-1', accessToken: 'token'),
@@ -162,8 +156,9 @@ void main() {
     });
 
     test('throws exception on failure', () async {
-      when(() => mockDio.post(any(), options: any(named: 'options')))
-          .thenThrow(_dioErr(statusCode: 401));
+      when(
+        () => mockDio.post(any(), options: any(named: 'options')),
+      ).thenThrow(_dioErr(statusCode: 401));
 
       expect(
         () => sut.likeAlbum(albumId: 'album-1', accessToken: 'invalid'),
@@ -176,8 +171,9 @@ void main() {
 
   group('AlbumService.unlikeAlbum', () {
     test('completes on success', () async {
-      when(() => mockDio.delete(any(), options: any(named: 'options')))
-          .thenAnswer((_) async => _res({}));
+      when(
+        () => mockDio.delete(any(), options: any(named: 'options')),
+      ).thenAnswer((_) async => _res({}));
 
       await expectLater(
         sut.unlikeAlbum(albumId: 'album-1', accessToken: 'token'),

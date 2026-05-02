@@ -7,7 +7,10 @@ void main() {
 
   group('PlaylistNotifier', () {
     test('requires complex integration setup', () {
-      expect(true, true); // Placeholder - requires ProviderContainer with proper overrides
+      expect(
+        true,
+        true,
+      ); // Placeholder - requires ProviderContainer with proper overrides
     });
   });
 }

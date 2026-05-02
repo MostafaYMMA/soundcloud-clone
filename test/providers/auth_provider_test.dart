@@ -34,14 +34,14 @@ final mockTokens = AuthTokens(
 );
 
 DioException _dioErr({int statusCode = 500, dynamic data}) => DioException(
-      requestOptions: RequestOptions(path: ''),
-      response: Response(
-        data: data ?? {},
-        statusCode: statusCode,
-        requestOptions: RequestOptions(path: ''),
-      ),
-      type: DioExceptionType.badResponse,
-    );
+  requestOptions: RequestOptions(path: ''),
+  response: Response(
+    data: data ?? {},
+    statusCode: statusCode,
+    requestOptions: RequestOptions(path: ''),
+  ),
+  type: DioExceptionType.badResponse,
+);
 
 void main() {
   setUpAll(() {
@@ -58,30 +58,46 @@ void main() {
       mockUserService = MockUserService();
       mockStorage = MockSecureStorage();
 
-      when(() => mockStorage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => null);
-      when(() => mockStorage.write(key: any(named: 'key'), value: any(named: 'value')))
-          .thenAnswer((_) async {});
-      when(() => mockStorage.delete(key: any(named: 'key')))
-          .thenAnswer((_) async {});
-      when(() => mockStorage.deleteAll())
-          .thenAnswer((_) async {});
+      when(
+        () => mockStorage.read(key: any(named: 'key')),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockStorage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockStorage.delete(key: any(named: 'key')),
+      ).thenAnswer((_) async {});
+      when(() => mockStorage.deleteAll()).thenAnswer((_) async {});
 
-      authNotifier = AuthNotifier(mockAuthService, mockUserService, mockStorage);
+      authNotifier = AuthNotifier(
+        mockAuthService,
+        mockUserService,
+        mockStorage,
+      );
     });
 
     // ── Bootstrap tests ───────────────────────────────────────────────────────
 
     group('_bootstrap', () {
       test('restores user session from storage', () async {
-        when(() => mockStorage.read(key: 'access_token'))
-            .thenAnswer((_) async => 'acc-123');
-        when(() => mockStorage.read(key: 'refresh_token'))
-            .thenAnswer((_) async => 'ref-123');
-        when(() => mockUserService.getMe('acc-123'))
-            .thenAnswer((_) async => mockUser);
+        when(
+          () => mockStorage.read(key: 'access_token'),
+        ).thenAnswer((_) async => 'acc-123');
+        when(
+          () => mockStorage.read(key: 'refresh_token'),
+        ).thenAnswer((_) async => 'ref-123');
+        when(
+          () => mockUserService.getMe('acc-123'),
+        ).thenAnswer((_) async => mockUser);
 
-        final notifier = AuthNotifier(mockAuthService, mockUserService, mockStorage);
+        final notifier = AuthNotifier(
+          mockAuthService,
+          mockUserService,
+          mockStorage,
+        );
         await Future.delayed(const Duration(milliseconds: 100));
 
         expect(notifier.state.isLoggedIn, true);
@@ -89,14 +105,21 @@ void main() {
       });
 
       test('clears storage on failed bootstrap', () async {
-        when(() => mockStorage.read(key: 'access_token'))
-            .thenAnswer((_) async => 'acc-123');
-        when(() => mockStorage.read(key: 'refresh_token'))
-            .thenAnswer((_) async => 'ref-123');
-        when(() => mockUserService.getMe(any()))
-            .thenThrow(_dioErr(statusCode: 401));
+        when(
+          () => mockStorage.read(key: 'access_token'),
+        ).thenAnswer((_) async => 'acc-123');
+        when(
+          () => mockStorage.read(key: 'refresh_token'),
+        ).thenAnswer((_) async => 'ref-123');
+        when(
+          () => mockUserService.getMe(any()),
+        ).thenThrow(_dioErr(statusCode: 401));
 
-        final notifier = AuthNotifier(mockAuthService, mockUserService, mockStorage);
+        final notifier = AuthNotifier(
+          mockAuthService,
+          mockUserService,
+          mockStorage,
+        );
         await Future.delayed(const Duration(milliseconds: 100));
 
         expect(notifier.state.isLoggedIn, false);
@@ -104,10 +127,15 @@ void main() {
       });
 
       test('handles missing tokens', () async {
-        when(() => mockStorage.read(key: any(named: 'key')))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockStorage.read(key: any(named: 'key')),
+        ).thenAnswer((_) async => null);
 
-        final notifier = AuthNotifier(mockAuthService, mockUserService, mockStorage);
+        final notifier = AuthNotifier(
+          mockAuthService,
+          mockUserService,
+          mockStorage,
+        );
         await Future.delayed(const Duration(milliseconds: 100));
 
         expect(notifier.state.isLoggedIn, false);
@@ -170,7 +198,9 @@ void main() {
             displayName: any(named: 'displayName'),
             accountType: any(named: 'accountType'),
           ),
-        ).thenAnswer((_) async => Future.delayed(const Duration(milliseconds: 50)));
+        ).thenAnswer(
+          (_) async => Future.delayed(const Duration(milliseconds: 50)),
+        );
 
         final future = authNotifier.register(
           email: 'test@example.com',
@@ -188,28 +218,29 @@ void main() {
 
     group('login', () {
       test('logs in and saves tokens', () async {
-        when(() => mockAuthService.login('user@test.com', 'pass123'))
-            .thenAnswer((_) async => mockTokens);
-        when(() => mockUserService.getMe('acc-token-123'))
-            .thenAnswer((_) async => mockUser);
+        when(
+          () => mockAuthService.login('user@test.com', 'pass123'),
+        ).thenAnswer((_) async => mockTokens);
+        when(
+          () => mockUserService.getMe('acc-token-123'),
+        ).thenAnswer((_) async => mockUser);
 
         await authNotifier.login('user@test.com', 'pass123');
 
         expect(authNotifier.state.isLoggedIn, true);
         expect(authNotifier.state.user?.id, 'user-1');
-        verify(() => mockStorage.write(
-          key: 'access_token',
-          value: 'acc-token-123',
-        )).called(1);
-        verify(() => mockStorage.write(
-          key: 'refresh_token',
-          value: 'ref-token-456',
-        )).called(1);
+        verify(
+          () => mockStorage.write(key: 'access_token', value: 'acc-token-123'),
+        ).called(1);
+        verify(
+          () => mockStorage.write(key: 'refresh_token', value: 'ref-token-456'),
+        ).called(1);
       });
 
       test('handles login failure', () async {
-        when(() => mockAuthService.login('bad@test.com', 'wrong'))
-            .thenThrow(_dioErr(statusCode: 401));
+        when(
+          () => mockAuthService.login('bad@test.com', 'wrong'),
+        ).thenThrow(_dioErr(statusCode: 401));
 
         await authNotifier.login('bad@test.com', 'wrong');
 
@@ -218,10 +249,12 @@ void main() {
       });
 
       test('handles user fetch failure after token success', () async {
-        when(() => mockAuthService.login('user@test.com', 'pass123'))
-            .thenAnswer((_) async => mockTokens);
-        when(() => mockUserService.getMe('acc-token-123'))
-            .thenThrow(_dioErr(statusCode: 403));
+        when(
+          () => mockAuthService.login('user@test.com', 'pass123'),
+        ).thenAnswer((_) async => mockTokens);
+        when(
+          () => mockUserService.getMe('acc-token-123'),
+        ).thenThrow(_dioErr(statusCode: 403));
 
         await authNotifier.login('user@test.com', 'pass123');
 
@@ -233,10 +266,12 @@ void main() {
 
     group('googleLogin', () {
       test('logs in via Google and saves tokens', () async {
-        when(() => mockAuthService.googleLogin('google-id-token'))
-            .thenAnswer((_) async => mockTokens);
-        when(() => mockUserService.getMe('acc-token-123'))
-            .thenAnswer((_) async => mockUser);
+        when(
+          () => mockAuthService.googleLogin('google-id-token'),
+        ).thenAnswer((_) async => mockTokens);
+        when(
+          () => mockUserService.getMe('acc-token-123'),
+        ).thenAnswer((_) async => mockUser);
 
         await authNotifier.googleLogin('google-id-token');
 
@@ -245,8 +280,9 @@ void main() {
       });
 
       test('handles invalid Google token', () async {
-        when(() => mockAuthService.googleLogin('invalid-token'))
-            .thenThrow(_dioErr(statusCode: 400));
+        when(
+          () => mockAuthService.googleLogin('invalid-token'),
+        ).thenThrow(_dioErr(statusCode: 400));
 
         await authNotifier.googleLogin('invalid-token');
 
@@ -259,10 +295,12 @@ void main() {
 
     group('facebookLogin', () {
       test('logs in via Facebook and saves tokens', () async {
-        when(() => mockAuthService.facebookLogin('facebook-token'))
-            .thenAnswer((_) async => mockTokens);
-        when(() => mockUserService.getMe('acc-token-123'))
-            .thenAnswer((_) async => mockUser);
+        when(
+          () => mockAuthService.facebookLogin('facebook-token'),
+        ).thenAnswer((_) async => mockTokens);
+        when(
+          () => mockUserService.getMe('acc-token-123'),
+        ).thenAnswer((_) async => mockUser);
 
         await authNotifier.facebookLogin('facebook-token');
 
@@ -274,8 +312,9 @@ void main() {
 
     group('verifyEmail', () {
       test('sets success message on verification', () async {
-        when(() => mockAuthService.verifyEmail('token-123'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockAuthService.verifyEmail('token-123'),
+        ).thenAnswer((_) async {});
 
         await authNotifier.verifyEmail('token-123');
 
@@ -284,8 +323,9 @@ void main() {
       });
 
       test('sets error on invalid token', () async {
-        when(() => mockAuthService.verifyEmail('bad-token'))
-            .thenThrow(_dioErr(statusCode: 400));
+        when(
+          () => mockAuthService.verifyEmail('bad-token'),
+        ).thenThrow(_dioErr(statusCode: 400));
 
         await authNotifier.verifyEmail('bad-token');
 
@@ -297,8 +337,9 @@ void main() {
 
     group('resendVerification', () {
       test('sets success message', () async {
-        when(() => mockAuthService.resendVerification('test@example.com'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockAuthService.resendVerification('test@example.com'),
+        ).thenAnswer((_) async {});
 
         await authNotifier.resendVerification('test@example.com');
 
@@ -310,28 +351,24 @@ void main() {
 
     group('refreshTokens', () {
       test('refreshes and saves new tokens', () async {
-        authNotifier.state = AuthState(
-          tokens: mockTokens,
-          user: mockUser,
-        );
+        authNotifier.state = AuthState(tokens: mockTokens, user: mockUser);
 
         final newTokens = AuthTokens(
           accessToken: 'new-acc',
           refreshToken: 'new-ref',
         );
 
-        when(() => mockAuthService.refreshTokens('ref-token-456'))
-            .thenAnswer((_) async => newTokens);
+        when(
+          () => mockAuthService.refreshTokens('ref-token-456'),
+        ).thenAnswer((_) async => newTokens);
 
         await authNotifier.refreshTokens();
 
         expect(authNotifier.state.tokens?.accessToken, 'new-acc');
-        verify(() => mockStorage.write(
-          key: 'access_token',
-          value: 'new-acc',
-        )).called(1);
+        verify(
+          () => mockStorage.write(key: 'access_token', value: 'new-acc'),
+        ).called(1);
       });
-
 
       test('does nothing when not logged in', () async {
         await authNotifier.refreshTokens();
@@ -344,10 +381,7 @@ void main() {
 
     group('logout', () {
       test('clears tokens and state', () async {
-        authNotifier.state = AuthState(
-          tokens: mockTokens,
-          user: mockUser,
-        );
+        authNotifier.state = AuthState(tokens: mockTokens, user: mockUser);
 
         when(
           () => mockAuthService.logout(
@@ -364,10 +398,7 @@ void main() {
       });
 
       test('clears tokens even on logout API failure', () async {
-        authNotifier.state = AuthState(
-          tokens: mockTokens,
-          user: mockUser,
-        );
+        authNotifier.state = AuthState(tokens: mockTokens, user: mockUser);
 
         when(
           () => mockAuthService.logout(
@@ -386,10 +417,7 @@ void main() {
 
     group('updateCurrentUser', () {
       test('updates user while preserving tokens', () async {
-        authNotifier.state = AuthState(
-          tokens: mockTokens,
-          user: mockUser,
-        );
+        authNotifier.state = AuthState(tokens: mockTokens, user: mockUser);
 
         final updatedUser = User(
           id: mockUser.id,
@@ -412,10 +440,7 @@ void main() {
     group('AuthState.isLoggedIn', () {
       test('returns true when tokens present', () {
         const state = AuthState(
-          tokens: AuthTokens(
-            accessToken: 'acc',
-            refreshToken: 'ref',
-          ),
+          tokens: AuthTokens(accessToken: 'acc', refreshToken: 'ref'),
         );
         expect(state.isLoggedIn, true);
       });

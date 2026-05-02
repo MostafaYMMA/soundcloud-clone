@@ -7,20 +7,20 @@ import 'package:my_project/services/create_playlist_service.dart';
 class MockDio extends Mock implements Dio {}
 
 Response<dynamic> _res(dynamic data, {int statusCode = 200}) => Response(
-      data: data,
-      statusCode: statusCode,
-      requestOptions: RequestOptions(path: ''),
-    );
+  data: data,
+  statusCode: statusCode,
+  requestOptions: RequestOptions(path: ''),
+);
 
 DioException _dioErr({int statusCode = 500}) => DioException(
-      requestOptions: RequestOptions(path: ''),
-      response: Response(
-        data: {},
-        statusCode: statusCode,
-        requestOptions: RequestOptions(path: ''),
-      ),
-      type: DioExceptionType.badResponse,
-    );
+  requestOptions: RequestOptions(path: ''),
+  response: Response(
+    data: {},
+    statusCode: statusCode,
+    requestOptions: RequestOptions(path: ''),
+  ),
+  type: DioExceptionType.badResponse,
+);
 
 void main() {
   setUpAll(() {
@@ -70,7 +70,11 @@ void main() {
 
     test('creates playlist without description', () async {
       when(
-        () => mockDio.post(any(), data: any(named: 'data'), options: any(named: 'options')),
+        () => mockDio.post(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
       ).thenAnswer(
         (_) async => _res({
           'data': {
@@ -96,14 +100,16 @@ void main() {
 
     test('throws DioException on creation failure', () async {
       when(
-        () => mockDio.post(any(), data: any(named: 'data'), options: any(named: 'options')),
+        () => mockDio.post(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
       ).thenThrow(_dioErr(statusCode: 400));
 
       expect(
-        () => sut.createPlaylist(
-          accessToken: 'invalid-token',
-          name: 'Playlist',
-        ),
+        () =>
+            sut.createPlaylist(accessToken: 'invalid-token', name: 'Playlist'),
         throwsA(isA<DioException>()),
       );
     });

@@ -7,21 +7,21 @@ class MockDio extends Mock implements Dio {}
 
 // Helper to build a successful Dio Response
 Response<dynamic> _res(dynamic data, {int statusCode = 200}) => Response(
-      data: data,
-      statusCode: statusCode,
-      requestOptions: RequestOptions(path: ''),
-    );
+  data: data,
+  statusCode: statusCode,
+  requestOptions: RequestOptions(path: ''),
+);
 
 // Helper to build a DioException
 DioException _dioErr({int statusCode = 500, dynamic data}) => DioException(
-      requestOptions: RequestOptions(path: ''),
-      response: Response(
-        data: data ?? {},
-        statusCode: statusCode,
-        requestOptions: RequestOptions(path: ''),
-      ),
-      type: DioExceptionType.badResponse,
-    );
+  requestOptions: RequestOptions(path: ''),
+  response: Response(
+    data: data ?? {},
+    statusCode: statusCode,
+    requestOptions: RequestOptions(path: ''),
+  ),
+  type: DioExceptionType.badResponse,
+);
 
 void main() {
   setUpAll(() {
@@ -72,7 +72,10 @@ void main() {
         ),
       ).thenThrow(_dioErr(statusCode: 401));
 
-      expect(() => sut.login('bad@test.com', 'wrong'), throwsA(isA<DioException>()));
+      expect(
+        () => sut.login('bad@test.com', 'wrong'),
+        throwsA(isA<DioException>()),
+      );
     });
   });
 
@@ -240,7 +243,10 @@ void main() {
         ),
       ).thenThrow(_dioErr(statusCode: 401));
 
-      expect(() => sut.refreshTokens('expired-refresh'), throwsA(isA<DioException>()));
+      expect(
+        () => sut.refreshTokens('expired-refresh'),
+        throwsA(isA<DioException>()),
+      );
     });
   });
 
@@ -300,7 +306,10 @@ void main() {
         ),
       ).thenAnswer((_) async => _res({'message': 'reset ok'}));
 
-      await expectLater(sut.resetPassword('reset-token', 'newPass123'), completes);
+      await expectLater(
+        sut.resetPassword('reset-token', 'newPass123'),
+        completes,
+      );
     });
 
     test('propagates DioException on invalid token', () async {

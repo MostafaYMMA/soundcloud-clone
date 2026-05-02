@@ -7,7 +7,10 @@ void main() {
 
   group('Track Providers', () {
     test('providers require integration testing', () {
-      expect(true, true); // Placeholder - complex provider tree requires full setup
+      expect(
+        true,
+        true,
+      ); // Placeholder - complex provider tree requires full setup
     });
   });
 }

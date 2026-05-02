@@ -36,10 +36,7 @@ void main() {
     });
 
     test('parses createdAt as String', () {
-      final json = {
-        'id': 'msg-1',
-        'created_at': '2024-06-15T12:00:00.000Z',
-      };
+      final json = {'id': 'msg-1', 'created_at': '2024-06-15T12:00:00.000Z'};
 
       final message = Message.fromJson(json);
 
@@ -71,10 +68,7 @@ void main() {
     });
 
     test('parses playlist reference', () {
-      final json = {
-        'id': 'msg-1',
-        'playlist_id': 'playlist-1',
-      };
+      final json = {'id': 'msg-1', 'playlist_id': 'playlist-1'};
 
       final message = Message.fromJson(json);
 

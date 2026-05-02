@@ -23,22 +23,15 @@ void main() {
     });
 
     test('copyWith updates individual fields', () {
-      const state = SubscriptionState(
-        isLoading: true,
-        error: null,
-      );
+      const state = SubscriptionState(isLoading: true, error: null);
 
-      final updated = state.copyWith(
-        isLoading: false,
-      );
+      final updated = state.copyWith(isLoading: false);
 
       expect(updated.isLoading, false);
     });
 
     test('copyWith preserves status when not provided', () {
-      const state = SubscriptionState(
-        isLoading: true,
-      );
+      const state = SubscriptionState(isLoading: true);
 
       final updated = state.copyWith(isLoading: false);
 

@@ -7,20 +7,20 @@ import 'package:my_project/services/user_profile_services.dart';
 class MockDio extends Mock implements Dio {}
 
 Response<dynamic> _res(dynamic data, {int statusCode = 200}) => Response(
-      data: data,
-      statusCode: statusCode,
-      requestOptions: RequestOptions(path: ''),
-    );
+  data: data,
+  statusCode: statusCode,
+  requestOptions: RequestOptions(path: ''),
+);
 
 DioException _dioErr({int statusCode = 500}) => DioException(
-      requestOptions: RequestOptions(path: ''),
-      response: Response(
-        data: {},
-        statusCode: statusCode,
-        requestOptions: RequestOptions(path: ''),
-      ),
-      type: DioExceptionType.badResponse,
-    );
+  requestOptions: RequestOptions(path: ''),
+  response: Response(
+    data: {},
+    statusCode: statusCode,
+    requestOptions: RequestOptions(path: ''),
+  ),
+  type: DioExceptionType.badResponse,
+);
 
 void main() {
   setUpAll(() {
@@ -36,8 +36,7 @@ void main() {
 
   group('UserService.getMe', () {
     test('returns current user', () async {
-      when(() => mockDio.get(any(), options: any(named: 'options')))
-          .thenAnswer(
+      when(() => mockDio.get(any(), options: any(named: 'options'))).thenAnswer(
         (_) async => _res({
           'data': {
             'id': 'user-1',
@@ -54,13 +53,11 @@ void main() {
     });
 
     test('throws exception on authentication failure', () async {
-      when(() => mockDio.get(any(), options: any(named: 'options')))
-          .thenThrow(_dioErr(statusCode: 401));
+      when(
+        () => mockDio.get(any(), options: any(named: 'options')),
+      ).thenThrow(_dioErr(statusCode: 401));
 
-      expect(
-        () => sut.getMe('invalid-token'),
-        throwsA(isA<DioException>()),
-      );
+      expect(() => sut.getMe('invalid-token'), throwsA(isA<DioException>()));
     });
   });
 
@@ -93,13 +90,15 @@ void main() {
 
   group('UserService.updateMe', () {
     test('updates user profile', () async {
-      when(() => mockDio.patch(any(), data: any(named: 'data'), options: any(named: 'options')))
-          .thenAnswer(
+      when(
+        () => mockDio.patch(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
         (_) async => _res({
-          'data': {
-            'id': 'user-1',
-            'username': 'updated_user',
-          },
+          'data': {'id': 'user-1', 'username': 'updated_user'},
         }),
       );
 
@@ -112,24 +111,34 @@ void main() {
     });
 
     test('throws exception on update failure', () async {
-      when(() => mockDio.patch(any(), data: any(named: 'data'), options: any(named: 'options')))
-          .thenThrow(_dioErr(statusCode: 400));
+      when(
+        () => mockDio.patch(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
+      ).thenThrow(_dioErr(statusCode: 400));
 
       expect(
-        () => sut.updateMe(
-          accessToken: 'token',
-          displayName: 'New Name',
-        ),
+        () => sut.updateMe(accessToken: 'token', displayName: 'New Name'),
         throwsA(isA<DioException>()),
       );
     });
   });
 
-
   group('UserService.updatePrivacy', () {
     test('updates privacy setting', () async {
-      when(() => mockDio.patch(any(), data: any(named: 'data'), options: any(named: 'options')))
-          .thenAnswer((_) async => _res({'data': {'is_private': true}}));
+      when(
+        () => mockDio.patch(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
+        (_) async => _res({
+          'data': {'is_private': true},
+        }),
+      );
 
       final isPrivate = await sut.updatePrivacy(
         accessToken: 'token',
@@ -142,12 +151,13 @@ void main() {
 
   group('UserService.getSocialLinks', () {
     test('returns social links', () async {
-      when(() => mockDio.get(any(), options: any(named: 'options')))
-          .thenAnswer((_) async => _res({
-            'data': [
-              {'platform': 'twitter', 'url': 'https://twitter.com/user'},
-            ],
-          }));
+      when(() => mockDio.get(any(), options: any(named: 'options'))).thenAnswer(
+        (_) async => _res({
+          'data': [
+            {'platform': 'twitter', 'url': 'https://twitter.com/user'},
+          ],
+        }),
+      );
 
       final links = await sut.getSocialLinks('token');
 
@@ -158,8 +168,13 @@ void main() {
 
   group('UserService.updateSocialLinks', () {
     test('updates social links', () async {
-      when(() => mockDio.put(any(), data: any(named: 'data'), options: any(named: 'options')))
-          .thenAnswer((_) async => _res({}));
+      when(
+        () => mockDio.put(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer((_) async => _res({}));
 
       await expectLater(
         sut.updateSocialLinks(
@@ -175,8 +190,9 @@ void main() {
 
   group('UserService.followUser', () {
     test('follows user', () async {
-      when(() => mockDio.post(any(), options: any(named: 'options')))
-          .thenAnswer((_) async => _res({}));
+      when(
+        () => mockDio.post(any(), options: any(named: 'options')),
+      ).thenAnswer((_) async => _res({}));
 
       await expectLater(
         sut.followUser(accessToken: 'token', username: 'testuser'),
@@ -187,8 +203,9 @@ void main() {
 
   group('UserService.blockUser', () {
     test('blocks user', () async {
-      when(() => mockDio.post(any(), options: any(named: 'options')))
-          .thenAnswer((_) async => _res({}));
+      when(
+        () => mockDio.post(any(), options: any(named: 'options')),
+      ).thenAnswer((_) async => _res({}));
 
       await expectLater(
         sut.blockUser(accessToken: 'token', username: 'testuser'),

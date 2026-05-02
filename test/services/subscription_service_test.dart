@@ -6,12 +6,13 @@ import 'package:my_project/services/subscription_service.dart';
 class MockDio extends Mock implements Dio {}
 
 Response<dynamic> _res(dynamic data, {int statusCode = 200}) => Response(
-      data: data,
-      statusCode: statusCode,
-      requestOptions: RequestOptions(path: ''),
-    );
+  data: data,
+  statusCode: statusCode,
+  requestOptions: RequestOptions(path: ''),
+);
 
-DioException _dioErr({int statusCode = 500, dynamic responseData}) => DioException(
+DioException _dioErr({int statusCode = 500, dynamic responseData}) =>
+    DioException(
       requestOptions: RequestOptions(path: ''),
       response: Response(
         data: responseData ?? {},
@@ -90,8 +91,7 @@ void main() {
 
   group('SubscriptionService.getMySubscription', () {
     test('returns subscription status', () async {
-      when(() => mockDio.get(any(), options: any(named: 'options')))
-          .thenAnswer(
+      when(() => mockDio.get(any(), options: any(named: 'options'))).thenAnswer(
         (_) async => _res({
           'data': {
             'plan': 'Premium',
@@ -109,8 +109,9 @@ void main() {
     });
 
     test('throws exception on auth failure', () async {
-      when(() => mockDio.get(any(), options: any(named: 'options')))
-          .thenThrow(_dioErr(statusCode: 401));
+      when(
+        () => mockDio.get(any(), options: any(named: 'options')),
+      ).thenThrow(_dioErr(statusCode: 401));
 
       expect(
         () => sut.getMySubscription(accessToken: 'invalid'),
@@ -122,7 +123,11 @@ void main() {
   group('SubscriptionService.upgrade', () {
     test('upgrades to premium monthly', () async {
       when(
-        () => mockDio.post(any(), data: any(named: 'data'), options: any(named: 'options')),
+        () => mockDio.post(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
       ).thenAnswer((_) async => _res({'message': 'Upgraded to Premium'}));
 
       final message = await sut.upgrade(
@@ -137,7 +142,11 @@ void main() {
 
     test('upgrades to premium yearly', () async {
       when(
-        () => mockDio.post(any(), data: any(named: 'data'), options: any(named: 'options')),
+        () => mockDio.post(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
       ).thenAnswer((_) async => _res({'message': 'Upgraded'}));
 
       final message = await sut.upgrade(
@@ -152,7 +161,11 @@ void main() {
 
     test('upgrades to pro monthly', () async {
       when(
-        () => mockDio.post(any(), data: any(named: 'data'), options: any(named: 'options')),
+        () => mockDio.post(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
       ).thenAnswer((_) async => _res({'message': 'Upgraded to Pro'}));
 
       final message = await sut.upgrade(
@@ -167,7 +180,11 @@ void main() {
 
     test('upgrades to pro yearly', () async {
       when(
-        () => mockDio.post(any(), data: any(named: 'data'), options: any(named: 'options')),
+        () => mockDio.post(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
       ).thenAnswer((_) async => _res({'message': 'Upgraded'}));
 
       final message = await sut.upgrade(
@@ -182,7 +199,11 @@ void main() {
 
     test('throws exception on payment failure (402)', () async {
       when(
-        () => mockDio.post(any(), data: any(named: 'data'), options: any(named: 'options')),
+        () => mockDio.post(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
       ).thenThrow(_dioErr(statusCode: 402));
 
       expect(
@@ -198,7 +219,11 @@ void main() {
 
     test('throws exception on validation error (422)', () async {
       when(
-        () => mockDio.post(any(), data: any(named: 'data'), options: any(named: 'options')),
+        () => mockDio.post(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
       ).thenThrow(_dioErr(statusCode: 422));
 
       expect(

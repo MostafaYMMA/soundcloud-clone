@@ -35,8 +35,9 @@ void main() {
         ),
       ];
 
-      when(() => mockService.getNotifications())
-          .thenAnswer((_) async => notifications);
+      when(
+        () => mockService.getNotifications(),
+      ).thenAnswer((_) async => notifications);
 
       final result = await container.read(notificationsProvider.future);
 
@@ -45,8 +46,9 @@ void main() {
     });
 
     test('build throws on service error', () async {
-      when(() => mockService.getNotifications())
-          .thenThrow(Exception('Network error'));
+      when(
+        () => mockService.getNotifications(),
+      ).thenThrow(Exception('Network error'));
 
       expect(
         () => container.read(notificationsProvider.future),
@@ -65,10 +67,12 @@ void main() {
         ),
       ];
 
-      when(() => mockService.getNotifications())
-          .thenAnswer((_) async => notifications);
-      when(() => mockService.markNotificationAsRead(id: 'notif-1'))
-          .thenAnswer((_) async {});
+      when(
+        () => mockService.getNotifications(),
+      ).thenAnswer((_) async => notifications);
+      when(
+        () => mockService.markNotificationAsRead(id: 'notif-1'),
+      ).thenAnswer((_) async {});
       when(() => mockService.getUnreadCount()).thenAnswer((_) async => 0);
 
       final notifier = container.read(notificationsProvider.notifier);
@@ -97,10 +101,10 @@ void main() {
         ),
       ];
 
-      when(() => mockService.getNotifications())
-          .thenAnswer((_) async => notifications);
-      when(() => mockService.markAllAsRead())
-          .thenAnswer((_) async {});
+      when(
+        () => mockService.getNotifications(),
+      ).thenAnswer((_) async => notifications);
+      when(() => mockService.markAllAsRead()).thenAnswer((_) async {});
       when(() => mockService.getUnreadCount()).thenAnswer((_) async => 0);
 
       final notifier = container.read(notificationsProvider.notifier);
@@ -122,10 +126,12 @@ void main() {
         ),
       ];
 
-      when(() => mockService.getNotifications())
-          .thenAnswer((_) async => notifications);
-      when(() => mockService.deleteNotification(id: 'notif-1'))
-          .thenAnswer((_) async {});
+      when(
+        () => mockService.getNotifications(),
+      ).thenAnswer((_) async => notifications);
+      when(
+        () => mockService.deleteNotification(id: 'notif-1'),
+      ).thenAnswer((_) async {});
       when(() => mockService.getUnreadCount()).thenAnswer((_) async => 0);
 
       final notifier = container.read(notificationsProvider.notifier);
@@ -147,8 +153,9 @@ void main() {
         ),
       ];
 
-      when(() => mockService.getNotifications())
-          .thenAnswer((_) async => notifications);
+      when(
+        () => mockService.getNotifications(),
+      ).thenAnswer((_) async => notifications);
       when(() => mockService.getUnreadCount()).thenAnswer((_) async => 0);
 
       final notifier = container.read(notificationsProvider.notifier);

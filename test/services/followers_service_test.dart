@@ -6,20 +6,20 @@ import 'package:my_project/services/followers_service.dart';
 class MockDio extends Mock implements Dio {}
 
 Response<dynamic> _res(dynamic data, {int statusCode = 200}) => Response(
-      data: data,
-      statusCode: statusCode,
-      requestOptions: RequestOptions(path: ''),
-    );
+  data: data,
+  statusCode: statusCode,
+  requestOptions: RequestOptions(path: ''),
+);
 
 DioException _dioErr({int statusCode = 500}) => DioException(
-      requestOptions: RequestOptions(path: ''),
-      response: Response(
-        data: {},
-        statusCode: statusCode,
-        requestOptions: RequestOptions(path: ''),
-      ),
-      type: DioExceptionType.badResponse,
-    );
+  requestOptions: RequestOptions(path: ''),
+  response: Response(
+    data: {},
+    statusCode: statusCode,
+    requestOptions: RequestOptions(path: ''),
+  ),
+  type: DioExceptionType.badResponse,
+);
 
 void main() {
   setUpAll(() {
@@ -89,7 +89,7 @@ void main() {
         (_) async => _res({
           'data': {
             'followers': [
-              {'user_id': 'user-1', 'username': 'follower1'}
+              {'user_id': 'user-1', 'username': 'follower1'},
             ],
             'total_count': 1,
           },
@@ -108,7 +108,7 @@ void main() {
         (_) async => _res({
           'data': {
             'following': [
-              {'user_id': 'user-2', 'username': 'following1'}
+              {'user_id': 'user-2', 'username': 'following1'},
             ],
             'total_count': 1,
           },
@@ -125,10 +125,7 @@ void main() {
     test('returns user followers', () async {
       when(() => mockDio.get(any())).thenAnswer(
         (_) async => _res({
-          'data': {
-            'followers': [],
-            'total_count': 0,
-          },
+          'data': {'followers': [], 'total_count': 0},
         }),
       );
 
@@ -142,10 +139,7 @@ void main() {
     test('returns user following list', () async {
       when(() => mockDio.get(any())).thenAnswer(
         (_) async => _res({
-          'data': {
-            'following': [],
-            'total_count': 0,
-          },
+          'data': {'following': [], 'total_count': 0},
         }),
       );
 

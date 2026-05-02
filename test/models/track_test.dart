@@ -65,7 +65,12 @@ void main() {
     });
 
     test('profilePicture is null when missing', () {
-      final artist = TrackArtist.fromJson({'user_id': 'u1', 'username': 'u', 'display_name': 'd', 'follower_count': 0});
+      final artist = TrackArtist.fromJson({
+        'user_id': 'u1',
+        'username': 'u',
+        'display_name': 'd',
+        'follower_count': 0,
+      });
       expect(artist.profilePicture, isNull);
     });
   });
@@ -208,7 +213,9 @@ void main() {
     });
 
     test('updates coverImageUrl', () {
-      final updated = original.copyWith(coverImageUrl: 'https://new.com/img.jpg');
+      final updated = original.copyWith(
+        coverImageUrl: 'https://new.com/img.jpg',
+      );
       expect(updated.coverImageUrl, 'https://new.com/img.jpg');
       expect(updated.artworkUrl, 'https://new.com/img.jpg');
     });
