@@ -48,6 +48,7 @@ class _RootScreenState extends ConsumerState<RootScreen> {
 
   final Map<int, Widget> _subScreens = {};
   bool _bootstrapped = false;
+  bool _queueListenerRegistered = false;
 
   void _pushSubScreen(Widget screen) {
     setState(() => _subScreens[_selectedIndex] = screen);
@@ -67,6 +68,8 @@ class _RootScreenState extends ConsumerState<RootScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_queueListenerRegistered) return;
+    _queueListenerRegistered = true;
     ref.listenManual(queueProvider, (previous, next) {
       if (next == null) return;
       if (next.action == QueueAction.playNext) {
@@ -89,6 +92,9 @@ class _RootScreenState extends ConsumerState<RootScreen> {
 
     _playerStateSub = _player.playerStateStream.listen((state) {
       if (!mounted) return;
+      debugPrint(
+        'PLAYER STATE: ${state.processingState} playing=${state.playing}',
+      );
       setState(() => _isPlaying = state.playing);
       if (state.processingState == ProcessingState.completed) {
         _playNextInQueue();
@@ -115,14 +121,27 @@ class _RootScreenState extends ConsumerState<RootScreen> {
 
   void _addToQueueNext(Track track) {
     if (_queue.isEmpty) {
-      // Start queue with current track + new track
       _queue = [_currentTrack, track];
       _currentQueueIndex = 0;
+      if (!_isPlaying) {
+        _currentQueueIndex = 1;
+        _playTrack(track);
+        return;
+      }
     } else {
       _queue.removeWhere((t) => t.trackId == track.trackId);
       final insertAt = (_currentQueueIndex + 1).clamp(0, _queue.length);
       _queue.insert(insertAt, track);
+      // Queue ended and not playing — play this track immediately
+      if (!_isPlaying) {
+        _currentQueueIndex = insertAt;
+        _playTrack(track);
+        return;
+      }
     }
+    debugPrint(
+      'QUEUE NEXT: ${_queue.map((t) => t.title).toList()} idx=$_currentQueueIndex',
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${track.title} will play next'),
@@ -135,10 +154,24 @@ class _RootScreenState extends ConsumerState<RootScreen> {
     if (_queue.isEmpty) {
       _queue = [_currentTrack, track];
       _currentQueueIndex = 0;
+      if (!_isPlaying) {
+        _currentQueueIndex = 1;
+        _playTrack(track);
+        return;
+      }
     } else {
       _queue.removeWhere((t) => t.trackId == track.trackId);
       _queue.add(track);
+      // Queue ended and not playing — play this track immediately
+      if (!_isPlaying) {
+        _currentQueueIndex = _queue.length - 1;
+        _playTrack(track);
+        return;
+      }
     }
+    debugPrint(
+      'QUEUE LAST: ${_queue.map((t) => t.title).toList()} idx=$_currentQueueIndex',
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${track.title} added to queue'),
@@ -147,25 +180,28 @@ class _RootScreenState extends ConsumerState<RootScreen> {
     );
   }
 
-  /// Called when current track ends — advances to next in queue.
   Future<void> _playNextInQueue() async {
+    debugPrint(
+      'PLAY NEXT CALLED: idx=$_currentQueueIndex len=${_queue.length}',
+    );
     if (_currentQueueIndex < _queue.length - 1) {
       _currentQueueIndex++;
+      debugPrint('PLAYING NEXT: ${_queue[_currentQueueIndex].title}');
       await _playTrack(_queue[_currentQueueIndex]);
+    } else {
+      debugPrint('QUEUE ENDED - no more tracks');
     }
   }
 
-  // ── Direct user tap — resets queue to just this track ─────────────────────
+  // ── Direct user tap ────────────────────────────────────────────────────────
 
   Future<void> _handlePlay(Track track) async {
-    // If this track is already in the queue, just navigate to it
     final existingIndex =
         _queue.indexWhere((t) => t.trackId == track.trackId);
     if (existingIndex >= 0) {
       _currentQueueIndex = existingIndex;
       await _playTrack(track);
     } else {
-      // New track tapped — start a fresh single-track queue
       _queue = [track];
       _currentQueueIndex = 0;
       await _playTrack(track);
@@ -191,13 +227,11 @@ class _RootScreenState extends ConsumerState<RootScreen> {
           ? rawUrl.toString()
           : 'https://streamline-swp.duckdns.org$rawUrl';
 
-      // Pause if same track is already playing
       if (_currentTrack.trackId == track.trackId && _isPlaying) {
         await _player.pause();
         return;
       }
 
-      // Load new track
       if (_currentTrack.trackId != track.trackId || !_hasLoaded) {
         setState(() {
           _hasLoaded = true;
@@ -216,7 +250,6 @@ class _RootScreenState extends ConsumerState<RootScreen> {
 
       await _player.play();
 
-      // Record play only once per track
       if (_lastRecordedTrackId != track.trackId) {
         _lastRecordedTrackId = track.trackId;
         ref
@@ -287,7 +320,9 @@ class _RootScreenState extends ConsumerState<RootScreen> {
       Future.microtask(() {
         if (mounted) setState(() => _bootstrapped = true);
       });
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (!authState.isLoggedIn) {

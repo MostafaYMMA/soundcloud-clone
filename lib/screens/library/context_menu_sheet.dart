@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
@@ -228,6 +229,71 @@ class _ContextMenuSheetState extends ConsumerState<_ContextMenuSheet> {
     if (mounted) Navigator.of(context).pop();
   }
 
+
+  void _showQrCode() {
+    final url = _trackUrl();
+    Navigator.of(context).pop();
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!widget.rootContext.mounted) return;
+      showDialog(
+        context: widget.rootContext,
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Scan to listen',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.track?.title ?? '',
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 13,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 20),
+                QrImageView(
+                  data: url,
+                  version: QrVersions.auto,
+                  size: 220,
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(
+                      color: Colors.black54,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
   Future<void> _shareMore() async {
     try {
       await Share.share(
@@ -283,6 +349,7 @@ class _ContextMenuSheetState extends ConsumerState<_ContextMenuSheet> {
                     _ShareRow(
                       onCopyLink: _copyLink,
                       onSms: _shareSms,
+                      onQrCode: _showQrCode,
                       onWhatsApp: _shareWhatsApp,
                       onInstagramStories: _shareInstagram,
                       onSnapchat: _shareSnapchat,
@@ -507,6 +574,7 @@ class _ShareRow extends StatelessWidget {
   const _ShareRow({
     required this.onCopyLink,
     required this.onSms,
+    required this.onQrCode,
     required this.onWhatsApp,
     required this.onInstagramStories,
     required this.onSnapchat,
@@ -515,6 +583,7 @@ class _ShareRow extends StatelessWidget {
 
   final VoidCallback onCopyLink;
   final VoidCallback onSms;
+  final VoidCallback onQrCode;
   final VoidCallback onWhatsApp;
   final VoidCallback onInstagramStories;
   final VoidCallback onSnapchat;
@@ -558,7 +627,7 @@ class _ShareRow extends StatelessWidget {
                 _ShareButton(
                   icon: Icons.qr_code_2,
                   label: 'QR code',
-                  onTap: () {},
+                  onTap: onQrCode,
                 ),
                 _ShareButton(
                   customChild: Container(
