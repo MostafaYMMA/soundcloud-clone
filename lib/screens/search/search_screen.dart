@@ -239,7 +239,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             final isUpdating = _updatingPlaylistId == playlist.id;
 
             return ListTile(
-              onTap: () => _openPlaylist(playlist),
+              onTap: () => openPlaylist(playlist),
 
               leading: _SquareImage(
                 imageUrl: image,
