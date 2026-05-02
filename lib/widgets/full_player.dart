@@ -15,6 +15,8 @@ import '../../providers/followers_provider.dart';
 import '../../providers/liked_tracks_provider.dart';
 import '../../providers/track_provider.dart';
 import '../../screens/home/queue_screen.dart';
+import '../../screens/profile/artist_profile_screen.dart';
+import '../../screens/profile/comments_screen.dart';
 
 class FullPlayer extends ConsumerStatefulWidget {
   const FullPlayer({
@@ -347,9 +349,18 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
               children: [
                 Text(_currentTrack.title, style: AppTextStyles.heading2),
                 const SizedBox(height: 4),
-                Text(
-                  _currentTrack.artist?.displayName ?? 'Unknown Artist',
-                  style: AppTextStyles.artistName,
+                GestureDetector(
+                  onTap: _currentTrack.artist?.username != null
+                      ? () => _openArtistProfile(
+                            context,
+                            _currentTrack.artist!.username,
+                            _currentTrack.artist!.displayName,
+                          )
+                      : null,
+                  child: Text(
+                    _currentTrack.artist?.displayName ?? 'Unknown Artist',
+                    style: AppTextStyles.artistName,
+                  ),
                 ),
                 const SizedBox(height: AppDimensions.spaceSmall),
                 const Row(
@@ -397,11 +408,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                     : () {
                         ref.read(followProvider(followKey).notifier).toggle();
                       },
-              ),
-              IconButton(
-                icon: const Icon(Icons.grid_view_rounded),
-                color: AppColors.textSecondary,
-                onPressed: () {},
               ),
             ],
           ),
@@ -582,35 +588,25 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
 
   Widget _buildCommentBar() {
     return GestureDetector(
-      onTap: () {},
+      onTap: () => showCommentsScreen(context, _currentTrack),
       child: Container(
-        margin: const EdgeInsets.all(AppDimensions.spaceSmall),
+        width: double.infinity,
         padding: const EdgeInsets.symmetric(
           horizontal: AppDimensions.spaceMedium,
           vertical: AppDimensions.spaceSmall,
         ),
-        decoration: const ShapeDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.surface,
-          shape: StadiumBorder(
-            side: BorderSide(color: AppColors.textMuted, width: 0.5),
+          border: Border(
+            top: BorderSide(color: AppColors.textMuted, width: 0.5),
+            bottom: BorderSide(color: AppColors.textMuted, width: 0.5),
           ),
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Comment...',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textMuted,
-                ),
-              ),
-            ),
-            const Text('🔥', style: TextStyle(fontSize: 18)),
-            const SizedBox(width: AppDimensions.spaceSmall),
-            const Text('👏', style: TextStyle(fontSize: 18)),
-            const SizedBox(width: AppDimensions.spaceSmall),
-            const Text('🥹', style: TextStyle(fontSize: 18)),
-          ],
+        child: Text(
+          'Comment...',
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textMuted,
+          ),
         ),
       ),
     );
@@ -628,6 +624,22 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
         onRemove: widget.onQueueRemove!,
         onJumpTo: widget.onQueueJumpTo!,
         onAddTrack: widget.onQueueAdd!,
+      ),
+    );
+  }
+
+  void _openArtistProfile(
+    BuildContext context,
+    String username,
+    String displayName,
+  ) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ArtistProfileScreen(
+          username: username,
+          displayName: displayName,
+          onTrackTap: (track) async {},
+        ),
       ),
     );
   }
@@ -674,11 +686,6 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
               ),
             ],
           ),
-        ),
-        const Icon(
-          Icons.chat_bubble_outline,
-          color: AppColors.textSecondary,
-          size: 22,
         ),
         const Icon(Icons.ios_share, color: AppColors.textSecondary, size: 22),
         GestureDetector(
