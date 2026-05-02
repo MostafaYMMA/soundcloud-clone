@@ -102,9 +102,7 @@ class Playlist {
       description: json['description']?.toString() ?? '',
       coverUrl: fixMediaUrl(rawCoverUrl),
       isPublic: json['is_public'] == true,
-      trackCount: json['track_count'] is int
-          ? json['track_count']
-          : tracks.length,
+      trackCount: (json['track_count'] as int?) ?? tracks.length,
       tracks: tracks,
     );
   }

@@ -7,7 +7,7 @@ class EngagementService {
 
   EngagementService({required Dio dio}) : _dio = dio;
 
-  // POST /tracks/{track_id}/like  (note: NOT /likes/tracks/{track_id})
+  // POST /tracks/{track_id}/like
   Future<void> likeTrack({required String trackId}) async {
     await _dio.post('$_baseUrl/tracks/$trackId/like');
   }
@@ -34,6 +34,7 @@ class EngagementService {
   }
 
   // GET /tracks/{track_id}/comments
+  // Response: { data: { comments: [...] } }
   Future<List<Comment>> getComments({
     required String trackId,
     int limit = 50,
@@ -43,8 +44,12 @@ class EngagementService {
       '$_baseUrl/tracks/$trackId/comments',
       queryParameters: {'limit': limit, 'offset': offset},
     );
-    final List data = response.data['data'] ?? [];
-    return data.map((e) => Comment.fromJson(e)).toList();
+    final data = response.data['data'];
+    final List comments = (data is Map ? data['comments'] : null) ?? [];
+    return comments
+        .whereType<Map<String, dynamic>>()
+        .map(Comment.fromJson)
+        .toList();
   }
 
   // POST /tracks/{track_id}/comments
@@ -64,7 +69,7 @@ class EngagementService {
     );
   }
 
-  // POST /playlists/  (create playlist)
+  // POST /playlists/
   Future<Map<String, dynamic>> createPlaylist({
     required String name,
     String? description,

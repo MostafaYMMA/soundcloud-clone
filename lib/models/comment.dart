@@ -25,24 +25,30 @@ class Comment {
 
   factory Comment.fromJson(Map<String, dynamic> json) {
     return Comment(
-      id: json['id'] as String,
-      trackId: json['track_id'] as String,
-      userId: json['user_id'] as String,
-      userDisplayName: json['display_name'] as String,
-      userProfilePicture: json['profile_picture'] as String?,
-      content: json['content'] as String,
+      // API returns comment_id, fallback to id for safety
+      id: json['comment_id']?.toString() ?? json['id']?.toString() ?? '',
+      trackId: json['track_id']?.toString() ?? '',
+      userId: json['user_id']?.toString() ?? '',
+      // API doesn't return display_name — use username or fallback
+      userDisplayName:
+          json['display_name']?.toString() ??
+          json['username']?.toString() ??
+          'Unknown',
+      userProfilePicture:
+          json['profile_picture']?.toString() ?? json['avatar_url']?.toString(),
+      content: json['content']?.toString() ?? '',
       timestampInTrack: json['timestamp_in_track'] as int?,
-      parentCommentId: json['parent_comment_id'] as String?,
+      parentCommentId: json['parent_comment_id']?.toString(),
       replies: (json['replies'] as List<dynamic>? ?? [])
           .map((e) => Comment.fromJson(e as Map<String, dynamic>))
           .toList(),
-      createdAt: json['created_at'] as String,
+      createdAt: json['created_at']?.toString() ?? '',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'comment_id': id,
       'track_id': trackId,
       'user_id': userId,
       'display_name': userDisplayName,

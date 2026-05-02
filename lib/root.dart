@@ -17,6 +17,7 @@ import 'package:my_project/screens/auth/welcome_screen.dart';
 import 'package:my_project/providers/auth_providers.dart';
 import './providers/track_provider.dart';
 import './providers/library_providers.dart';
+import './providers/queue_provider.dart';
 
 class RootScreen extends ConsumerStatefulWidget {
   const RootScreen({super.key});
@@ -40,16 +41,14 @@ class _RootScreenState extends ConsumerState<RootScreen> {
   StreamSubscription<Duration?>? _durationSub;
   StreamSubscription<PlayerState>? _playerStateSub;
 
-  // Queue state
   List<Track> _queue = [];
   int _currentQueueIndex = -1;
 
-  // Guard: only call recordPlay once per unique track
   String? _lastRecordedTrackId;
 
   final Map<int, Widget> _subScreens = {};
-
   bool _bootstrapped = false;
+  bool _queueListenerRegistered = false;
 
   void _pushSubScreen(Widget screen) {
     setState(() => _subScreens[_selectedIndex] = screen);
@@ -66,6 +65,22 @@ class _RootScreenState extends ConsumerState<RootScreen> {
     _listenToPlayer();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_queueListenerRegistered) return;
+    _queueListenerRegistered = true;
+    ref.listenManual(queueProvider, (previous, next) {
+      if (next == null) return;
+      if (next.action == QueueAction.playNext) {
+        _addToQueueNext(next.track);
+      } else {
+        _addToQueueLast(next.track);
+      }
+      ref.read(queueProvider.notifier).clear();
+    });
+  }
+
   void _listenToPlayer() {
     _durationSub = _player.durationStream.listen((duration) {
       if (!mounted) return;
@@ -77,9 +92,12 @@ class _RootScreenState extends ConsumerState<RootScreen> {
 
     _playerStateSub = _player.playerStateStream.listen((state) {
       if (!mounted) return;
+      debugPrint(
+        'PLAYER STATE: ${state.processingState} playing=${state.playing}',
+      );
       setState(() => _isPlaying = state.playing);
       if (state.processingState == ProcessingState.completed) {
-        _playNext();
+        _playNextInQueue();
       }
     });
   }
@@ -93,31 +111,105 @@ class _RootScreenState extends ConsumerState<RootScreen> {
     super.dispose();
   }
 
-  // Set a full queue and start playing from startIndex.
+  // ── Queue management ───────────────────────────────────────────────────────
+
   void _setQueueAndPlay(List<Track> tracks, int startIndex) {
     _queue = List.from(tracks);
     _currentQueueIndex = startIndex;
-    _handlePlay(tracks[startIndex]);
+    _playTrack(tracks[startIndex]);
   }
 
-  // Auto-advance to the next track in the queue.
-  Future<void> _playNext() async {
+  void _addToQueueNext(Track track) {
+    if (_queue.isEmpty) {
+      _queue = [_currentTrack, track];
+      _currentQueueIndex = 0;
+      if (!_isPlaying) {
+        _currentQueueIndex = 1;
+        _playTrack(track);
+        return;
+      }
+    } else {
+      _queue.removeWhere((t) => t.trackId == track.trackId);
+      final insertAt = (_currentQueueIndex + 1).clamp(0, _queue.length);
+      _queue.insert(insertAt, track);
+      // Queue ended and not playing — play this track immediately
+      if (!_isPlaying) {
+        _currentQueueIndex = insertAt;
+        _playTrack(track);
+        return;
+      }
+    }
+    debugPrint(
+      'QUEUE NEXT: ${_queue.map((t) => t.title).toList()} idx=$_currentQueueIndex',
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${track.title} will play next'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _addToQueueLast(Track track) {
+    if (_queue.isEmpty) {
+      _queue = [_currentTrack, track];
+      _currentQueueIndex = 0;
+      if (!_isPlaying) {
+        _currentQueueIndex = 1;
+        _playTrack(track);
+        return;
+      }
+    } else {
+      _queue.removeWhere((t) => t.trackId == track.trackId);
+      _queue.add(track);
+      // Queue ended and not playing — play this track immediately
+      if (!_isPlaying) {
+        _currentQueueIndex = _queue.length - 1;
+        _playTrack(track);
+        return;
+      }
+    }
+    debugPrint(
+      'QUEUE LAST: ${_queue.map((t) => t.title).toList()} idx=$_currentQueueIndex',
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${track.title} added to queue'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _playNextInQueue() async {
+    debugPrint(
+      'PLAY NEXT CALLED: idx=$_currentQueueIndex len=${_queue.length}',
+    );
     if (_currentQueueIndex < _queue.length - 1) {
       _currentQueueIndex++;
-      await _handlePlay(_queue[_currentQueueIndex]);
+      debugPrint('PLAYING NEXT: ${_queue[_currentQueueIndex].title}');
+      await _playTrack(_queue[_currentQueueIndex]);
+    } else {
+      debugPrint('QUEUE ENDED - no more tracks');
     }
   }
 
+  // ── Direct user tap ────────────────────────────────────────────────────────
+
   Future<void> _handlePlay(Track track) async {
-    // Keep queue index in sync when a track is tapped directly.
     final existingIndex = _queue.indexWhere((t) => t.trackId == track.trackId);
     if (existingIndex >= 0) {
       _currentQueueIndex = existingIndex;
+      await _playTrack(track);
     } else {
       _queue = [track];
       _currentQueueIndex = 0;
+      await _playTrack(track);
     }
+  }
 
+  // ── Core play logic ────────────────────────────────────────────────────────
+
+  Future<void> _playTrack(Track track) async {
     try {
       final streamData = await ref
           .read(tracksServiceProvider)
@@ -157,7 +249,6 @@ class _RootScreenState extends ConsumerState<RootScreen> {
 
       await _player.play();
 
-      // Record only when a new track starts — never on resume or pause.
       if (_lastRecordedTrackId != track.trackId) {
         _lastRecordedTrackId = track.trackId;
         ref
@@ -176,7 +267,7 @@ class _RootScreenState extends ConsumerState<RootScreen> {
   }
 
   Future<void> _toggleCurrentTrack() async {
-    await _handlePlay(_currentTrack);
+    await _playTrack(_currentTrack);
   }
 
   Future<void> _seekTo(Duration position) async {
@@ -202,7 +293,7 @@ class _RootScreenState extends ConsumerState<RootScreen> {
           player: _player,
           onPlayPause: _toggleCurrentTrack,
           onSeek: _seekTo,
-          onSkipNext: () => _playNext(),
+          onSkipNext: () => _playNextInQueue(),
         ),
       ),
     );
@@ -228,7 +319,6 @@ class _RootScreenState extends ConsumerState<RootScreen> {
       Future.microtask(() {
         if (mounted) setState(() => _bootstrapped = true);
       });
-
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 

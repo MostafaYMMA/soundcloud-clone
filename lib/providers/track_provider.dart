@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/track.dart';
 import '../services/track_service.dart';
+import '../services/user_profile_services.dart';
 import 'auth_providers.dart';
 
 // ─── Service Provider ─────────────────────────────────────────────────────────
@@ -18,7 +19,6 @@ final tracksServiceProvider = Provider<TracksService>((ref) {
         if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
         }
-
         print('${options.method} ${options.uri}');
         handler.next(options);
       },
@@ -134,6 +134,7 @@ final trackWaveformProvider = FutureProvider.family<List<double>, String>((
     return [];
   }
 });
+
 // ─── GET /search/tracks?keyword= ─────────────────────────────────────────────
 
 final searchTracksProvider = FutureProvider.family<List<Track>, String>((
@@ -160,6 +161,16 @@ final userLikedTracksProvider = FutureProvider.family<List<Track>, String>((
   String username,
 ) async {
   return ref.read(tracksServiceProvider).getUserLikedTracks(username: username);
+});
+
+// ─── GET /reposts/users/{username} ───────────────────────────────────────────
+
+final userRepostsProvider = FutureProvider.family<List<Track>, String>((
+  ref,
+  String username,
+) async {
+  final userService = UserService(dio: Dio());
+  return userService.getUserReposts(username: username);
 });
 
 // ─── Feed State ───────────────────────────────────────────────────────────────
@@ -270,9 +281,7 @@ class FollowingFeedNotifier extends StateNotifier<FeedState> {
     state = state.copyWith(
       items: state.items.map((t) {
         if (t.trackId != trackId) return t;
-
         final liked = !(t.isLiked ?? false);
-
         return t.copyWith(
           isLiked: liked,
           likeCount: (t.likeCount ?? 0) + (liked ? 1 : -1),
@@ -358,9 +367,7 @@ class DiscoverFeedNotifier extends StateNotifier<FeedState> {
     state = state.copyWith(
       items: state.items.map((t) {
         if (t.trackId != trackId) return t;
-
         final liked = !(t.isLiked ?? false);
-
         return t.copyWith(
           isLiked: liked,
           likeCount: (t.likeCount ?? 0) + (liked ? 1 : -1),
@@ -472,7 +479,7 @@ final createTrackProvider = AsyncNotifierProvider<CreateTrackNotifier, Track?>(
   CreateTrackNotifier.new,
 );
 
-// ─── PUT /tracks/{track_id} — Update track ───────────────────────────────────
+// ─── PUT /tracks/{track_id} ───────────────────────────────────────────────────
 
 class UpdateTrackNotifier extends FamilyAsyncNotifier<Track?, String> {
   @override
@@ -600,4 +607,29 @@ class ToggleTrackLikeNotifier extends FamilyAsyncNotifier<void, String> {
 final toggleTrackLikeProvider =
     AsyncNotifierProviderFamily<ToggleTrackLikeNotifier, void, String>(
       ToggleTrackLikeNotifier.new,
+    );
+
+// ─── POST+DELETE /tracks/{track_id}/repost ────────────────────────────────────
+
+class ToggleRepostNotifier extends FamilyAsyncNotifier<void, String> {
+  @override
+  Future<void> build(String arg) async {}
+
+  Future<void> toggle({required bool currentlyReposted}) async {
+    final service = ref.read(tracksServiceProvider);
+    try {
+      if (currentlyReposted) {
+        await service.unrepostTrack(trackId: arg);
+      } else {
+        await service.repostTrack(trackId: arg);
+      }
+    } on DioException catch (e) {
+      throw Exception(_dioError(e));
+    }
+  }
+}
+
+final toggleRepostProvider =
+    AsyncNotifierProviderFamily<ToggleRepostNotifier, void, String>(
+      ToggleRepostNotifier.new,
     );

@@ -37,18 +37,11 @@ class TracksService {
       ),
     };
 
-    if (genre != null && genre.trim().isNotEmpty) {
-      map['genre'] = genre.trim();
-    }
-
-    if (tags != null && tags.trim().isNotEmpty) {
-      map['tags'] = tags.trim();
-    }
-
+    if (genre != null && genre.trim().isNotEmpty) map['genre'] = genre.trim();
+    if (tags != null && tags.trim().isNotEmpty) map['tags'] = tags.trim();
     if (releaseDate != null && releaseDate.trim().isNotEmpty) {
       map['release_date'] = releaseDate.trim();
     }
-
     if (coverImagePath != null && coverImagePath.trim().isNotEmpty) {
       map['cover_image'] = await MultipartFile.fromFile(
         coverImagePath,
@@ -61,7 +54,6 @@ class TracksService {
       data: FormData.fromMap(map),
       options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
     );
-
     return Track.fromJson(res.data['data'] as Map<String, dynamic>);
   }
 
@@ -83,13 +75,12 @@ class TracksService {
         if (title != null) 'title': title,
         if (description != null) 'description': description,
         if (genre != null) 'genre': genre,
-        if (tags != null) 'tags': tags.join(','), // ✅ fixed here
+        if (tags != null) 'tags': tags.join(','),
         if (releaseDate != null) 'release_date': releaseDate,
         if (fileUrl != null) 'file_url': fileUrl,
         if (visibility != null) 'visibility': visibility,
       },
     );
-
     return Track.fromJson(res.data['data'] as Map<String, dynamic>);
   }
 
@@ -100,8 +91,6 @@ class TracksService {
   }
 
   // ── GET /tracks/{track_id}/stream ─────────────────────────────────────────
-  // Returns StreamData: { track_id, stream_url, expires_in, content_type,
-  //                       play_count, processing_status }
 
   Future<Map<String, dynamic>> getTrackStream({required String trackId}) async {
     final res = await _dio.get('$_base/tracks/$trackId/stream');
@@ -109,13 +98,11 @@ class TracksService {
   }
 
   // ── GET /tracks/{track_id}/audio ──────────────────────────────────────────
-  // Returns the raw audio bytes (streamed). Use this URL directly in a player.
 
   String getTrackAudioUrl({required String trackId}) =>
       '$_base/tracks/$trackId/audio';
 
   // ── GET /tracks/{track_id}/waveform ──────────────────────────────────────
-  // Returns WaveformData: { track_id, duration_seconds, sample_count, peaks[] }
 
   Future<Map<String, dynamic>> getTrackWaveform({
     required String trackId,
@@ -125,7 +112,6 @@ class TracksService {
   }
 
   // ── GET /tracks/{track_id}/playback ──────────────────────────────────────
-  // Returns PlaybackData (includes embedded waveform, stream_url, etc.)
 
   Future<Map<String, dynamic>> getTrackPlayback({
     required String trackId,
@@ -149,7 +135,6 @@ class TracksService {
   }
 
   // ── GET /feed/following ───────────────────────────────────────────────────
-  // Returns FeedData: { items: FeedTrackItem[], next_cursor, has_more }
 
   Future<Map<String, dynamic>> getFollowingFeed({
     int limit = 20,
@@ -209,15 +194,28 @@ class TracksService {
         .map((e) => Track.fromJson(e as Map<String, dynamic>))
         .toList();
   }
-  // ── POST /likes/tracks/{track_id} ───────────────────────────────────────────
+
+  // ── POST /likes/tracks/{track_id} ─────────────────────────────────────────
 
   Future<void> likeTrack({required String trackId}) async {
     await _dio.post('$_base/likes/tracks/$trackId');
   }
 
-  // ── DELETE /likes/tracks/{track_id} ─────────────────────────────────────────
+  // ── DELETE /likes/tracks/{track_id} ──────────────────────────────────────
 
   Future<void> unlikeTrack({required String trackId}) async {
     await _dio.delete('$_base/likes/tracks/$trackId');
+  }
+
+  // ── POST /reposts/tracks/{track_id} ──────────────────────────────────────
+
+  Future<void> repostTrack({required String trackId}) async {
+    await _dio.post('$_base/reposts/tracks/$trackId');
+  }
+
+  // ── DELETE /reposts/tracks/{track_id} ────────────────────────────────────
+
+  Future<void> unrepostTrack({required String trackId}) async {
+    await _dio.delete('$_base/reposts/tracks/$trackId');
   }
 }

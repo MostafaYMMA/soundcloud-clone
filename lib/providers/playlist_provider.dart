@@ -409,10 +409,7 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
         description: description,
         isPublic: isPublic,
       );
-
-      // Refresh both lists so UI stays in sync
       await fetchLikedPlaylists();
-
       state = state.copyWith(
         isUpdating: false,
         successMessage: 'Playlist updated.',
@@ -442,8 +439,6 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
 
     try {
       await _service.deletePlaylist(playlistId: playlistId, accessToken: token);
-
-      // Remove from local state immediately for instant UI feedback
       state = state.copyWith(
         isUpdating: false,
         userPlaylists: state.userPlaylists
@@ -475,3 +470,12 @@ final playlistProvider = StateNotifierProvider<PlaylistNotifier, PlaylistState>(
     return PlaylistNotifier(service, ref);
   },
 );
+
+// ── FutureProvider for liked playlists — used by profile Likes section ────────
+
+final userLikedPlaylistsProvider = FutureProvider<List<Playlist>>((ref) async {
+  final token = ref.watch(authProvider).tokens?.accessToken;
+  if (token == null || token.isEmpty) return [];
+  final service = PlaylistService(dio: Dio());
+  return service.getLikedPlaylists(token);
+});

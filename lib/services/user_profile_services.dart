@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../models/user.dart';
+import '../models/track.dart';
 
 class UserService {
   final Dio _dio;
@@ -17,7 +18,6 @@ class UserService {
   }
 
   // GET /users/{username}
-  // NOTE: API uses username (not user ID) as the path param
   Future<User> getUserByUsername(String username) async {
     final res = await _dio.get('$_baseUrl/users/$username');
     return User.fromJson(res.data['data']);
@@ -111,8 +111,6 @@ class UserService {
   }
 
   // PUT /users/me/social-links
-  // socialLinks: [{'platform': 'instagram', 'url': 'https://...'}, ...]
-  // Send empty list to clear all links. Max 5 links.
   Future<void> updateSocialLinks({
     required String accessToken,
     required List<Map<String, String>> socialLinks,
@@ -146,6 +144,28 @@ class UserService {
       options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
     );
     return res.data['data'] ?? [];
+  }
+
+  // GET /reposts/users/{username}
+  // No auth required per API docs.
+  Future<List<Track>> getUserReposts({required String username}) async {
+    final res = await _dio.get('$_baseUrl/reposts/users/$username');
+    final data = res.data['data'];
+    final List reposts = (data is Map ? data['reposts'] : null) ?? [];
+    return reposts
+        .whereType<Map<String, dynamic>>()
+        .map(
+          (r) => Track(
+            trackId: r['track_id']?.toString() ?? '',
+            title: r['title']?.toString() ?? 'Untitled',
+            coverImageUrl: r['cover_image_url']?.toString(),
+            streamUrl: r['stream_url']?.toString() ?? '',
+            visibility: 'public',
+            processingStatus: 'processed',
+            playCount: 0,
+          ),
+        )
+        .toList();
   }
 
   // GET /users/me/recently-played
