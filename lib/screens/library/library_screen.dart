@@ -39,6 +39,7 @@ class LibraryScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: AppColors.background,
         elevation: 0,
         title: const Text('Library', style: AppTextStyles.heading2),

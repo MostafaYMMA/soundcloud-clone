@@ -68,6 +68,28 @@ class Playlist {
 
   String get owner => 'Playlist owner';
 
+  Playlist copyWith({
+    String? id,
+    String? userId,
+    String? name,
+    String? description,
+    String? coverUrl,
+    bool? isPublic,
+    int? trackCount,
+    List<PlaylistTrack>? tracks,
+  }) {
+    return Playlist(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      coverUrl: coverUrl ?? this.coverUrl,
+      isPublic: isPublic ?? this.isPublic,
+      trackCount: trackCount ?? this.trackCount,
+      tracks: tracks ?? this.tracks,
+    );
+  }
+
   factory Playlist.fromJson(Map<String, dynamic> json) {
     final tracksRaw = json['tracks'];
 

@@ -73,6 +73,41 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
 
   String? get _token => ref.read(authProvider).tokens?.accessToken;
 
+  Future<List<Playlist>> _withDetailedTrackCounts(
+    List<Playlist> playlists,
+    String token,
+  ) async {
+    final detailed = await Future.wait(
+      playlists.map((playlist) async {
+        try {
+          final details = await _service.getPlaylistById(
+            playlistId: playlist.id,
+            accessToken: token,
+          );
+          return playlist.copyWith(
+            trackCount: details.tracks.length,
+            tracks: details.tracks,
+          );
+        } catch (_) {
+          return playlist;
+        }
+      }),
+    );
+    return detailed;
+  }
+
+  List<Playlist> _updatePlaylistTrackCount(
+    List<Playlist> playlists,
+    String playlistId,
+    int delta,
+  ) {
+    return playlists.map((playlist) {
+      if (playlist.id != playlistId) return playlist;
+      final nextCount = playlist.trackCount + delta;
+      return playlist.copyWith(trackCount: nextCount < 0 ? 0 : nextCount);
+    }).toList();
+  }
+
   // ── GET /playlists/liked ────────────────────────────────────────────────────
 
   Future<void> fetchLikedPlaylists() async {
@@ -93,8 +128,12 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
 
     try {
       final playlists = await _service.getLikedPlaylists(token);
+      final detailedPlaylists = await _withDetailedTrackCounts(
+        playlists,
+        token,
+      );
       state = state.copyWith(
-        likedPlaylists: playlists,
+        likedPlaylists: detailedPlaylists,
         isLoadingLiked: false,
         clearError: true,
       );
@@ -124,8 +163,12 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
         username: username,
         accessToken: token,
       );
+      final detailedPlaylists = await _withDetailedTrackCounts(
+        playlists,
+        token,
+      );
       state = state.copyWith(
-        userPlaylists: playlists,
+        userPlaylists: detailedPlaylists,
         isLoadingUserPlaylists: false,
         clearError: true,
       );
@@ -274,6 +317,16 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
       );
       state = state.copyWith(
         isUpdating: false,
+        likedPlaylists: _updatePlaylistTrackCount(
+          state.likedPlaylists,
+          playlistId,
+          1,
+        ),
+        userPlaylists: _updatePlaylistTrackCount(
+          state.userPlaylists,
+          playlistId,
+          1,
+        ),
         successMessage: 'Track added successfully.',
       );
     } catch (e) {
@@ -303,6 +356,16 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
       );
       state = state.copyWith(
         isUpdating: false,
+        likedPlaylists: _updatePlaylistTrackCount(
+          state.likedPlaylists,
+          playlistId,
+          -1,
+        ),
+        userPlaylists: _updatePlaylistTrackCount(
+          state.userPlaylists,
+          playlistId,
+          -1,
+        ),
         successMessage: 'Track removed.',
       );
       return true;
@@ -368,6 +431,8 @@ class PlaylistNotifier extends StateNotifier<PlaylistState> {
         name: name,
         description: description,
       );
+
+      await _service.likePlaylist(playlistId: playlist.id, accessToken: token);
       await fetchLikedPlaylists();
       state = state.copyWith(
         isCreating: false,
