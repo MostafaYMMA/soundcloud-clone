@@ -64,43 +64,50 @@ class Album {
   }
 
   factory Album.fromJson(Map<String, dynamic> json) {
-    int releaseYear = 0;
+  // Detail endpoint uses release_date, search endpoint uses year
+  int releaseYear = 0;
+  if (json['year'] != null) {
+    releaseYear = json['year'] is int
+        ? json['year']
+        : int.tryParse(json['year'].toString()) ?? 0;
+  } else {
     final rawDate = json['release_date']?.toString();
     if (rawDate != null && rawDate.isNotEmpty) {
       releaseYear = int.tryParse(rawDate.split('-').first) ?? 0;
     }
-
-    final tracksRaw = json['tracks'];
-    final tracks = tracksRaw is List
-        ? tracksRaw
-              .whereType<Map<String, dynamic>>()
-              .map(AlbumTrack.fromJson)
-              .toList()
-        : <AlbumTrack>[];
-
-    return Album(
-      id: json['album_id']?.toString() ?? json['id']?.toString() ?? '',
-      title: json['title']?.toString() ?? 'Untitled Album',
-      artist:
-          json['artist']?.toString() ??
-          json['display_name']?.toString() ??
-          json['owner']?.toString() ??
-          'Unknown Artist',
-      artworkUrl: _fixMediaUrl(
-        json['cover_photo_url']?.toString() ??
-            json['cover_image_url']?.toString() ??
-            json['artwork_url']?.toString(),
-      ),
-      trackCount: json['track_count'] is int
-          ? json['track_count']
-          : int.tryParse(json['track_count']?.toString() ?? '') ?? 0,
-      releaseYear: releaseYear,
-      likeCount: json['like_count'] is int
-          ? json['like_count']
-          : int.tryParse(json['like_count']?.toString() ?? '') ?? 0,
-      trackIds:
-          (json['track_ids'] as List?)?.map((e) => e.toString()).toList() ?? [],
-      tracks: tracks, // ← added
-    );
   }
+
+  final tracksRaw = json['tracks'];
+  final tracks = tracksRaw is List
+      ? tracksRaw
+          .whereType<Map<String, dynamic>>()
+          .map(AlbumTrack.fromJson)
+          .toList()
+      : <AlbumTrack>[];
+
+  return Album(
+    id: json['album_id']?.toString() ?? json['id']?.toString() ?? '',
+    title: json['title']?.toString() ?? 'Untitled Album',
+    // search uses artist_name, detail uses artist/display_name
+    artist: json['artist_name']?.toString() ??
+        json['artist']?.toString() ??
+        json['display_name']?.toString() ??
+        'Unknown Artist',
+    artworkUrl: _fixMediaUrl(
+      json['cover_photo_url']?.toString() ??
+          json['cover_image_url']?.toString() ??
+          json['artwork_url']?.toString(),
+    ),
+    trackCount: json['track_count'] is int
+        ? json['track_count']
+        : int.tryParse(json['track_count']?.toString() ?? '') ?? 0,
+    releaseYear: releaseYear,
+    likeCount: json['like_count'] is int
+        ? json['like_count']
+        : int.tryParse(json['like_count']?.toString() ?? '') ?? 0,
+    trackIds:
+        (json['track_ids'] as List?)?.map((e) => e.toString()).toList() ?? [],
+    tracks: tracks,
+  );
+}
 }

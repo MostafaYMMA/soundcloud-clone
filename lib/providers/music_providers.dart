@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/music_service.dart';
 import '../models/track.dart';
 import 'auth_providers.dart';
+import '../models/album.dart';
 
 // ─── Service Provider ─────────────────────────────────────────────────────────
 // Auth token injected via interceptor so all track endpoints are authenticated
@@ -62,3 +63,12 @@ final recordPlayProvider =
     AsyncNotifierProviderFamily<RecordPlayNotifier, void, String>(
       RecordPlayNotifier.new,
     );
+// ─── GET /search/playlists ────────────────────────────────────────────────────
+
+final searchAlbumsProvider = FutureProvider.family<List<Album>, String>((
+  ref,
+  String query,
+) async {
+  if (query.isEmpty) return <Album>[];
+  return ref.read(musicServiceProvider).searchAlbums(query);
+});

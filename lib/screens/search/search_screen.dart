@@ -11,11 +11,15 @@ import 'package:my_project/screens/library/collections_screen.dart';
 import 'package:my_project/screens/library/context_menu_sheet.dart';
 import 'package:my_project/screens/search/search_bar.dart';
 import 'package:my_project/screens/search/vibes_section.dart';
+import 'package:my_project/models/album.dart';
+import 'package:my_project/providers/album_provider.dart';
+import 'package:my_project/screens/library/collections_details_mapper.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   final void Function(Track)? onTrackTap;
-
-  const SearchScreen({super.key, this.onTrackTap});
+  final void Function(Widget screen)? onNavigate;
+  
+  const SearchScreen({super.key, this.onTrackTap, this.onNavigate});
 
   @override
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
@@ -52,6 +56,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
       ref.read(playlistProvider.notifier).searchPlaylists(query);
       ref.invalidate(searchTracksProvider(query));
+      ref.invalidate(searchAlbumsProvider(query));
     });
   }
 
@@ -115,6 +120,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final playlistState = ref.watch(playlistProvider);
     final trackState = ref.watch(searchTracksProvider(_query));
+    final albumAsync = ref.watch(searchAlbumsProvider(_query));
     final isSearching = _query.isNotEmpty;
 
     return Scaffold(
@@ -129,7 +135,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const SizedBox(height: 10),
             Expanded(
               child: isSearching
-                  ? _buildResults(playlistState, trackState)
+                  ? _buildResults(playlistState, trackState, albumAsync)
                   : const SingleChildScrollView(
                       child: Padding(
                         padding: EdgeInsets.only(bottom: 20),
@@ -146,15 +152,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget _buildResults(
     PlaylistState playlistState,
     AsyncValue<List<Track>> trackState,
+    AsyncValue<List<Album>> albumAsync,
   ) {
-    if (playlistState.isSearching || trackState.isLoading) {
+    if (playlistState.isSearching || 
+    trackState.isLoading ||
+    albumAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     final playlists = playlistState.searchResults;
     final tracks = trackState.value ?? [];
-
-    if (playlistState.error != null && playlists.isEmpty && tracks.isEmpty) {
+    final albums = albumAsync.value ?? [];
+    if (playlistState.error != null && playlists.isEmpty && tracks.isEmpty && albums.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -167,7 +176,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       );
     }
 
-    if (playlists.isEmpty && tracks.isEmpty) {
+    if (playlists.isEmpty && tracks.isEmpty && albums.isEmpty) {
       return const Center(
         child: Text(
           'No results found',
@@ -225,6 +234,60 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             );
           }),
         ],
+         // ───── ALBUMS ───── 
+      if (albums.isNotEmpty) ...[
+        const Padding(
+          padding: EdgeInsets.all(12),
+          child: Text(
+            'Albums',
+            style: TextStyle(color: Colors.white, fontSize: 18),
+          ),
+        ),
+        ...albums.map((album) {
+          final image = fixImageUrl(album.artworkUrl);
+          final isLiked = ref
+              .watch(albumProvider)
+              .likedAlbums
+              .any((a) => a.id == album.id);
+
+          return ListTile(
+            onTap: () => _openAlbum(album),
+            leading: _SquareImage(
+              imageUrl: image,
+              fallbackIcon: Icons.album,
+            ),
+            title: Text(
+              album.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white),
+            ),
+            subtitle: Text(
+              album.artist,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white70),
+            ),
+            trailing: IconButton(
+              tooltip: isLiked ? 'Remove from likes' : 'Add to likes',
+              icon: Icon(
+                isLiked ? Icons.favorite : Icons.favorite_border,
+                color: isLiked
+                    ? AppColors.primary
+                    : AppColors.textSecondary,
+              ),
+              onPressed: () async {
+                if (isLiked) {
+                  await ref.read(albumProvider.notifier).unlikeAlbum(album.id);
+                } else {
+                  await ref.read(albumProvider.notifier).likeAlbum(album.id);
+                }
+              },
+            ),
+          );
+        }),
+      ],
+
 
         // ───── PLAYLISTS ─────
         if (playlists.isNotEmpty) ...[
@@ -291,54 +354,73 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Future<void> openPlaylist(Playlist playlist) async {
-    final detailed = await ref
-        .read(playlistProvider.notifier)
-        .getPlaylistDetails(playlist.id);
+  final detailed = await ref
+      .read(playlistProvider.notifier)
+      .getPlaylistDetails(playlist.id);
 
-    if (!mounted) return;
-    if (detailed == null) {
-      final error =
-          ref.read(playlistProvider).error ?? 'Could not open playlist.';
+  if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error)));
-
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CollectionDetailsScreen(
-          playlistId: detailed.id,
-          data: CollectionDetailsData(
-            type: CollectionType.playlist,
-            title: detailed.name,
-            artworkPath: detailed.coverUrl,
-            ownerName: detailed.owner,
-            ownerAvatarPath: '',
-            yearText: '${detailed.trackCount} tracks',
-            likesText: detailed.owner,
-            tracks: detailed.tracks
-                .map(
-                  (track) => CollectionTrack(
-                    id: track.id,
-                    title: track.title,
-                    artist: track.artist,
-                    artworkPath: track.artworkUrl,
-                    durationSeconds: track.durationSeconds,
-                    isAvailable: true,
-                  ),
-                )
-                .toList(),
-          ),
-        ),
-      ),
-    );
+  if (detailed == null) {
+    final error = ref.read(playlistProvider).error ?? 'Could not open playlist.';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+    return;
   }
-}
 
+  widget.onNavigate?.call( // ← was Navigator.push
+    CollectionDetailsScreen(
+      playlistId: detailed.id,
+      data: CollectionDetailsData(
+        type: CollectionType.playlist,
+        title: detailed.name,
+        artworkPath: detailed.coverUrl,
+        ownerName: detailed.owner,
+        ownerAvatarPath: '',
+        yearText: '${detailed.trackCount} tracks',
+        likesText: detailed.owner,
+        tracks: detailed.tracks
+            .map(
+              (track) => CollectionTrack(
+                id: track.id,
+                title: track.title,
+                artist: track.artist,
+                artworkPath: track.artworkUrl,
+                durationSeconds: track.durationSeconds,
+                isAvailable: true,
+              ),
+            )
+            .toList(),
+      ),
+      onBack: () => widget.onNavigate?.call(SearchScreen(
+        onTrackTap: widget.onTrackTap,
+        onNavigate: widget.onNavigate,
+      )),
+    ),
+  );
+}
+  Future<void> _openAlbum(Album album) async {
+  final detailed = await ref
+      .read(albumProvider.notifier)
+      .getAlbumDetails(album.id);
+
+  if (!mounted) return;
+
+  if (detailed == null) {
+    final error = ref.read(albumProvider).error ?? 'Could not open album.';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+    return;
+  }
+
+  widget.onNavigate?.call( 
+    CollectionDetailsScreen(
+      data: CollectionDetailsMapper.fromAlbum(detailed),
+      onBack: () => widget.onNavigate?.call(SearchScreen(
+        onTrackTap: widget.onTrackTap,
+        onNavigate: widget.onNavigate,
+      )),
+    ),
+  );
+}
+}
 class _SquareImage extends StatelessWidget {
   final String imageUrl;
   final IconData fallbackIcon;
