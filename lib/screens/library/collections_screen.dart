@@ -83,22 +83,27 @@ class _CollectionDetailsScreenState
   String? _removingTrackId;
 
   List<Track> _toPlayableTracks(List<CollectionTrack> tracks) {
-  return tracks.map((t) => Track(
-    trackId: t.id,
-    title: t.title,
-    coverImageUrl: t.artworkPath,
-    streamUrl: 'https://streamline-swp.duckdns.org/api/tracks/${t.id}/audio',
-    artist: TrackArtist(
-      userId: '',
-      username: '',
-      displayName: t.artist,
-      followerCount: 0,
-    ),
-      visibility: 'public',
-      processingStatus: '',
-      playCount: 0,
-      durationSeconds: t.durationSeconds,
-    )).toList();
+    return tracks
+        .map(
+          (t) => Track(
+            trackId: t.id,
+            title: t.title,
+            coverImageUrl: t.artworkPath,
+            streamUrl:
+                'https://streamline-swp.duckdns.org/api/tracks/${t.id}/audio',
+            artist: TrackArtist(
+              userId: '',
+              username: '',
+              displayName: t.artist,
+              followerCount: 0,
+            ),
+            visibility: 'public',
+            processingStatus: '',
+            playCount: 0,
+            durationSeconds: t.durationSeconds,
+          ),
+        )
+        .toList();
   }
 
   @override
@@ -309,13 +314,25 @@ class _CollectionDetailsScreenState
                   const SizedBox(height: AppDimensions.spaceLarge),
                   _ActionRow(
                     likesText: data.likesText,
-                    onPlay: _tracks.isEmpty ? null : () {
-                    widget.onQueuePlay?.call(_toPlayableTracks(_tracks), 0);
-                    },
-                    onShuffle: _tracks.isEmpty ? null : () {
-                    final shuffled = List<CollectionTrack>.from(_tracks)..shuffle();
-                    widget.onQueuePlay?.call(_toPlayableTracks(shuffled), 0);
-                    },),
+                    onPlay: _tracks.isEmpty
+                        ? null
+                        : () {
+                            widget.onQueuePlay?.call(
+                              _toPlayableTracks(_tracks),
+                              0,
+                            );
+                          },
+                    onShuffle: _tracks.isEmpty
+                        ? null
+                        : () {
+                            final shuffled = List<CollectionTrack>.from(_tracks)
+                              ..shuffle();
+                            widget.onQueuePlay?.call(
+                              _toPlayableTracks(shuffled),
+                              0,
+                            );
+                          },
+                  ),
                   const SizedBox(height: AppDimensions.spaceLarge),
                   if (_tracks.isEmpty)
                     Container(
@@ -494,13 +511,9 @@ class _ActionRow extends StatelessWidget {
   final VoidCallback? onPlay;
   final VoidCallback? onShuffle;
 
-  const _ActionRow({
-    required this.likesText,
-    this.onPlay,
-    this.onShuffle,
-  });
+  const _ActionRow({required this.likesText, this.onPlay, this.onShuffle});
 
- @override
+  @override
   Widget build(BuildContext context) {
     return Row(
       children: [

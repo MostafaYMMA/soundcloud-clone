@@ -23,7 +23,7 @@ class LibraryScreen extends ConsumerWidget {
   final void Function(Widget) onNavigate;
   final VoidCallback? onBack;
   final Future<void> Function(Track track) onTrackTap;
-  final void Function(List<Track> tracks, int startIndex) onQueuePlay; 
+  final void Function(List<Track> tracks, int startIndex) onQueuePlay;
   const LibraryScreen({
     super.key,
     required this.onNavigate,
@@ -90,9 +90,9 @@ class LibraryScreen extends ConsumerWidget {
                   title: 'Liked Tracks',
                   onTap: () => onNavigate(
                     LikedTracksScreen(
-                      onBack: onBack, 
-                      onTrackTap: onTrackTap
-                      ,onQueuePlay: onQueuePlay,
+                      onBack: onBack,
+                      onTrackTap: onTrackTap,
+                      onQueuePlay: onQueuePlay,
                     ),
                   ),
                 ),

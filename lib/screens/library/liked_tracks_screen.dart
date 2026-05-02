@@ -16,13 +16,13 @@ enum LikedTracksSortOption { recentlyAdded, firstAdded, trackName, artist }
 class LikedTracksScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
   final Future<void> Function(Track track) onTrackTap;
-   final void Function(List<Track> tracks, int startIndex) onQueuePlay;
+  final void Function(List<Track> tracks, int startIndex) onQueuePlay;
   const LikedTracksScreen({
-    super.key, 
-    this.onBack, 
+    super.key,
+    this.onBack,
     required this.onTrackTap,
-    required this.onQueuePlay
-    });
+    required this.onQueuePlay,
+  });
 
   @override
   ConsumerState<LikedTracksScreen> createState() => _LikedTracksScreenState();
@@ -306,23 +306,31 @@ class _LikedTracksScreenState extends ConsumerState<LikedTracksScreen> {
                                   children: [
                                     IconButton(
                                       icon: Icon(
-                                      Icons.shuffle,
-                                      color: _isShuffled ? AppColors.primary : AppColors.textPrimary,
-                                      size: 24,
+                                        Icons.shuffle,
+                                        color: _isShuffled
+                                            ? AppColors.primary
+                                            : AppColors.textPrimary,
+                                        size: 24,
                                       ),
                                       onPressed: () {
-                                      setState(() => _isShuffled = !_isShuffled);
-                                      if (displayed.isNotEmpty) {
-                                      final shuffled = List<Track>.from(displayed)..shuffle();
-                                      widget.onQueuePlay(shuffled, 0);
-                                      }
-                                    },
-                                  ),
+                                        setState(
+                                          () => _isShuffled = !_isShuffled,
+                                        );
+                                        if (displayed.isNotEmpty) {
+                                          final shuffled = List<Track>.from(
+                                            displayed,
+                                          )..shuffle();
+                                          widget.onQueuePlay(shuffled, 0);
+                                        }
+                                      },
+                                    ),
                                     const SizedBox(width: 8),
                                     GestureDetector(
-                                      onTap: displayed.isEmpty ? null : () {
-                                          widget.onQueuePlay(displayed, 0);
-                                      },
+                                      onTap: displayed.isEmpty
+                                          ? null
+                                          : () {
+                                              widget.onQueuePlay(displayed, 0);
+                                            },
                                       child: Container(
                                         width: 52,
                                         height: 52,

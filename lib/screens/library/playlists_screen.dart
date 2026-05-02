@@ -19,8 +19,7 @@ class PlaylistsScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
   final Future<void> Function(Track track) onTrackTap;
   final void Function(Widget screen) onNavigate;
-    final void Function(List<Track> tracks, int startIndex) onQueuePlay; 
-
+  final void Function(List<Track> tracks, int startIndex) onQueuePlay;
 
   const PlaylistsScreen({
     super.key,
