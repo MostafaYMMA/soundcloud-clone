@@ -30,64 +30,69 @@ class MoreLikeSection extends StatelessWidget {
         const SizedBox(height: AppDimensions.spaceSmall),
         SizedBox(
           height: 180,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.spaceMedium,
-            ),
-            child: Row(
-              children: [
-                for (int i = 0; i < tracks.length; i++) ...[
-                  GestureDetector(
-                    onTap: () => onTrackTap?.call(tracks[i]),
-                    child: SizedBox(
-                      width: 150,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              AppDimensions.borderRadiusSmall,
-                            ),
-                            child:
-                                (tracks[i].coverImageUrl != null &&
-                                    tracks[i].coverImageUrl!.isNotEmpty)
-                                ? Image.network(
-                                    tracks[i].coverImageUrl!,
-                                    width: 150,
-                                    height: 130,
-                                    fit: BoxFit.cover,
-                                    headers: const {
-                                      'User-Agent': 'Mozilla/5.0',
-                                    },
-                                    errorBuilder: (_, __, ___) =>
-                                        const _PlaceholderThumb(),
-                                  )
-                                : const _PlaceholderThumb(),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            tracks[i].title,
-                            style: AppTextStyles.artistName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            tracks[i].artist?.displayName ?? 'Unknown Artist',
-                            style: AppTextStyles.caption,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
+          child: tracks.isEmpty
+              ? const Center(
+                  child: Text('No items yet', style: AppTextStyles.caption),
+                )
+              : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimensions.spaceMedium,
                   ),
-                  if (i < tracks.length - 1)
-                    const SizedBox(width: AppDimensions.spaceSmall),
-                ],
-              ],
-            ),
-          ),
+                  child: Row(
+                    children: [
+                      for (int i = 0; i < tracks.length; i++) ...[
+                        GestureDetector(
+                          onTap: () => onTrackTap?.call(tracks[i]),
+                          child: SizedBox(
+                            width: 150,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.borderRadiusSmall,
+                                  ),
+                                  child:
+                                      (tracks[i].coverImageUrl != null &&
+                                          tracks[i].coverImageUrl!.isNotEmpty)
+                                      ? Image.network(
+                                          tracks[i].coverImageUrl!,
+                                          width: 150,
+                                          height: 130,
+                                          fit: BoxFit.cover,
+                                          headers: const {
+                                            'User-Agent': 'Mozilla/5.0',
+                                          },
+                                          errorBuilder: (_, _, _) =>
+                                              const _PlaceholderThumb(),
+                                        )
+                                      : const _PlaceholderThumb(),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  tracks[i].title,
+                                  style: AppTextStyles.artistName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  tracks[i].artist?.displayName ??
+                                      'Unknown Artist',
+                                  style: AppTextStyles.caption,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (i < tracks.length - 1)
+                          const SizedBox(width: AppDimensions.spaceSmall),
+                      ],
+                    ],
+                  ),
+                ),
         ),
       ],
     );

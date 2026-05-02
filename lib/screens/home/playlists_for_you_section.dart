@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
 import '../../constants/app_dimensions.dart';
-import '../../models/album.dart';
+import '../../models/playlist.dart';
 
-class AlbumsForYouSection extends StatelessWidget {
+class PlaylistsForYouSection extends StatelessWidget {
   final String sectionTitle;
-  final List<Album> albums;
-  final void Function(Album)? onAlbumTap;
+  final List<Playlist> playlists;
+  final void Function(Playlist)? onPlaylistTap;
 
-  const AlbumsForYouSection({
+  const PlaylistsForYouSection({
     super.key,
     required this.sectionTitle,
-    required this.albums,
-    this.onAlbumTap,
+    required this.playlists,
+    this.onPlaylistTap,
   });
 
   @override
@@ -30,7 +30,7 @@ class AlbumsForYouSection extends StatelessWidget {
         const SizedBox(height: AppDimensions.spaceSmall),
         SizedBox(
           height: 210,
-          child: albums.isEmpty
+          child: playlists.isEmpty
               ? const Center(
                   child: Text('No items yet', style: AppTextStyles.caption),
                 )
@@ -41,9 +41,9 @@ class AlbumsForYouSection extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      for (int i = 0; i < albums.length; i++) ...[
+                      for (int i = 0; i < playlists.length; i++) ...[
                         GestureDetector(
-                          onTap: () => onAlbumTap?.call(albums[i]),
+                          onTap: () => onPlaylistTap?.call(playlists[i]),
                           child: SizedBox(
                             width: 150,
                             child: Column(
@@ -53,9 +53,9 @@ class AlbumsForYouSection extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(
                                     AppDimensions.borderRadiusSmall,
                                   ),
-                                  child: albums[i].artworkUrl.isNotEmpty
+                                  child: playlists[i].coverUrl.isNotEmpty
                                       ? Image.network(
-                                          albums[i].artworkUrl,
+                                          playlists[i].coverUrl,
                                           width: 150,
                                           height: 150,
                                           fit: BoxFit.cover,
@@ -69,13 +69,13 @@ class AlbumsForYouSection extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  albums[i].title,
+                                  playlists[i].name,
                                   style: AppTextStyles.artistName,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Text(
-                                  '${albums[i].artist} · ${albums[i].trackCount} tracks',
+                                  '${playlists[i].trackCount} tracks',
                                   style: AppTextStyles.caption,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -84,7 +84,7 @@ class AlbumsForYouSection extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if (i < albums.length - 1)
+                        if (i < playlists.length - 1)
                           const SizedBox(width: AppDimensions.spaceSmall),
                       ],
                     ],
@@ -105,7 +105,11 @@ class _PlaceholderCover extends StatelessWidget {
       width: 150,
       height: 150,
       color: AppColors.waveformInactive,
-      child: const Icon(Icons.album, color: AppColors.textMuted, size: 40),
+      child: const Icon(
+        Icons.playlist_play,
+        color: AppColors.textMuted,
+        size: 40,
+      ),
     );
   }
 }
