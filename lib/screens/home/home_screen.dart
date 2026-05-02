@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_project/models/track.dart';
 import 'package:my_project/widgets/upload_track_sheet.dart';
+import 'dart:math';
 
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
@@ -10,10 +11,12 @@ import '../../providers/album_provider.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/feed_provider.dart';
 import '../../providers/notifications_provider.dart';
+import '../../providers/playlist_provider.dart';
 import '../auth/welcome_screen.dart';
 import 'activity.dart';
 import 'albums_for_you_section.dart';
 import 'more_like_section.dart';
+import 'playlists_for_you_section.dart';
 import 'today_pick_card.dart';
 import 'your_likes_card.dart';
 
@@ -169,13 +172,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ref.read(followingFeedProvider.notifier).refresh(),
                 ),
                 data: (state) {
-                  if (state.items.isEmpty) return const SizedBox();
+                  final allTracks = state.items
+                      .map((item) => item.toTrack())
+                      .toList();
+
+                  final randomTracks = allTracks.isEmpty
+                      ? <Track>[]
+                      : (allTracks..shuffle()).take(4).toList();
 
                   return YourLikesCard(
-                    tracks: state.items
-                        .take(6)
-                        .map((item) => item.toTrack())
-                        .toList(),
+                    tracks: randomTracks,
                     onQueuePlay: widget.onQueuePlay,
                   );
                 },
@@ -203,13 +209,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 loading: () => const SizedBox(),
                 error: (_, __) => const SizedBox(),
                 data: (state) {
-                  final tracks = state.items
+                  var tracks = state.items
                       .skip(6)
                       .take(10)
                       .map((item) => item.toTrack())
                       .toList();
 
-                  if (tracks.isEmpty) return const SizedBox();
+                  if (tracks.isEmpty && state.items.isNotEmpty) {
+                    final shuffled = (state.items.toList()..shuffle());
+                    tracks = shuffled.take(10).map((item) => item.toTrack()).toList();
+                  }
 
                   return MoreLikeSection(
                     sectionTitle: 'More of what you like',
@@ -223,13 +232,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 loading: () => const SizedBox(),
                 error: (_, __) => const SizedBox(),
                 data: (state) {
-                  final tracks = state.items
+                  var tracks = state.items
                       .skip(1)
                       .take(10)
                       .map((item) => item.toTrack())
                       .toList();
 
-                  if (tracks.isEmpty) return const SizedBox();
+                  if (tracks.isEmpty && state.items.isNotEmpty) {
+                    final shuffled = (state.items.toList()..shuffle());
+                    tracks = shuffled.take(10).map((item) => item.toTrack()).toList();
+                  }
 
                   return MoreLikeSection(
                     sectionTitle: 'Mixed for You',
@@ -242,9 +254,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Builder(
                 builder: (_) {
                   final albums = ref.watch(albumProvider).likedAlbums;
+
                   if (albums.isEmpty) {
-                    return const SizedBox.shrink();
+                    final playlistsData = ref.watch(userLikedPlaylistsProvider);
+                    return playlistsData.when(
+                      loading: () => const Center(
+                        child: SizedBox(
+                          height: 210,
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                      ),
+                      error: (_, _) => const SizedBox(),
+                      data: (playlists) {
+                        var displayPlaylists = playlists;
+
+                        if (displayPlaylists.isEmpty) {
+                          return AlbumsForYouSection(
+                            sectionTitle: 'Albums for You',
+                            albums: albums,
+                          );
+                        }
+
+                        if (displayPlaylists.length > 1) {
+                          final shuffled = (displayPlaylists.toList()..shuffle());
+                          displayPlaylists = shuffled;
+                        }
+
+                        return PlaylistsForYouSection(
+                          sectionTitle: 'Albums for You',
+                          playlists: displayPlaylists,
+                        );
+                      },
+                    );
                   }
+
                   return AlbumsForYouSection(
                     sectionTitle: 'Albums for You',
                     albums: albums,

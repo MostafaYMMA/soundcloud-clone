@@ -30,62 +30,69 @@ class AlbumsForYouSection extends StatelessWidget {
         const SizedBox(height: AppDimensions.spaceSmall),
         SizedBox(
           height: 210,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.spaceMedium,
-            ),
-            child: Row(
-              children: [
-                for (int i = 0; i < albums.length; i++) ...[
-                  GestureDetector(
-                    onTap: () => onAlbumTap?.call(albums[i]),
-                    child: SizedBox(
-                      width: 150,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              AppDimensions.borderRadiusSmall,
-                            ),
-                            child: albums[i].artworkUrl.isNotEmpty
-                                ? Image.network(
-                                    albums[i].artworkUrl,
-                                    width: 150,
-                                    height: 150,
-                                    fit: BoxFit.cover,
-                                    headers: const {
-                                      'User-Agent': 'Mozilla/5.0',
-                                    },
-                                    errorBuilder: (_, __, ___) =>
-                                        const _PlaceholderCover(),
-                                  )
-                                : const _PlaceholderCover(),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            albums[i].title,
-                            style: AppTextStyles.artistName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            '${albums[i].artist} · ${albums[i].trackCount} tracks',
-                            style: AppTextStyles.caption,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
+          child: albums.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No items yet',
+                    style: AppTextStyles.caption,
                   ),
-                  if (i < albums.length - 1)
-                    const SizedBox(width: AppDimensions.spaceSmall),
-                ],
-              ],
-            ),
-          ),
+                )
+              : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimensions.spaceMedium,
+                  ),
+                  child: Row(
+                    children: [
+                      for (int i = 0; i < albums.length; i++) ...[
+                        GestureDetector(
+                          onTap: () => onAlbumTap?.call(albums[i]),
+                          child: SizedBox(
+                            width: 150,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.borderRadiusSmall,
+                                  ),
+                                  child: albums[i].artworkUrl.isNotEmpty
+                                      ? Image.network(
+                                          albums[i].artworkUrl,
+                                          width: 150,
+                                          height: 150,
+                                          fit: BoxFit.cover,
+                                          headers: const {
+                                            'User-Agent': 'Mozilla/5.0',
+                                          },
+                                          errorBuilder: (_, _, _) =>
+                                              const _PlaceholderCover(),
+                                        )
+                                      : const _PlaceholderCover(),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  albums[i].title,
+                                  style: AppTextStyles.artistName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  '${albums[i].artist} · ${albums[i].trackCount} tracks',
+                                  style: AppTextStyles.caption,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (i < albums.length - 1)
+                          const SizedBox(width: AppDimensions.spaceSmall),
+                      ],
+                    ],
+                  ),
+                ),
         ),
       ],
     );
