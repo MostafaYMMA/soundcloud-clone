@@ -196,8 +196,7 @@ class _RootScreenState extends ConsumerState<RootScreen> {
   // ── Direct user tap ────────────────────────────────────────────────────────
 
   Future<void> _handlePlay(Track track) async {
-    final existingIndex =
-        _queue.indexWhere((t) => t.trackId == track.trackId);
+    final existingIndex = _queue.indexWhere((t) => t.trackId == track.trackId);
     if (existingIndex >= 0) {
       _currentQueueIndex = existingIndex;
       await _playTrack(track);
@@ -320,9 +319,7 @@ class _RootScreenState extends ConsumerState<RootScreen> {
       Future.microtask(() {
         if (mounted) setState(() => _bootstrapped = true);
       });
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (!authState.isLoggedIn) {

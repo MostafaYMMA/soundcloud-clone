@@ -231,7 +231,6 @@ class _ContextMenuSheetState extends ConsumerState<_ContextMenuSheet> {
     if (mounted) Navigator.of(context).pop();
   }
 
-
   void _showQrCode() {
     final url = _trackUrl();
     Navigator.of(context).pop();
@@ -261,10 +260,7 @@ class _ContextMenuSheetState extends ConsumerState<_ContextMenuSheet> {
                 const SizedBox(height: 4),
                 Text(
                   widget.track?.title ?? '',
-                  style: const TextStyle(
-                    color: Colors.black54,
-                    fontSize: 13,
-                  ),
+                  style: const TextStyle(color: Colors.black54, fontSize: 13),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -282,10 +278,7 @@ class _ContextMenuSheetState extends ConsumerState<_ContextMenuSheet> {
                   onPressed: () => Navigator.of(ctx).pop(),
                   child: const Text(
                     'Close',
-                    style: TextStyle(
-                      color: Colors.black54,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(color: Colors.black54, fontSize: 15),
                   ),
                 ),
               ],
