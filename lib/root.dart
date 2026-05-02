@@ -307,6 +307,7 @@ class _RootScreenState extends ConsumerState<RootScreen> {
       onNavigate: _pushSubScreen,
       onBack: _popSubScreen,
       onTrackTap: _handlePlay,
+      onQueuePlay: _setQueueAndPlay,
     ),
     const UpgradeScreen(),
   ];

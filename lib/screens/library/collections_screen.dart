@@ -8,6 +8,7 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_text_styles.dart';
 import '../../providers/playlist_provider.dart';
+import '../../models/track.dart';
 
 enum CollectionType { playlist, album, station }
 
@@ -57,6 +58,7 @@ class CollectionDetailsScreen extends ConsumerStatefulWidget {
   final String? playlistId;
   final CollectionDetailsData data;
   final Future<void> Function(CollectionTrack track)? onTrackTap;
+  final void Function(List<Track> tracks, int startIndex)? onQueuePlay;
   final VoidCallback? onBack;
 
   const CollectionDetailsScreen({
@@ -64,6 +66,7 @@ class CollectionDetailsScreen extends ConsumerStatefulWidget {
     this.playlistId,
     required this.data,
     this.onTrackTap,
+    this.onQueuePlay,
     this.onBack,
   });
 
@@ -78,6 +81,30 @@ class _CollectionDetailsScreenState
   late List<CollectionTrack> _tracks;
   bool _isUploadingCover = false;
   String? _removingTrackId;
+
+  List<Track> _toPlayableTracks(List<CollectionTrack> tracks) {
+    return tracks
+        .map(
+          (t) => Track(
+            trackId: t.id,
+            title: t.title,
+            coverImageUrl: t.artworkPath,
+            streamUrl:
+                'https://streamline-swp.duckdns.org/api/tracks/${t.id}/audio',
+            artist: TrackArtist(
+              userId: '',
+              username: '',
+              displayName: t.artist,
+              followerCount: 0,
+            ),
+            visibility: 'public',
+            processingStatus: '',
+            playCount: 0,
+            durationSeconds: t.durationSeconds,
+          ),
+        )
+        .toList();
+  }
 
   @override
   void initState() {
@@ -285,7 +312,27 @@ class _CollectionDetailsScreenState
                     onBack: widget.onBack,
                   ),
                   const SizedBox(height: AppDimensions.spaceLarge),
-                  _ActionRow(likesText: data.likesText),
+                  _ActionRow(
+                    likesText: data.likesText,
+                    onPlay: _tracks.isEmpty
+                        ? null
+                        : () {
+                            widget.onQueuePlay?.call(
+                              _toPlayableTracks(_tracks),
+                              0,
+                            );
+                          },
+                    onShuffle: _tracks.isEmpty
+                        ? null
+                        : () {
+                            final shuffled = List<CollectionTrack>.from(_tracks)
+                              ..shuffle();
+                            widget.onQueuePlay?.call(
+                              _toPlayableTracks(shuffled),
+                              0,
+                            );
+                          },
+                  ),
                   const SizedBox(height: AppDimensions.spaceLarge),
                   if (_tracks.isEmpty)
                     Container(
@@ -461,8 +508,10 @@ class _TopSection extends StatelessWidget {
 
 class _ActionRow extends StatelessWidget {
   final String likesText;
+  final VoidCallback? onPlay;
+  final VoidCallback? onShuffle;
 
-  const _ActionRow({required this.likesText});
+  const _ActionRow({required this.likesText, this.onPlay, this.onShuffle});
 
   @override
   Widget build(BuildContext context) {
@@ -480,19 +529,25 @@ class _ActionRow extends StatelessWidget {
         const SizedBox(width: 16),
         const Icon(Icons.more_horiz, color: Colors.white70, size: 28),
         const Spacer(),
-        const Icon(Icons.shuffle, color: Colors.white70, size: 30),
+        GestureDetector(
+          onTap: onShuffle,
+          child: const Icon(Icons.shuffle, color: Colors.white70, size: 30),
+        ),
         const SizedBox(width: AppDimensions.spaceMedium),
-        Container(
-          width: 68,
-          height: 68,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.play_arrow_rounded,
-            color: Colors.black,
-            size: 40,
+        GestureDetector(
+          onTap: onPlay,
+          child: Container(
+            width: 68,
+            height: 68,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.play_arrow_rounded,
+              color: Colors.black,
+              size: 40,
+            ),
           ),
         ),
       ],
