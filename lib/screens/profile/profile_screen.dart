@@ -16,6 +16,7 @@ import 'widgets/profile_playlists_section.dart';
 import 'widgets/profile_track_list_section.dart';
 import 'edit_profile_screen.dart';
 import 'playlist_detail_screen.dart';
+import 'see_all_screen.dart';
 
 const Color kBackgroundColor = Color(0xFF0F0F0F);
 
@@ -83,10 +84,16 @@ class _LikePlaylist extends _LikeItem {
 }
 
 class ProfileScreen extends ConsumerStatefulWidget {
-  const ProfileScreen({super.key, this.onTrackTap, this.onNavigate});
+  const ProfileScreen({
+    super.key,
+    this.onTrackTap,
+    this.onNavigate,
+    this.onBack,
+  });
 
   final Future<void> Function(Track)? onTrackTap;
   final void Function(Widget)? onNavigate;
+  final VoidCallback? onBack;
 
   @override
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
@@ -153,6 +160,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ProfileScreen(
                 onTrackTap: widget.onTrackTap,
                 onNavigate: widget.onNavigate,
+                onBack: widget.onBack,
               ),
             )
           : null,
@@ -229,7 +237,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           title: 'Reposts',
           showSeeAll: tracks.length > 3,
           tracks: tracks.take(3).toList(),
-          onSeeAllTap: () {},
+          onSeeAllTap: () {
+            final screen = SeeAllScreen(
+              title: 'Reposts',
+              tracks: tracks,
+              onBack: widget.onNavigate != null
+                  ? () => widget.onNavigate!(
+                      ProfileScreen(
+                        onTrackTap: widget.onTrackTap,
+                        onNavigate: widget.onNavigate,
+                        onBack: widget.onBack,
+                      ),
+                    )
+                  : null,
+              onTrackTap: widget.onTrackTap,
+              onNavigate: widget.onNavigate,
+            );
+            if (widget.onNavigate != null) {
+              widget.onNavigate!(screen);
+            } else {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => screen));
+            }
+          },
           onTrackTap: (t) => widget.onTrackTap?.call(t),
           onMoreTap: (t) => showTrackContextMenu(context, t),
         );
@@ -282,7 +313,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               const Spacer(),
               if (items.length > 3)
                 GestureDetector(
-                  onTap: () {},
+                  onTap: () {
+                    final screen = SeeAllScreen(
+                      title: 'Likes',
+                      tracks: tracks,
+                      playlists: playlists,
+                      onBack: widget.onNavigate != null
+                          ? () => widget.onNavigate!(
+                              ProfileScreen(
+                                onTrackTap: widget.onTrackTap,
+                                onNavigate: widget.onNavigate,
+                                onBack: widget.onBack,
+                              ),
+                            )
+                          : null,
+                      onTrackTap: widget.onTrackTap,
+                      onNavigate: widget.onNavigate,
+                    );
+                    if (widget.onNavigate != null) {
+                      widget.onNavigate!(screen);
+                    } else {
+                      Navigator.of(
+                        context,
+                      ).push(MaterialPageRoute(builder: (_) => screen));
+                    }
+                  },
                   child: Text(
                     'See all',
                     style: TextStyle(
@@ -354,7 +409,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             children: [
               ProfileHeaderSection(
                 user: user,
-                onBackPressed: () => Navigator.of(context).maybePop(),
+                onBackPressed: () {
+                  if (widget.onBack != null) {
+                    widget.onBack!();
+                  } else {
+                    Navigator.of(context).maybePop();
+                  }
+                },
                 onMorePressed: () => showProfileMore(context, user: user),
                 onEditPressed: _openEditProfile,
                 onShufflePressed: () {},
