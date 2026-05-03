@@ -24,6 +24,7 @@ class LibraryScreen extends ConsumerWidget {
   final VoidCallback? onBack;
   final Future<void> Function(Track track) onTrackTap;
   final void Function(List<Track> tracks, int startIndex) onQueuePlay;
+
   const LibraryScreen({
     super.key,
     required this.onNavigate,
@@ -58,11 +59,11 @@ class LibraryScreen extends ConsumerWidget {
                 const SizedBox(width: AppDimensions.spaceSmall),
                 GestureDetector(
                   onTap: () {
-                    // Use onNavigate so mini player stays visible
                     onNavigate(
                       ProfileScreen(
                         onTrackTap: onTrackTap,
                         onNavigate: onNavigate,
+                        onBack: onBack,
                       ),
                     );
                   },
@@ -186,13 +187,15 @@ class LibraryScreen extends ConsumerWidget {
             loading: () => const SliverToBoxAdapter(
               child: Center(child: CircularProgressIndicator()),
             ),
-            error: (_, _) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+            error: (_, _) =>
+                const SliverToBoxAdapter(child: SizedBox.shrink()),
             data: (tracks) => SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) => TrackTile(
                   track: tracks[index],
                   onTap: () => onTrackTap(tracks[index]),
-                  onMoreTap: () => showTrackContextMenu(context, tracks[index]),
+                  onMoreTap: () =>
+                      showTrackContextMenu(context, tracks[index]),
                 ),
                 childCount: tracks.length,
               ),

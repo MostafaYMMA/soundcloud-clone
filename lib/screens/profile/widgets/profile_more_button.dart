@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../../models/user.dart';
 import 'profile_view_info.dart';
 
-/// Shows the ··· sheet as a full-screen modal.
-/// Usage:
-///   showProfileMoreSheet(context, user: user);
 void showProfileMore(BuildContext context, {required User user}) {
   showModalBottomSheet(
     context: context,
@@ -16,8 +16,11 @@ void showProfileMore(BuildContext context, {required User user}) {
       minChildSize: 0.5,
       maxChildSize: 1.0,
       expand: false,
-      builder: (__, scrollController) =>
-          ProfileMoreButton(user: user, scrollController: scrollController),
+      builder: (__, scrollController) => ProfileMoreButton(
+        user: user,
+        scrollController: scrollController,
+        rootContext: context,
+      ),
     ),
   );
 }
@@ -26,27 +29,30 @@ class ProfileMoreButton extends StatelessWidget {
   const ProfileMoreButton({
     super.key,
     required this.user,
+    required this.rootContext,
     this.scrollController,
   });
 
   final User user;
+  final BuildContext rootContext;
   final ScrollController? scrollController;
 
   static const Color _bg = Color(0xFF111111);
   static const Color _divider = Color(0xFF232323);
 
-  // Correct order from screenshot:
-  // Copy link, Message, QR code, SMS, WhatsApp, Stories, Snapchat, More
+  String get _profileUrl =>
+      'https://soundcloud.com/${user.userName ?? ''}';
+
   List<_ShareItem> get _shareItems => [
-    _ShareItem.dark(icon: Icons.copy_rounded, label: 'Copy link'),
-    _ShareItem.dark(icon: Icons.near_me_outlined, label: 'Message'),
-    _ShareItem.dark(icon: Icons.qr_code_2_rounded, label: 'QR code'),
-    _ShareItem.dark(icon: Icons.chat_bubble_outline_rounded, label: 'SMS'),
-    _ShareItem.whatsapp(),
-    _ShareItem.instagram(),
-    _ShareItem.snapchat(),
-    _ShareItem.dark(icon: Icons.more_horiz_rounded, label: 'More'),
-  ];
+        _ShareItem.dark(icon: Icons.copy_rounded, label: 'Copy link'),
+        _ShareItem.dark(icon: Icons.near_me_outlined, label: 'Message'),
+        _ShareItem.dark(icon: Icons.qr_code_2_rounded, label: 'QR code'),
+        _ShareItem.dark(icon: Icons.chat_bubble_outline_rounded, label: 'SMS'),
+        _ShareItem.whatsapp(),
+        _ShareItem.instagram(),
+        _ShareItem.snapchat(),
+        _ShareItem.dark(icon: Icons.more_horiz_rounded, label: 'More'),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +70,6 @@ class ProfileMoreButton extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Drag handle
               const SizedBox(height: 10),
               Container(
                 width: 36,
@@ -76,14 +81,13 @@ class ProfileMoreButton extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Avatar
               CircleAvatar(
                 radius: avatarRadius,
                 backgroundColor: const Color(0xFF2A2A2A),
                 backgroundImage:
                     (user.avatarUrl != null && user.avatarUrl!.isNotEmpty)
-                    ? NetworkImage(user.avatarUrl!)
-                    : null,
+                        ? NetworkImage(user.avatarUrl!)
+                        : null,
                 child: (user.avatarUrl == null || user.avatarUrl!.isEmpty)
                     ? Icon(
                         Icons.person,
@@ -94,7 +98,6 @@ class ProfileMoreButton extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // Name
               Text(
                 user.userName ?? '',
                 style: const TextStyle(
@@ -105,14 +108,12 @@ class ProfileMoreButton extends StatelessWidget {
               ),
               const SizedBox(height: 4),
 
-              // Followers
               Text(
                 '${_formatCount(user.followers ?? 0)} followers',
                 style: TextStyle(color: Colors.grey[400], fontSize: 14),
               ),
               const SizedBox(height: 24),
 
-              // Share icons row
               SizedBox(
                 height: 82,
                 child: ListView.separated(
@@ -133,7 +134,6 @@ class ProfileMoreButton extends StatelessWidget {
               const SizedBox(height: 8),
               Divider(color: _divider, height: 1),
 
-              // View info row
               InkWell(
                 onTap: () {
                   Navigator.of(context).pop();
@@ -181,17 +181,113 @@ class ProfileMoreButton extends StatelessWidget {
     );
   }
 
-  void _handleTap(BuildContext context, String label) {
-    if (label == 'Copy link') {
-      final url = 'https://soundcloud.com/${user.userName ?? ''}';
-      Clipboard.setData(ClipboardData(text: url));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Link copied to clipboard'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      Navigator.of(context).pop();
+  Future<void> _handleTap(BuildContext context, String label) async {
+    switch (label) {
+      case 'Copy link':
+        await Clipboard.setData(ClipboardData(text: _profileUrl));
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Link copied to clipboard'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          Navigator.of(context).pop();
+        }
+
+      case 'SMS':
+        final uri = Uri(
+          scheme: 'sms',
+          queryParameters: {'body': _profileUrl},
+        );
+        if (await canLaunchUrl(uri)) await launchUrl(uri);
+        if (context.mounted) Navigator.of(context).pop();
+
+      case 'Message':
+        await Share.share(_profileUrl);
+        if (context.mounted) Navigator.of(context).pop();
+
+      case 'WhatsApp':
+        final encoded = Uri.encodeComponent(_profileUrl);
+        final uri = Uri.parse('whatsapp://send?text=$encoded');
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          final webUri = Uri.parse('https://wa.me/?text=$encoded');
+          await launchUrl(webUri, mode: LaunchMode.externalApplication);
+        }
+        if (context.mounted) Navigator.of(context).pop();
+
+      case 'Stories':
+        await Share.share(_profileUrl);
+        if (context.mounted) Navigator.of(context).pop();
+
+      case 'Snapchat':
+        await Share.share(_profileUrl);
+        if (context.mounted) Navigator.of(context).pop();
+
+      case 'More':
+        await Share.share(_profileUrl);
+        if (context.mounted) Navigator.of(context).pop();
+
+      case 'QR code':
+        Navigator.of(context).pop();
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (!rootContext.mounted) return;
+          showDialog(
+            context: rootContext,
+            builder: (ctx) => Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Scan to visit profile',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      user.userName ?? '',
+                      style: const TextStyle(
+                        color: Colors.black54,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    QrImageView(
+                      data: _profileUrl,
+                      version: QrVersions.auto,
+                      size: 220,
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text(
+                        'Close',
+                        style: TextStyle(
+                          color: Colors.black54,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
     }
   }
 
@@ -207,7 +303,7 @@ class ProfileMoreButton extends StatelessWidget {
   }
 }
 
-// ── Share item data model ────────────────────────────────────────────────────
+// ── Share item data model ─────────────────────────────────────────────────────
 
 enum _ShareItemType { dark, whatsapp, instagram, snapchat }
 
@@ -231,7 +327,7 @@ class _ShareItem {
       const _ShareItem._(label: 'Snapchat', type: _ShareItemType.snapchat);
 }
 
-// ── Share icon button ────────────────────────────────────────────────────────
+// ── Share icon button ─────────────────────────────────────────────────────────
 
 class _ShareIconButton extends StatelessWidget {
   const _ShareIconButton({required this.item, required this.onTap});
@@ -269,7 +365,6 @@ class _ShareIconButton extends StatelessWidget {
           ),
           child: Icon(item.icon, color: Colors.white, size: 24),
         );
-
       case _ShareItemType.whatsapp:
         return Container(
           width: 52,
@@ -289,7 +384,6 @@ class _ShareIconButton extends StatelessWidget {
             ),
           ),
         );
-
       case _ShareItemType.instagram:
         return Container(
           width: 52,
@@ -313,7 +407,6 @@ class _ShareIconButton extends StatelessWidget {
             size: 26,
           ),
         );
-
       case _ShareItemType.snapchat:
         return Container(
           width: 52,
