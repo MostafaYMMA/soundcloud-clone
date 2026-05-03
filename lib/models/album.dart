@@ -64,10 +64,17 @@ class Album {
   }
 
   factory Album.fromJson(Map<String, dynamic> json) {
+    // Detail endpoint uses release_date, search endpoint uses year
     int releaseYear = 0;
-    final rawDate = json['release_date']?.toString();
-    if (rawDate != null && rawDate.isNotEmpty) {
-      releaseYear = int.tryParse(rawDate.split('-').first) ?? 0;
+    if (json['year'] != null) {
+      releaseYear = json['year'] is int
+          ? json['year']
+          : int.tryParse(json['year'].toString()) ?? 0;
+    } else {
+      final rawDate = json['release_date']?.toString();
+      if (rawDate != null && rawDate.isNotEmpty) {
+        releaseYear = int.tryParse(rawDate.split('-').first) ?? 0;
+      }
     }
 
     final tracksRaw = json['tracks'];
@@ -81,10 +88,11 @@ class Album {
     return Album(
       id: json['album_id']?.toString() ?? json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? 'Untitled Album',
+      // search uses artist_name, detail uses artist/display_name
       artist:
+          json['artist_name']?.toString() ??
           json['artist']?.toString() ??
           json['display_name']?.toString() ??
-          json['owner']?.toString() ??
           'Unknown Artist',
       artworkUrl: _fixMediaUrl(
         json['cover_photo_url']?.toString() ??
@@ -100,7 +108,7 @@ class Album {
           : int.tryParse(json['like_count']?.toString() ?? '') ?? 0,
       trackIds:
           (json['track_ids'] as List?)?.map((e) => e.toString()).toList() ?? [],
-      tracks: tracks, // ← added
+      tracks: tracks,
     );
   }
 }

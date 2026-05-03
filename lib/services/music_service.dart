@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../models/track.dart';
+import '../models/album.dart';
 
 class MusicService {
   final Dio _dio;
@@ -151,5 +152,16 @@ class MusicService {
     final raw = res.data['data'];
     final List data = (raw is Map ? (raw['playlists'] ?? []) : raw) ?? [];
     return data.map((e) => e as Map<String, dynamic>).toList();
+  }
+
+  // GET /search/playlists?keyword=query
+  Future<List<Album>> searchAlbums(String query) async {
+    final res = await _dio.get(
+      '$_baseUrl/search/albums',
+      queryParameters: {'keyword': query},
+    );
+    final raw = res.data['data'];
+    final List data = (raw is Map ? (raw['albums'] ?? []) : raw) ?? [];
+    return data.map<Album>((json) => Album.fromJson(json)).toList();
   }
 }
