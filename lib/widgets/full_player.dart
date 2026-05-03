@@ -15,6 +15,7 @@ import '../../providers/followers_provider.dart';
 import '../../providers/liked_tracks_provider.dart';
 import '../../providers/track_provider.dart';
 import '../../screens/home/queue_screen.dart';
+import '../../screens/library/context_menu_sheet.dart';
 import '../../screens/profile/artist_profile_screen.dart';
 import '../../screens/profile/comments_screen.dart';
 
@@ -61,11 +62,9 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
 
   void _onTrackChanged() {
     if (!mounted) return;
-
     setState(() {
       _currentTrack = widget.trackNotifier.value;
     });
-
     _seedLikedState(_currentTrack);
   }
 
@@ -73,10 +72,8 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
     if (track.isLiked == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-
         final notifier = ref.read(likedTracksProvider.notifier);
         final current = ref.read(likedTracksProvider);
-
         if (!current.contains(track.trackId)) {
           notifier.setAll({...current, track.trackId});
         }
@@ -98,10 +95,8 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
 
   void _seekFromDx(double dx, double width, Duration totalDuration) {
     if (width <= 0 || totalDuration.inMilliseconds <= 0) return;
-
     final newProgress = (dx / width).clamp(0.0, 1.0);
     final targetMs = (newProgress * totalDuration.inMilliseconds).round();
-
     widget.onSeek(Duration(milliseconds: targetMs));
   }
 
@@ -188,30 +183,24 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                               ),
                               Expanded(child: _buildArtworkArea()),
                               waveformAsync.when(
-                                data: (waveform) {
-                                  return _buildWaveform(
-                                    waveform: waveform,
-                                    elapsed: elapsed,
-                                    totalSeconds: totalSeconds,
-                                    progress: progress,
-                                    totalDuration: totalDuration,
-                                  );
-                                },
-                                loading: () {
-                                  return _buildWaveformLoading(
-                                    elapsed: elapsed,
-                                    totalSeconds: totalSeconds,
-                                  );
-                                },
-                                error: (_, __) {
-                                  return _buildWaveform(
-                                    waveform: _fallbackWaveform,
-                                    elapsed: elapsed,
-                                    totalSeconds: totalSeconds,
-                                    progress: progress,
-                                    totalDuration: totalDuration,
-                                  );
-                                },
+                                data: (waveform) => _buildWaveform(
+                                  waveform: waveform,
+                                  elapsed: elapsed,
+                                  totalSeconds: totalSeconds,
+                                  progress: progress,
+                                  totalDuration: totalDuration,
+                                ),
+                                loading: () => _buildWaveformLoading(
+                                  elapsed: elapsed,
+                                  totalSeconds: totalSeconds,
+                                ),
+                                error: (_, __) => _buildWaveform(
+                                  waveform: _fallbackWaveform,
+                                  elapsed: elapsed,
+                                  totalSeconds: totalSeconds,
+                                  progress: progress,
+                                  totalDuration: totalDuration,
+                                ),
                               ),
                               _buildCommentBar(),
                               _buildBottomBar(),
@@ -352,10 +341,10 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                 GestureDetector(
                   onTap: _currentTrack.artist?.username != null
                       ? () => _openArtistProfile(
-                          context,
-                          _currentTrack.artist!.username,
-                          _currentTrack.artist!.displayName,
-                        )
+                            context,
+                            _currentTrack.artist!.username,
+                            _currentTrack.artist!.displayName,
+                          )
                       : null,
                   child: Text(
                     _currentTrack.artist?.displayName ?? 'Unknown Artist',
@@ -655,16 +644,17 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
+        // Like button
         GestureDetector(
           onTap: () async {
             final notifier = ref.read(likedTracksProvider.notifier);
             final wasLiked = isLiked;
-
             notifier.toggleLocal(_currentTrack.trackId);
-
             try {
               await ref
-                  .read(toggleTrackLikeProvider(_currentTrack.trackId).notifier)
+                  .read(
+                    toggleTrackLikeProvider(_currentTrack.trackId).notifier,
+                  )
                   .toggle(currentlyLiked: wasLiked, username: username);
             } catch (_) {
               notifier.toggleLocal(_currentTrack.trackId);
@@ -680,12 +670,18 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
               const SizedBox(width: 4),
               Text(
                 '$displayCount',
-                style: AppTextStyles.caption.copyWith(color: AppColors.primary),
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.primary,
+                ),
               ),
             ],
           ),
         ),
+
+        // Share
         const Icon(Icons.ios_share, color: AppColors.textSecondary, size: 22),
+
+        // Queue
         GestureDetector(
           onTap: widget.queueNotifier != null ? _openQueueSheet : null,
           child: Icon(
@@ -696,7 +692,16 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
             size: 22,
           ),
         ),
-        const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 22),
+
+        // More — opens context menu sheet
+        GestureDetector(
+          onTap: () => showTrackContextMenu(context, _currentTrack),
+          child: const Icon(
+            Icons.more_horiz,
+            color: AppColors.textSecondary,
+            size: 22,
+          ),
+        ),
       ],
     );
   }
@@ -730,9 +735,8 @@ class WaveformPainter extends CustomPainter {
           const Radius.circular(2),
         ),
         Paint()
-          ..color = played
-              ? AppColors.waveformActive
-              : AppColors.waveformInactive,
+          ..color =
+              played ? AppColors.waveformActive : AppColors.waveformInactive,
       );
 
       canvas.drawRRect(
