@@ -47,10 +47,7 @@ class SeeAllScreen extends StatelessWidget {
       ),
       body: totalCount == 0
           ? const Center(
-              child: Text(
-                'Nothing here yet.',
-                style: AppTextStyles.artistName,
-              ),
+              child: Text('Nothing here yet.', style: AppTextStyles.artistName),
             )
           : ListView.builder(
               padding: const EdgeInsets.only(bottom: 100),
@@ -76,9 +73,9 @@ class SeeAllScreen extends StatelessWidget {
                       if (onNavigate != null) {
                         onNavigate!(screen);
                       } else {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => screen),
-                        );
+                        Navigator.of(
+                          context,
+                        ).push(MaterialPageRoute(builder: (_) => screen));
                       }
                     },
                   );
@@ -129,10 +126,7 @@ class _PlaylistTile extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: const Icon(
-        Icons.chevron_right,
-        color: AppColors.textMuted,
-      ),
+      trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
     );
   }
 
@@ -141,10 +135,7 @@ class _PlaylistTile extends StatelessWidget {
       width: 52,
       height: 52,
       color: AppColors.surfaceLight,
-      child: const Icon(
-        Icons.queue_music,
-        color: AppColors.textMuted,
-      ),
+      child: const Icon(Icons.queue_music, color: AppColors.textMuted),
     );
   }
 }

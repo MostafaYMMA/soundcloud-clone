@@ -187,15 +187,13 @@ class LibraryScreen extends ConsumerWidget {
             loading: () => const SliverToBoxAdapter(
               child: Center(child: CircularProgressIndicator()),
             ),
-            error: (_, _) =>
-                const SliverToBoxAdapter(child: SizedBox.shrink()),
+            error: (_, _) => const SliverToBoxAdapter(child: SizedBox.shrink()),
             data: (tracks) => SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) => TrackTile(
                   track: tracks[index],
                   onTap: () => onTrackTap(tracks[index]),
-                  onMoreTap: () =>
-                      showTrackContextMenu(context, tracks[index]),
+                  onMoreTap: () => showTrackContextMenu(context, tracks[index]),
                 ),
                 childCount: tracks.length,
               ),

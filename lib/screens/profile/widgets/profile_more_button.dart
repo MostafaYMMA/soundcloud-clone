@@ -40,19 +40,18 @@ class ProfileMoreButton extends StatelessWidget {
   static const Color _bg = Color(0xFF111111);
   static const Color _divider = Color(0xFF232323);
 
-  String get _profileUrl =>
-      'https://soundcloud.com/${user.userName ?? ''}';
+  String get _profileUrl => 'https://soundcloud.com/${user.userName ?? ''}';
 
   List<_ShareItem> get _shareItems => [
-        _ShareItem.dark(icon: Icons.copy_rounded, label: 'Copy link'),
-        _ShareItem.dark(icon: Icons.near_me_outlined, label: 'Message'),
-        _ShareItem.dark(icon: Icons.qr_code_2_rounded, label: 'QR code'),
-        _ShareItem.dark(icon: Icons.chat_bubble_outline_rounded, label: 'SMS'),
-        _ShareItem.whatsapp(),
-        _ShareItem.instagram(),
-        _ShareItem.snapchat(),
-        _ShareItem.dark(icon: Icons.more_horiz_rounded, label: 'More'),
-      ];
+    _ShareItem.dark(icon: Icons.copy_rounded, label: 'Copy link'),
+    _ShareItem.dark(icon: Icons.near_me_outlined, label: 'Message'),
+    _ShareItem.dark(icon: Icons.qr_code_2_rounded, label: 'QR code'),
+    _ShareItem.dark(icon: Icons.chat_bubble_outline_rounded, label: 'SMS'),
+    _ShareItem.whatsapp(),
+    _ShareItem.instagram(),
+    _ShareItem.snapchat(),
+    _ShareItem.dark(icon: Icons.more_horiz_rounded, label: 'More'),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -86,8 +85,8 @@ class ProfileMoreButton extends StatelessWidget {
                 backgroundColor: const Color(0xFF2A2A2A),
                 backgroundImage:
                     (user.avatarUrl != null && user.avatarUrl!.isNotEmpty)
-                        ? NetworkImage(user.avatarUrl!)
-                        : null,
+                    ? NetworkImage(user.avatarUrl!)
+                    : null,
                 child: (user.avatarUrl == null || user.avatarUrl!.isEmpty)
                     ? Icon(
                         Icons.person,
@@ -196,10 +195,7 @@ class ProfileMoreButton extends StatelessWidget {
         }
 
       case 'SMS':
-        final uri = Uri(
-          scheme: 'sms',
-          queryParameters: {'body': _profileUrl},
-        );
+        final uri = Uri(scheme: 'sms', queryParameters: {'body': _profileUrl});
         if (await canLaunchUrl(uri)) await launchUrl(uri);
         if (context.mounted) Navigator.of(context).pop();
 
@@ -276,10 +272,7 @@ class ProfileMoreButton extends StatelessWidget {
                       onPressed: () => Navigator.of(ctx).pop(),
                       child: const Text(
                         'Close',
-                        style: TextStyle(
-                          color: Colors.black54,
-                          fontSize: 15,
-                        ),
+                        style: TextStyle(color: Colors.black54, fontSize: 15),
                       ),
                     ),
                   ],

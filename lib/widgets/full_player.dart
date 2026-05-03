@@ -341,10 +341,10 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
                 GestureDetector(
                   onTap: _currentTrack.artist?.username != null
                       ? () => _openArtistProfile(
-                            context,
-                            _currentTrack.artist!.username,
-                            _currentTrack.artist!.displayName,
-                          )
+                          context,
+                          _currentTrack.artist!.username,
+                          _currentTrack.artist!.displayName,
+                        )
                       : null,
                   child: Text(
                     _currentTrack.artist?.displayName ?? 'Unknown Artist',
@@ -652,9 +652,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
             notifier.toggleLocal(_currentTrack.trackId);
             try {
               await ref
-                  .read(
-                    toggleTrackLikeProvider(_currentTrack.trackId).notifier,
-                  )
+                  .read(toggleTrackLikeProvider(_currentTrack.trackId).notifier)
                   .toggle(currentlyLiked: wasLiked, username: username);
             } catch (_) {
               notifier.toggleLocal(_currentTrack.trackId);
@@ -670,9 +668,7 @@ class _FullPlayerState extends ConsumerState<FullPlayer> {
               const SizedBox(width: 4),
               Text(
                 '$displayCount',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.primary,
-                ),
+                style: AppTextStyles.caption.copyWith(color: AppColors.primary),
               ),
             ],
           ),
@@ -735,8 +731,9 @@ class WaveformPainter extends CustomPainter {
           const Radius.circular(2),
         ),
         Paint()
-          ..color =
-              played ? AppColors.waveformActive : AppColors.waveformInactive,
+          ..color = played
+              ? AppColors.waveformActive
+              : AppColors.waveformInactive,
       );
 
       canvas.drawRRect(
