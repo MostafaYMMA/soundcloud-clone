@@ -6,11 +6,6 @@ at Cairo University, replicating core SoundCloud functionality.
 This repo contains my personal contribution: the Flutter/Dart mobile client.  
 The full project (backend, frontend, DevOps, QA) lives in the team organization repo.
 
-## My Contribution
-- Audio playback implementation
-- User authentication flows
-- Track browsing UI
-- Cross-platform iOS/Android builds
 
 ## Tech Stack
 Flutter · Dart · REST APIs · Git (large multi-contributor repo)
